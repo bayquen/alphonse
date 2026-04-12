@@ -140,3 +140,6 @@ vite.config.ts.timestamp-*
 
 # env files
 .env
+
+# any pseudocode text files for Brandon
+**pseudocode.*
