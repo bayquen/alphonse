@@ -1,7 +1,10 @@
 import * as fs from 'fs';  // From NodeJS
+import path from 'path';
 
 // Brandon's Pseudocode: 
-// for pipeline for ingesting and reading doc files (reading from a folder of 2-3 docs inside repo, for now)
+// Pipeline for ingesting doc files (program reads from a folder of a few uploaded sample docs, for now).
+// (Note:) In the context of this application, ingestion involves the E2E pipeline - from reading docs & converting
+//       them into file objects, all the way to storing the vector embeddings in a storage index (i.e. Redis)
 /** 
 * 1. Get directory path of doc files
 * 2. Get list of files inside the docs directory
@@ -23,26 +26,57 @@ import * as fs from 'fs';  // From NodeJS
 * 6. Create Redis vector index
 */
 
+interface FileObject {
+    file_name: string;
+    content: string;
+    source: string;
+}
 
 // Read directory containing uploaded doc files (for now; TODO: read doc files from git repos or files shared by user)
-function readDocsDir() {
-    fs.readdir('/docs', (err, files) => {
-        if (err) 
-            console.log(err);
-        else {
-            return files;
-        } 
-    })
-};
-
-// Asynchronously read files for server load efficiency (esp. for large-sized docs)
-// TODO (continue fixing this - 4/11/26)
-function readDocFiles() {
-    readDocsDir();
-    
-    fs.readFile('/docs/example.md', 'utf-8', (err, data) => {
-        if (err) throw err;
-        return data;
+function readDocsDir(docsPath: string): Promise<string[]> {
+    return new Promise((resolve, reject) => {
+        fs.readdir(docsPath, (err, files) => {
+            if (err)
+                reject(err);
+            else {
+                // Prepend full path to each file (i.e. [directory path] + separator + [file name])
+                const filePaths = files.map(file => path.join(docsPath, file));
+                resolve(filePaths);
+            }
+        });
     });
-};
+}
 
+// Read a single file and create file object
+function readFileObject(filePath: string): Promise<FileObject> {
+    return new Promise((resolve, reject) => { 
+        // Asynchronously read files for server load efficiency (esp. for large-sized docs)
+        fs.readFile(filePath, 'utf8', (err, data) => {
+            if (err) {
+                reject(err);
+            } else {
+                // Create file object
+                const fileObject: FileObject = {
+                    file_name: path.basename(filePath),
+                    content: data,
+                    source: filePath
+                };
+                resolve(fileObject);
+            }
+        });
+    });
+}
+
+// Pipeline: Read all doc files and return array of file objects
+async function ingestAllDocs(): Promise<FileObject[]> {
+    try {
+        const filePaths = await readDocsDir('/docs');
+        const fileObjects = await Promise.all(
+            filePaths.map(filePath => readFileObject(filePath))
+        );
+        return fileObjects;
+    } catch (err) {
+        console.error('Error ingesting:', err);
+        throw err;
+    }
+}
