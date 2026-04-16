@@ -2,26 +2,20 @@ import * as fs from 'fs';  // From NodeJS
 import path from 'path';
 import { MarkdownParser } from "markdown-parser";
 
-interface FileObject {
+interface FileMetadata {
     filename: string;
     content: string;
-    source: string;
+    sourcePath: string;
 }
 
-// interface MarkdownObject {
-//     content: string;
-//     filename: string;
-//     heading: string;
-//     position: number;
-// }
-
-interface MarkdownObject {
-    text: string;
-    h1: string;
-    h2: string;
-    h3: string;
+interface MarkdownMetadata {
+    filename: string;
+    content: string;
+    h1: string | null;
+    h2: string | null;
+    h3: string | null;
+    sourcePath: string;
 }
-
 
 
 // Function for reading directory containing uploaded doc files (for now; TODO: read doc files from git repos or files shared by user)
@@ -31,7 +25,7 @@ function readDocsDir(docsPath: string): Promise<string[]> {
             if (err)
                 reject(err);
             else {
-                // Prepend full path to each file (i.e. [directory path] + separator + [file name])
+                // Prepend full path to each file (i.e. [directory path] + '/' + [file name])
                 const filePaths = files.map(file => path.join(docsPath, file));
                 resolve(filePaths);
             }
@@ -40,7 +34,7 @@ function readDocsDir(docsPath: string): Promise<string[]> {
 }
 
 // Function for reading a single file and create file object from it
-function createFileObject(filePath: string): Promise<FileObject> {
+function createFileObject(filePath: string): Promise<FileMetadata> {
     return new Promise((resolve, reject) => { 
         // Asynchronously read files for server load efficiency (esp. for large-sized docs)
         fs.readFile(filePath, 'utf8', (err, data) => {
@@ -48,28 +42,58 @@ function createFileObject(filePath: string): Promise<FileObject> {
                 reject(err);
             } else {
                 // Create file object
-                const fileObject: FileObject = {
+                const metadata: FileMetadata = {
                     filename: path.basename(filePath),
                     content: data,
-                    source: filePath
+                    sourcePath: filePath
                 };
-                resolve(fileObject);
+                resolve(metadata);
             }
         });
     });
 }
 
+// TODO (4/15/26): Figure out how to return a complete, object array w/ both reg. file metadata objects and .md metadata objects together.
+//                 Each metadata file should correlate to a MarkdownMetadata object, but not a regular FileMetadata object.
+//                 We need the resulting object array so we can chunk them in prep for vector embedding, remember?
+
 // Pipeline: Read each file and create + return array of file objects to be chunked
-async function extractFileObjects(): Promise<FileObject[]> {
+async function extractFileObjects(): Promise<(FileMetadata | MarkdownMetadata)[]> {
     try {
         const filePaths = await readDocsDir('/docs');
+        // TODO: Within a for loop of file objects, should check if markdown file or not.
+        //       If-clause for extracting .md metadata, otherwise create regular FileMetadata for non-markdown file.
+
+        // for (const filePath of filePaths) {
+        //     // If .md file, then extract headings and content
+        //     if (path.basename(filePath).split('.').pop()?.toLowerCase() == 'md') {
+        //         extractMDHeadingsAndContent()
+        //     }
+        // }
         const fileObjects = await Promise.all(
             filePaths.map(filePath => createFileObject(filePath))
         );
-        // For each object, if markdown file, then extract section headings for chunks w/ richer metadata later
-        fileObjects.map(fileObject => )
 
-        return fileObjects;
+        let allMetadataObjects: (FileMetadata | MarkdownMetadata)[] = [];
+        let mdResults: MarkdownMetadata[] = []; 
+        let mdFiles: FileMetadata[] = [];
+        // Check if each file object is an .md file. If yes, then save into separate array 
+        // for .md metadata extraction
+        for (const fileObject of fileObjects) {
+            if (path.basename(fileObject.sourcePath).split('.').pop()?.toLowerCase() == 'md') {
+                mdFiles.push(fileObject);
+            } else {    // Else, save file object directly in end-results array
+                allMetadataObjects.push(fileObject);
+            }
+        }
+        // Extract .md metadata and save to end results array.
+        for (const mdFile of mdFiles) {
+            const extractedMDObjects = await extractMDHeadingsAndContent(mdFile);
+            for (const object of extractedMDObjects) {
+                allMetadataObjects.push(object);
+            }
+        }
+        return allMetadataObjects;  
     } catch (err) {
         console.error('Error ingesting:', err);
         throw err;
@@ -77,15 +101,21 @@ async function extractFileObjects(): Promise<FileObject[]> {
 }
 
 // Pipeline: Parse any markdown doc files to extract headings (h1, h2, etc.) and convert into
-// abstract syntax trees (AST) for richer metadata. Enriches metadata to improve context for agent 
-// (vector) search.
-async function extractMDHeadingsAndContent(fileText: string): Promise<MarkdownObject[]> {
+// abstract syntax trees (AST). Enriches metadata to improve context for agent (vector) search.
+
+// TODO: Fix this func so that it reads and parses given file's text directly with fs.readfile() ?
+async function extractMDHeadingsAndContent(
+    fileObject: FileMetadata
+ ): Promise<MarkdownMetadata[]> {
+    const fileText = fileObject.content
+
     const parser = new MarkdownParser();
     const nodes = parser.parse(fileText);
 
     let currentH1 = null;
     let currentH2 = null;
     let currentH3 = null;
+    const results: MarkdownMetadata[] = [];
 
     for (const node of nodes) {
         if (node.type === "heading") {
@@ -99,13 +129,20 @@ async function extractMDHeadingsAndContent(fileText: string): Promise<MarkdownOb
                 currentH3 = node.children[0][1];
             }
         } else if (node.type === "paragraph") {
-            const markdownObject: MarkdownObject = {
-                text: node.text,
+            const paragraphText = node.children[0][0]
+
+            const metadata: MarkdownMetadata = {
+                filename: fileObject.filename,
+                content: paragraphText,
                 h1: currentH1,
                 h2: currentH2,
                 h3: currentH3,
+                sourcePath: fileObject.sourcePath
             };
+            // Add resulting metadata into the results array
+            results.push(metadata)
         }
     }
-    // return ;
+    // Return metadata results array
+    return results;
 }
