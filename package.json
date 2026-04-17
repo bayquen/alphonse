@@ -1,0 +1,28 @@
+{
+    "name": "rtfm-agent",
+    "version": "1.0.0",
+    "description": "A Q&A chatbot agent that understands your technical docs and markdown",
+    "main": "ingest.js",
+    "directories": {
+      "doc": "docs"
+    },
+    "scripts": {
+      "test": "echo \"Error: no test specified\" && exit 1",
+      "build": "tsc",
+      "start": "npm run build && node dist/ingest.js",
+      "dev": "tsc --watch"
+    },
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/bayquen/rtfm-agent.git"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "type": "module",
+    "bugs": {
+      "url": "https://github.com/bayquen/rtfm-agent/issues"
+    },
+    "homepage": "https://github.com/bayquen/rtfm-agent#readme"
+  }
+  

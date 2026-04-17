@@ -11,6 +11,7 @@ interface FileMetadata {
 interface MarkdownMetadata {
     filename: string;
     content: string;
+    paragraph: string;
     h1: string | null;
     h2: string | null;
     h3: string | null;
@@ -60,20 +61,15 @@ function createFileObject(filePath: string): Promise<FileMetadata> {
 // Pipeline: Read each file and create + return array of file objects to be chunked
 async function extractFileObjects(): Promise<(FileMetadata | MarkdownMetadata)[]> {
     try {
-        const filePaths = await readDocsDir('/docs');
+        const filePaths = await readDocsDir('/home/bayquen/projects/rtfm-agent/docs');
+        
         // TODO: Within a for loop of file objects, should check if markdown file or not.
         //       If-clause for extracting .md metadata, otherwise create regular FileMetadata for non-markdown file.
 
-        // for (const filePath of filePaths) {
-        //     // If .md file, then extract headings and content
-        //     if (path.basename(filePath).split('.').pop()?.toLowerCase() == 'md') {
-        //         extractMDHeadingsAndContent()
-        //     }
-        // }
         const fileObjects = await Promise.all(
             filePaths.map(filePath => createFileObject(filePath))
         );
-
+        
         let allMetadataObjects: (FileMetadata | MarkdownMetadata)[] = [];
         let mdResults: MarkdownMetadata[] = []; 
         let mdFiles: FileMetadata[] = [];
@@ -82,8 +78,8 @@ async function extractFileObjects(): Promise<(FileMetadata | MarkdownMetadata)[]
         for (const fileObject of fileObjects) {
             if (path.basename(fileObject.sourcePath).split('.').pop()?.toLowerCase() == 'md') {
                 mdFiles.push(fileObject);
-            } else {    // Else, save file object directly in end-results array
-                allMetadataObjects.push(fileObject);
+            } else {
+                allMetadataObjects.push(fileObject);  // Else, save file object directly in end-results array
             }
         }
         // Extract .md metadata and save to end results array.
@@ -93,21 +89,25 @@ async function extractFileObjects(): Promise<(FileMetadata | MarkdownMetadata)[]
                 allMetadataObjects.push(object);
             }
         }
-        return allMetadataObjects;  
+        console.log(allMetadataObjects);
+        console.log("\n\nMetadata object's type:", typeof(allMetadataObjects));
+        console.log("\n\n");
+        console.log("Length of resulting metadata object array:", allMetadataObjects.length);
+        return allMetadataObjects;
     } catch (err) {
         console.error('Error ingesting:', err);
         throw err;
     }
 }
 
+// TODO (4/17/26) - Figure out how to return the actual text specifically from .md files, and store it in each MarkdownMetadata object!
+//                  I definitely need this for chunking text for the agent to read and understand.
 // Pipeline: Parse any markdown doc files to extract headings (h1, h2, etc.) and convert into
 // abstract syntax trees (AST). Enriches metadata to improve context for agent (vector) search.
-
-// TODO: Fix this func so that it reads and parses given file's text directly with fs.readfile() ?
 async function extractMDHeadingsAndContent(
     fileObject: FileMetadata
  ): Promise<MarkdownMetadata[]> {
-    const fileText = fileObject.content
+    const fileText = fileObject.content;
 
     const parser = new MarkdownParser();
     const nodes = parser.parse(fileText);
@@ -120,29 +120,39 @@ async function extractMDHeadingsAndContent(
     for (const node of nodes) {
         if (node.type === "heading") {
             if (node.level === 1) {
-                currentH1 = node.children[0][1];
+                currentH1 = (node.children[0] as any).text;
             }
             else if (node.level === 2) {
-                currentH2 = node.children[0][1];
+                currentH2 = (node.children[0] as any).text;
             }
             else if (node.level === 3) {
-                currentH3 = node.children[0][1];
+                currentH3 = (node.children[0] as any).text;
             }
         } else if (node.type === "paragraph") {
-            const paragraphText = node.children[0][0]
+            const paragraphText = (node.children[0] as any).text;
 
             const metadata: MarkdownMetadata = {
                 filename: fileObject.filename,
-                content: paragraphText,
+                content: fileObject.content,
+                paragraph: paragraphText,
                 h1: currentH1,
                 h2: currentH2,
                 h3: currentH3,
                 sourcePath: fileObject.sourcePath
             };
             // Add resulting metadata into the results array
-            results.push(metadata)
+            results.push(metadata);
         }
     }
     // Return metadata results array
     return results;
 }
+
+// Execute and print out results?
+extractFileObjects();
+
+function main() {
+    // Execute and print out results?
+    extractFileObjects();
+}   
+main();
