@@ -148,11 +148,8 @@ async function extractMDHeadingsAndContent(
     return results;
 }
 
-// Execute and print out results?
-extractFileObjects();
-
 function main() {
     // Execute and print out results?
     extractFileObjects();
-}   
+} 
 main();
