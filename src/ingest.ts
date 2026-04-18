@@ -1,6 +1,8 @@
-import * as fs from 'fs';  // From NodeJS
+import * as fs from 'fs';  // file-system module From NodeJS
 import path from 'path';
 import { MarkdownParser } from "markdown-parser";
+import { Tiktoken } from "js-tiktoken/lite";
+import cl100k_base from "js-tiktoken/ranks/cl100k_base";  // General purpose tokenizer encoding (might be good enough for Claude models)
 
 interface FileMetadata {
     filename: string;
