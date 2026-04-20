@@ -56,18 +56,10 @@ function createFileObject(filePath: string): Promise<FileMetadata> {
     });
 }
 
-// TODO (4/15/26): Figure out how to return a complete, object array w/ both reg. file metadata objects and .md metadata objects together.
-//                 Each metadata file should correlate to a MarkdownMetadata object, but not a regular FileMetadata object.
-//                 We need the resulting object array so we can chunk them in prep for vector embedding, remember?
-
-// Pipeline: Read each file and create + return array of file objects to be chunked
+// Pipeline: Read each file and create + return array of file metadata objects with their text to be chunked after
 async function extractFileObjects(): Promise<(FileMetadata | MarkdownMetadata)[]> {
     try {
         const filePaths = await readDocsDir('/home/bayquen/projects/rtfm-agent/docs');
-        
-        // TODO: Within a for loop of file objects, should check if markdown file or not.
-        //       If-clause for extracting .md metadata, otherwise create regular FileMetadata for non-markdown file.
-
         const fileObjects = await Promise.all(
             filePaths.map(filePath => createFileObject(filePath))
         );
@@ -85,6 +77,7 @@ async function extractFileObjects(): Promise<(FileMetadata | MarkdownMetadata)[]
             }
         }
         // Extract .md metadata and save to end results array.
+        // TODO: Time (and space?) complexity is O(n^2), I think. Figure out O(n) or O(nlog(n)) way to do this?
         for (const mdFile of mdFiles) {
             const extractedMDObjects = await extractMDHeadingsAndContent(mdFile);
             for (const object of extractedMDObjects) {
@@ -102,10 +95,8 @@ async function extractFileObjects(): Promise<(FileMetadata | MarkdownMetadata)[]
     }
 }
 
-// TODO (4/17/26) - Figure out how to return the actual text specifically from .md files, and store it in each MarkdownMetadata object!
-//                  I definitely need this for chunking text for the agent to read and understand.
-// Pipeline: Parse any markdown doc files to extract headings (h1, h2, etc.) and convert into
-// abstract syntax trees (AST). Enriches metadata to improve context for agent (vector) search.
+// Pipeline: Parse any markdown doc files to extract headings (h1, h2, h3) and other metadata, then convert into
+// file metadata objects. Enriches metadata to improve context for agent (vector) search.
 async function extractMDHeadingsAndContent(
     fileObject: FileMetadata
  ): Promise<MarkdownMetadata[]> {
@@ -148,6 +139,12 @@ async function extractMDHeadingsAndContent(
     }
     // Return metadata results array
     return results;
+}
+
+// Pipeline: Split all doc file text into chunks in prep for vector embedding
+function splitTextToChunks() {
+    const enc = new Tiktoken(cl100k_base);
+
 }
 
 function main() {
