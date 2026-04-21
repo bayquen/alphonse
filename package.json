@@ -25,6 +25,7 @@
     },
     "homepage": "https://github.com/bayquen/rtfm-agent#readme",
     "dependencies": {
+        "dotenv": "^17.4.2",
         "voyageai": "^0.2.1"
     }
 }

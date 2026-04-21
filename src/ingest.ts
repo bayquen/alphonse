@@ -1,6 +1,10 @@
 import * as fs from 'fs';  // file-system module From NodeJS
 import path from 'path';
 import { MarkdownParser } from "markdown-parser";
+import { VoyageAIClient } from "voyageai";
+import 'dotenv/config';
+
+const client = new VoyageAIClient({ apiKey: });
 
 interface FileMetadata {
     filename: string;
