@@ -9,7 +9,6 @@ const voyageAPIKey: string | undefined = process.env.VOYAGE_API_KEY;
 
 const client = new VoyageAIClient({ apiKey: voyageAPIKey});
 
-
 interface FileMetadata {
     filename: string;
     content: string;
@@ -25,7 +24,6 @@ interface MarkdownMetadata {
     h3: string | null;
     sourcePath: string;
 }
-
 
 // Function for reading directory containing uploaded doc files (for now; TODO: read doc files from git repos or files shared by user)
 function readDocsDir(docsPath: string): Promise<string[]> {
@@ -90,6 +88,7 @@ async function extractFileObjects(): Promise<(FileMetadata | MarkdownMetadata)[]
                 allMetadataObjects.push(object);
             }
         }
+        // Function debugging logs
         console.log(allMetadataObjects);
         console.log("\n\nMetadata object's type:", typeof(allMetadataObjects));
         console.log("\n\n");
@@ -153,7 +152,11 @@ async function chunkTextContent() {
     const allFileObjects = await extractFileObjects();
     let allText: string[] = [];
 
-    // TODO: Loop through each object and add text
+    // Loop through each object and add text (should work for both FileMetadata and MarkdownMetadata objects)
+    for (const fileObject of allFileObjects) {
+        allText.push(fileObject.content);
+    }
+    
 
 }
 
