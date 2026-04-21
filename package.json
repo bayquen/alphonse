@@ -23,8 +23,5 @@
     "bugs": {
         "url": "https://github.com/bayquen/rtfm-agent/issues"
     },
-    "homepage": "https://github.com/bayquen/rtfm-agent#readme",
-    "dependencies": {
-        "js-tiktoken": "^1.0.21"
-    }
+    "homepage": "https://github.com/bayquen/rtfm-agent#readme"
 }
