@@ -23,5 +23,8 @@
     "bugs": {
         "url": "https://github.com/bayquen/rtfm-agent/issues"
     },
-    "homepage": "https://github.com/bayquen/rtfm-agent#readme"
+    "homepage": "https://github.com/bayquen/rtfm-agent#readme",
+    "dependencies": {
+        "voyageai": "^0.2.1"
+    }
 }
