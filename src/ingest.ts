@@ -1,8 +1,6 @@
 import * as fs from 'fs';  // file-system module From NodeJS
 import path from 'path';
 import { MarkdownParser } from "markdown-parser";
-import { Tiktoken } from "js-tiktoken/lite";
-import cl100k_base from "js-tiktoken/ranks/cl100k_base";  // General purpose tokenizer encoding (might be good enough for Claude models)
 
 interface FileMetadata {
     filename: string;
@@ -142,13 +140,17 @@ async function extractMDHeadingsAndContent(
 }
 
 // Pipeline: Split all doc file text into chunks in prep for vector embedding
-function splitTextToChunks() {
-    const enc = new Tiktoken(cl100k_base);
+async function chunkTextContent() {
+    // Get array of file metadata objects
+    const allFileObjects = await extractFileObjects();
+    let allText: string[] = [];
+
+    // TODO: Loop through each object and add text
 
 }
 
 function main() {
-    // Execute and print out results?
-    extractFileObjects();
-} 
+    // // Execute and print out results?
+    // extractFileObjects();
+}
 main();
