@@ -3,11 +3,9 @@ import path from 'path';
 import { MarkdownParser } from "markdown-parser";
 import { VoyageAIClient } from "voyageai";
 import dotenv from "dotenv";
-import { VoyageEmbeddings } from "@langchain/community/embeddings/voyage";
 
 dotenv.config();
 const voyageAPIKey: string | undefined = process.env.VOYAGE_API_KEY;
-
 const client = new VoyageAIClient({ apiKey: voyageAPIKey});
 
 interface FileMetadata {
