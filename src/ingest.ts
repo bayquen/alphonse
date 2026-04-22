@@ -3,10 +3,14 @@ import path from 'path';
 import { MarkdownParser } from "markdown-parser";
 import { VoyageAIClient } from "voyageai";
 import dotenv from "dotenv";
+// TODO (4/21/26): Continue looking into transformers docs in HuggingFace.co for autotokenizer
+import { AutoTokenizer } from "@huggingface/transformers";
 
 dotenv.config();
 const voyageAPIKey: string | undefined = process.env.VOYAGE_API_KEY;
 const client = new VoyageAIClient({ apiKey: voyageAPIKey});
+
+const tokenizer = AutoTokenizer.from_pretrained("voyageai/voyage-code-3");
 
 interface FileMetadata {
     filename: string;
@@ -156,6 +160,15 @@ async function chunkTextContent() {
         allText.push(fileObject.content);
     }
 
+    // Chunk text somehow...
+
+
+    // VoyageAI client
+    const response = await client.embed({
+        // TODO: Add chunks for vector embedding?
+        input: "lorem bacon sizzling ipsum",
+        model: "voyage-code-3"
+    });
 
 }
 
