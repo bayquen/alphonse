@@ -169,22 +169,13 @@ async function estimateVoyageTokens(): Promise<number> {
 
 // Pipeline: Split all doc file text into chunks in prep for vector embedding
 async function chunkTextContent() {
-    // Get array of file metadata objects
-    // const allFileObjects = await extractFileObjects();
-    // let allText: string[] = [];
-
-    // // Loop through each object and add text (should work for both FileMetadata and MarkdownMetadata objects)
-    // for (const fileObject of allFileObjects) {
-    //     allText.push(fileObject.content);
-    // }
     const tokens = estimateVoyageTokens();
 
     // TODO: Chunk text
-    const codeChunks = "foo";
 
     // VoyageAI client
     const response = await client.embed({
-        // TODO: Add chunks for vector embedding?
+        // TODO: Add text chunks for vector embedding?
         input: "lorem bacon sizzling ipsum",
         model: "voyage-code-3"
     });
