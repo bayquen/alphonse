@@ -5,12 +5,15 @@ import { VoyageAIClient } from "voyageai";
 import dotenv from "dotenv";
 // TODO (4/21/26): Continue looking into transformers docs in HuggingFace.co for autotokenizer
 import { AutoTokenizer } from "@huggingface/transformers";
+import { Tiktoken } from "js-tiktoken/lite";
+import cl100k_base from "js-tiktoken/ranks/cl100k_base";
 
 dotenv.config();
 const voyageAPIKey: string | undefined = process.env.VOYAGE_API_KEY;
 const client = new VoyageAIClient({ apiKey: voyageAPIKey});
 
 const tokenizer = AutoTokenizer.from_pretrained("voyageai/voyage-code-3");
+const enc = new Tiktoken(cl100k_base);
 
 interface FileMetadata {
     filename: string;
@@ -149,19 +152,35 @@ async function extractMDHeadingsAndContent(
     return results;
 }
 
+async function estimateVoyageTokens(): Promise<number> {
+    // Get array of file metadata objects
+    const allFileObjects = await extractFileObjects();
+    // Initialize var for token estimation
+    let voyageEstimate: number = 0;
+    for (const fileObject of allFileObjects) {
+        const tikTokens = enc.encode(fileObject.content);
+        const tikCount = tikTokens.length;
+
+        // voyage-code-3 model produces an average of 1.15x more tokens than tiktoken
+        voyageEstimate = Math.ceil(tikCount * 1.15);
+    }
+    return voyageEstimate;
+}
+
 // Pipeline: Split all doc file text into chunks in prep for vector embedding
 async function chunkTextContent() {
     // Get array of file metadata objects
-    const allFileObjects = await extractFileObjects();
-    let allText: string[] = [];
+    // const allFileObjects = await extractFileObjects();
+    // let allText: string[] = [];
 
-    // Loop through each object and add text (should work for both FileMetadata and MarkdownMetadata objects)
-    for (const fileObject of allFileObjects) {
-        allText.push(fileObject.content);
-    }
+    // // Loop through each object and add text (should work for both FileMetadata and MarkdownMetadata objects)
+    // for (const fileObject of allFileObjects) {
+    //     allText.push(fileObject.content);
+    // }
+    const tokens = estimateVoyageTokens();
 
-    // Chunk text somehow...
-
+    // TODO: Chunk text
+    const codeChunks = "foo";
 
     // VoyageAI client
     const response = await client.embed({
