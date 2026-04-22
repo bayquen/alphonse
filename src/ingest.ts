@@ -66,46 +66,6 @@ function createFileObject(filePath: string): Promise<FileMetadata> {
     });
 }
 
-// Pipeline: Read each file and create + return array of file metadata objects with their text to be chunked after
-async function extractFileObjects(): Promise<(FileMetadata | MarkdownMetadata)[]> {
-    try {
-        const filePaths = await readDocsDir('/home/bayquen/projects/rtfm-agent/docs');
-        const fileObjects = await Promise.all(
-            filePaths.map(filePath => createFileObject(filePath))
-        );
-        
-        let allMetadataObjects: (FileMetadata | MarkdownMetadata)[] = [];
-        let mdResults: MarkdownMetadata[] = []; 
-        let mdFiles: FileMetadata[] = [];
-        // Check if each file object is an .md file. If yes, then save into separate array 
-        // for .md metadata extraction
-        for (const fileObject of fileObjects) {
-            if (path.basename(fileObject.sourcePath).split('.').pop()?.toLowerCase() == 'md') {
-                mdFiles.push(fileObject);
-            } else {
-                allMetadataObjects.push(fileObject);  // Else, save file object directly in end-results array
-            }
-        }
-        // Extract .md metadata and save to end results array.
-        // TODO: Time (and space?) complexity is O(n^2), I think. Figure out O(n) or O(nlog(n)) way to do this?
-        for (const mdFile of mdFiles) {
-            const extractedMDObjects = await extractMDHeadingsAndContent(mdFile);
-            for (const object of extractedMDObjects) {
-                allMetadataObjects.push(object);
-            }
-        }
-        // Function debugging logs
-        console.log(allMetadataObjects);
-        console.log("\n\nMetadata object's type:", typeof(allMetadataObjects));
-        console.log("\n\n");
-        console.log("Length of resulting metadata object array:", allMetadataObjects.length);
-        return allMetadataObjects;
-    } catch (err) {
-        console.error('Error ingesting:', err);
-        throw err;
-    }
-}
-
 // Pipeline: Parse any markdown doc files to extract headings (h1, h2, h3) and other metadata, then convert into
 // file metadata objects. Enriches metadata to improve context for agent (vector) search.
 async function extractMDHeadingsAndContent(
@@ -150,6 +110,46 @@ async function extractMDHeadingsAndContent(
     }
     // Return metadata results array
     return results;
+}
+
+// Pipeline: Read each file and create + return array of file metadata objects with their text to be chunked after
+async function extractFileObjects(): Promise<(FileMetadata | MarkdownMetadata)[]> {
+    try {
+        const filePaths = await readDocsDir('/home/bayquen/projects/rtfm-agent/docs');
+        const fileObjects = await Promise.all(
+            filePaths.map(filePath => createFileObject(filePath))
+        );
+        
+        let allMetadataObjects: (FileMetadata | MarkdownMetadata)[] = [];
+        let mdResults: MarkdownMetadata[] = []; 
+        let mdFiles: FileMetadata[] = [];
+        // Check if each file object is an .md file. If yes, then save into separate array 
+        // for .md metadata extraction
+        for (const fileObject of fileObjects) {
+            if (path.basename(fileObject.sourcePath).split('.').pop()?.toLowerCase() == 'md') {
+                mdFiles.push(fileObject);
+            } else {
+                allMetadataObjects.push(fileObject);  // Else, save file object directly in end-results array
+            }
+        }
+        // Extract .md metadata and save to end results array.
+        // TODO: Time (and space?) complexity is O(n^2), I think. Figure out O(n) or O(nlog(n)) way to do this?
+        for (const mdFile of mdFiles) {
+            const extractedMDObjects = await extractMDHeadingsAndContent(mdFile);
+            for (const object of extractedMDObjects) {
+                allMetadataObjects.push(object);
+            }
+        }
+        // Function debugging logs
+        console.log(allMetadataObjects);
+        console.log("\n\nMetadata object's type:", typeof(allMetadataObjects));
+        console.log("\n\n");
+        console.log("Length of resulting metadata object array:", allMetadataObjects.length);
+        return allMetadataObjects;
+    } catch (err) {
+        console.error('Error ingesting:', err);
+        throw err;
+    }
 }
 
 async function estimateVoyageTokens(): Promise<number> {
