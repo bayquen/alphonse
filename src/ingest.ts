@@ -4,9 +4,10 @@ import { MarkdownParser } from "markdown-parser";
 import { VoyageAIClient } from "voyageai";
 import dotenv from "dotenv";
 // TODO (4/21/26): Continue looking into transformers docs in HuggingFace.co for autotokenizer
-import { AutoTokenizer } from "@huggingface/transformers";
+import { AutoTokenizer, PreTrainedTokenizer } from "@huggingface/transformers";
 import { Tiktoken } from "js-tiktoken/lite";
 import cl100k_base from "js-tiktoken/ranks/cl100k_base";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 
 dotenv.config();
 const voyageAPIKey: string | undefined = process.env.VOYAGE_API_KEY;
@@ -176,7 +177,7 @@ async function estimateVoyageTokens(fileObject: (FileMetadata | MarkdownMetadata
     const tikTokens = enc.encode(fileObject.content);
     const tikCount = tikTokens.length;
 
-    // voyage-code-3 model produces an average of 1.15x more tokens than tiktoken
+    // voyage-code-3 model produces an average of 1.15x more tokens than Tiktoken tokenizer
     voyageEstimate = Math.ceil(tikCount * 1.15);
     // }
     return voyageEstimate;
@@ -185,11 +186,10 @@ async function estimateVoyageTokens(fileObject: (FileMetadata | MarkdownMetadata
 // Pipeline: Split all doc file text into chunks in prep for vector embedding
 async function chunkTextContent() {
     const allFileObjects = await extractFileObjects();
-    // TODO: Chunk text from each file
+    // TODO: Chunk text from each file in prep for tokenization. (Yes, I think I gotta chunk first, then tokenize each chunk for embed. model to be able to read text)
     for (const fileObject of allFileObjects) {
-        const tokens = estimateVoyageTokens(fileObject);
+        // const tokens = estimateVoyageTokens(fileObject);
 
-        
     }
 
     // VoyageAI client
