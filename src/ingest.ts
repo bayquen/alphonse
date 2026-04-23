@@ -31,6 +31,20 @@ interface MarkdownMetadata {
     sourcePath: string;
 }
 
+interface ChunkedFile {
+    filename: string
+    content: string;
+    tokenCount: number;
+    sourcePath: string;
+    contentMetadata: {
+        paragraph: string;
+        h1: string | null;
+        h2: string | null;
+        h3: string | null;
+        chunkIndex: number;
+    }
+}
+
 // Function for reading directory containing uploaded doc files (for now; TODO: read doc files from git repos or files shared by user)
 function readDocsDir(docsPath: string): Promise<string[]> {
     return new Promise((resolve, reject) => {
@@ -152,26 +166,31 @@ async function extractFileObjects(): Promise<(FileMetadata | MarkdownMetadata)[]
     }
 }
 
-async function estimateVoyageTokens(): Promise<number> {
+async function estimateVoyageTokens(fileObject: (FileMetadata | MarkdownMetadata)): Promise<number> {
     // Get array of file metadata objects
-    const allFileObjects = await extractFileObjects();
+    // const allFileObjects = await extractFileObjects();
+
     // Initialize var for token estimation
     let voyageEstimate: number = 0;
-    for (const fileObject of allFileObjects) {
-        const tikTokens = enc.encode(fileObject.content);
-        const tikCount = tikTokens.length;
+    // for (const fileObject of allFileObjects) {
+    const tikTokens = enc.encode(fileObject.content);
+    const tikCount = tikTokens.length;
 
-        // voyage-code-3 model produces an average of 1.15x more tokens than tiktoken
-        voyageEstimate = Math.ceil(tikCount * 1.15);
-    }
+    // voyage-code-3 model produces an average of 1.15x more tokens than tiktoken
+    voyageEstimate = Math.ceil(tikCount * 1.15);
+    // }
     return voyageEstimate;
 }
 
 // Pipeline: Split all doc file text into chunks in prep for vector embedding
 async function chunkTextContent() {
-    const tokens = estimateVoyageTokens();
+    const allFileObjects = await extractFileObjects();
+    // TODO: Chunk text from each file
+    for (const fileObject of allFileObjects) {
+        const tokens = estimateVoyageTokens(fileObject);
 
-    // TODO: Chunk text
+        
+    }
 
     // VoyageAI client
     const response = await client.embed({
