@@ -31,6 +31,7 @@ interface MarkdownMetadata {
     sourcePath: string;
 }
 
+// TODO: Does this make sense for my chunking needs???
 interface ChunkedFile {
     filename: string
     content: string;
@@ -190,13 +191,15 @@ async function chunkTextContent() {
     const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 400, chunkOverlap: 0 });
     for (const fileObject of allFileObjects) {
         // const tokens = estimateVoyageTokens(fileObject);
+        // For given file text, split into chunks and save into an array
         const splitText = await splitter.splitText(fileObject.content);
-        
+        // TODO (4/23/26) - Perhaps add each file-chunks array into chunk metadata object (defined above), 
+        //                  then uhh tokenize each array of chunks later?
     }
     // TODO (4/23/26): Every file of text obviously ends up with an array of chunks. So for all objects, it's a 2D array of chunks,
     //                 with each inner array corresponding to the text chunks of each file. I need to figure out a way to save chunks
     //                 such that it can be read properly by the tokenizer function in `tokenizeTextChunks` below.
-
+    
 
 }
 
