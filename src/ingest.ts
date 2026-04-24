@@ -3,7 +3,6 @@ import path from 'path';
 import { MarkdownParser } from "markdown-parser";
 import { VoyageAIClient } from "voyageai";
 import dotenv from "dotenv";
-// TODO (4/21/26): Continue looking into transformers docs in HuggingFace.co for autotokenizer
 import { AutoTokenizer, PreTrainedTokenizer } from "@huggingface/transformers";
 import { Tiktoken } from "js-tiktoken/lite";
 import cl100k_base from "js-tiktoken/ranks/cl100k_base";
@@ -13,7 +12,7 @@ dotenv.config();
 const voyageAPIKey: string | undefined = process.env.VOYAGE_API_KEY;
 const client = new VoyageAIClient({ apiKey: voyageAPIKey});
 
-const tokenizer = AutoTokenizer.from_pretrained("voyageai/voyage-code-3");
+const tokenizer = await AutoTokenizer.from_pretrained("voyageai/voyage-code-3");
 const enc = new Tiktoken(cl100k_base);
 
 interface FileMetadata {
@@ -186,19 +185,35 @@ async function estimateVoyageTokens(fileObject: (FileMetadata | MarkdownMetadata
 // Pipeline: Split all doc file text into chunks in prep for vector embedding
 async function chunkTextContent() {
     const allFileObjects = await extractFileObjects();
-    // TODO: Chunk text from each file in prep for tokenization. (Yes, I think I gotta chunk first, then tokenize each chunk for embed. model to be able to read text)
+    // TODO: Chunk text from each file in prep for tokenization. (Yes, I think I gotta chunk first,
+    //       then tokenize each chunk for embed. model to be able to read text.)
+    const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 400, chunkOverlap: 0 });
     for (const fileObject of allFileObjects) {
         // const tokens = estimateVoyageTokens(fileObject);
-
+        const splitText = await splitter.splitText(fileObject.content);
+        
     }
+    // TODO (4/23/26): Every file of text obviously ends up with an array of chunks. So for all objects, it's a 2D array of chunks,
+    //                 with each inner array corresponding to the text chunks of each file. I need to figure out a way to save chunks
+    //                 such that it can be read properly by the tokenizer function in `tokenizeTextChunks` below.
 
+
+}
+
+async function tokenizeTextChunks(textContent: string) {
+    // TODO: Tokenize chunks here (w/ HF.co's transformers library, RAHHH >:)
+    const tokens = tokenizer.tokenize(textContent);
+    // Return array of strings (tokens)
+    return tokens;
+}
+
+async function createEmbeddingVectorsFromChunks(textChunks: string[]) {
+    // TODO: Vector embedding functionality goes here bayBEEE!!!
     // VoyageAI client
     const response = await client.embed({
-        // TODO: Add text chunks for vector embedding?
-        input: "lorem bacon sizzling ipsum",
+        input: textChunks,
         model: "voyage-code-3"
     });
-
 }
 
 function main() {
