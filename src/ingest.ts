@@ -168,6 +168,13 @@ async function extractFileObjects(): Promise<(FileMetadata | MarkdownMetadata)[]
     }
 }
 
+// Helper function to tokenize text chunks
+async function tokenizeTextChunks(textContent: string) {
+    const tokens = tokenizer.tokenize(textContent);
+    // Return array of strings (tokens)
+    return tokens;
+}
+
 // async function estimateVoyageTokens(fileObject: (FileMetadata | MarkdownMetadata)): Promise<number> {
 //     // Get array of file metadata objects
 //     // const allFileObjects = await extractFileObjects();
@@ -212,12 +219,6 @@ async function chunkTextContent() {
     }
 
     return allTokenLists;
-}
-
-async function tokenizeTextChunks(textContent: string) {
-    const tokens = tokenizer.tokenize(textContent);
-    // Return array of strings (tokens)
-    return tokens;
 }
 
 async function createEmbeddingVectorsFromChunks(textChunks: string[]) {
