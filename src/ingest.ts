@@ -6,14 +6,15 @@ import dotenv from "dotenv";
 import { AutoTokenizer, PreTrainedTokenizer } from "@huggingface/transformers";
 import { Tiktoken } from "js-tiktoken/lite";
 import cl100k_base from "js-tiktoken/ranks/cl100k_base";
-import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+// import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+import { TokenTextSplitter } from "@langchain/textsplitters";
 
 dotenv.config();
 const voyageAPIKey: string | undefined = process.env.VOYAGE_API_KEY;
 const client = new VoyageAIClient({ apiKey: voyageAPIKey});
 
 const tokenizer = await AutoTokenizer.from_pretrained("voyageai/voyage-code-3");
-const enc = new Tiktoken(cl100k_base);
+// const enc = new Tiktoken(cl100k_base);
 
 interface FileMetadata {
     filename: string;
@@ -167,44 +168,53 @@ async function extractFileObjects(): Promise<(FileMetadata | MarkdownMetadata)[]
     }
 }
 
-async function estimateVoyageTokens(fileObject: (FileMetadata | MarkdownMetadata)): Promise<number> {
-    // Get array of file metadata objects
-    // const allFileObjects = await extractFileObjects();
+// async function estimateVoyageTokens(fileObject: (FileMetadata | MarkdownMetadata)): Promise<number> {
+//     // Get array of file metadata objects
+//     // const allFileObjects = await extractFileObjects();
 
-    // Initialize var for token estimation
-    let voyageEstimate: number = 0;
-    // for (const fileObject of allFileObjects) {
-    const tikTokens = enc.encode(fileObject.content);
-    const tikCount = tikTokens.length;
+//     // Initialize var for token estimation
+//     let voyageEstimate: number = 0;
+//     // for (const fileObject of allFileObjects) {
+//     const tikTokens = enc.encode(fileObject.content);
+//     const tikCount = tikTokens.length;
 
-    // voyage-code-3 model produces an average of 1.15x more tokens than Tiktoken tokenizer
-    voyageEstimate = Math.ceil(tikCount * 1.15);
-    // }
-    return voyageEstimate;
-}
+//     // voyage-code-3 model produces an average of 1.15x more tokens than Tiktoken tokenizer
+//     voyageEstimate = Math.ceil(tikCount * 1.15);
+//     // }
+//     return voyageEstimate;
+// }
 
 // Pipeline: Split all doc file text into chunks in prep for vector embedding
 async function chunkTextContent() {
     const allFileObjects = await extractFileObjects();
-    // TODO: Chunk text from each file in prep for tokenization. (Yes, I think I gotta chunk first,
-    //       then tokenize each chunk for embed. model to be able to read text.)
-    const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 400, chunkOverlap: 0 });
-    for (const fileObject of allFileObjects) {
-        // const tokens = estimateVoyageTokens(fileObject);
-        // For given file text, split into chunks and save into an array
-        const splitText = await splitter.splitText(fileObject.content);
-        // TODO (4/23/26) - Perhaps add each file-chunks array into chunk metadata object (defined above), 
-        //                  then uhh tokenize each array of chunks later?
-    }
-    // TODO (4/23/26): Every file of text obviously ends up with an array of chunks. So for all objects, it's a 2D array of chunks,
-    //                 with each inner array corresponding to the text chunks of each file. I need to figure out a way to save chunks
-    //                 such that it can be read properly by the tokenizer function in `tokenizeTextChunks` below.
-    
 
+    // const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 800, chunkOverlap: 100 });
+
+    // Token-aware text splitter, with added ~1.2x chunkSize multiplier since Voyage AI models use that ~1.2x more tokens 
+    // than the OpenAI-based splitter (via LangChain library) used here.
+    // Note that embedding model I'm using is voyage-code-3, which has a max context len. of 32k tokens.
+    const splitter = new TokenTextSplitter({ encodingName: "cl100k_base", chunkSize: 480, chunkOverlap: 100 });
+    let chunkLists: string[][] = [];
+    for (const fileObject of allFileObjects) {
+        // For given file text, split into chunks and save into an array
+        const chunkedText = await splitter.splitText(fileObject.content);
+
+        chunkLists.push(chunkedText);
+    }
+
+    // Tokenize each chunk within each list of chunks
+    let allTokenLists: string[][] = []
+    for (const currentList of chunkLists) {
+        for (const chunks of currentList) {
+            const tokens = await tokenizeTextChunks(chunks);
+            allTokenLists.push(tokens);
+        }
+    }
+
+    return allTokenLists;
 }
 
 async function tokenizeTextChunks(textContent: string) {
-    // TODO: Tokenize chunks here (w/ HF.co's transformers library, RAHHH >:)
     const tokens = tokenizer.tokenize(textContent);
     // Return array of strings (tokens)
     return tokens;
