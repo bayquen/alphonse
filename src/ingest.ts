@@ -208,30 +208,39 @@ async function chunkTextContent() {
 
         chunkLists.push(chunkedText);
     }
-
+    // Init 2D array to store tokenized chunk arrays
+    let allTokenizedChunks: string[][] = []
     // Tokenize each chunk within each list of chunks
-    let allTokenLists: string[][] = []
     for (const currentList of chunkLists) {
-        for (const chunks of currentList) {
-            const tokens = await tokenizeTextChunks(chunks);
-            allTokenLists.push(tokens);
+        for (const chunk of currentList) {
+            const tokens = await tokenizeTextChunks(chunk);
+            allTokenizedChunks.push(tokens);
         }
     }
-
-    return allTokenLists;
+    // Return the output tokens (which is a 2D array)
+    return allTokenizedChunks;
 }
 
-async function createEmbeddingVectorsFromChunks(textChunks: string[]) {
+async function createEmbeddingVectorsFromChunks(allChunks: string[][]) {
     // TODO: Vector embedding functionality goes here bayBEEE!!!
     // VoyageAI client
-    const response = await client.embed({
-        input: textChunks,
-        model: "voyage-code-3"
-    });
+    let embeddings = [];
+    
+    for (const chunkList in allChunks) {
+        const response = await client.embed({
+            input: chunkList,
+            model: "voyage-code-3"
+        });
+        // Debug logging and looking at output
+        console.log(response.data);
+        embeddings.push(response);
+    }
+    return embeddings;
 }
 
-function main() {
-    // // Execute and print out results?
-    // extractFileObjects();
+async function main() {
+    // createEmbeddingVectorsFromChunks();
+    const chunked_results = chunkTextContent();
+    // const bruh = await createEmbeddingVectorsFromChunks(chunked_results);
 }
 main();
