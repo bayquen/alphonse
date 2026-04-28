@@ -173,12 +173,12 @@ async function extractFileObjects(): Promise<(FileMetadata | MarkdownMetadata)[]
     }
 }
 
-// Helper function to tokenize text chunks
-async function tokenizeTextChunks(textContent: string) {
-    const tokens = tokenizer.tokenize(textContent);
-    // Return array of strings (tokens)
-    return tokens;
-}
+// // Helper function to create tokens from text chunks
+// async function tokenizeTextChunks(textContent: string) {
+//     const tokens = tokenizer.tokenize(textContent);
+//     // Return array of strings (tokens)
+//     return tokens;
+// }
 
 // async function estimateVoyageTokens(fileObject: (FileMetadata | MarkdownMetadata)): Promise<number> {
 //     // Get array of file metadata objects
@@ -213,21 +213,28 @@ async function chunkTextContent() {
 
         chunkLists.push(chunkedText);
     }
-    // Init 2D array to store tokenized chunk arrays
-    let allTokenizedChunks: string[][] = []
-    // Tokenize each chunk within each list of chunks
-    for (const currentList of chunkLists) {
-        for (const chunk of currentList) {
-            const tokens = await tokenizeTextChunks(chunk);
-            allTokenizedChunks.push(tokens);
-        }
+    // // Init 2D array to store tokenized chunk arrays
+    // let allTokenizedChunks: string[][] = []
+    // // Tokenize each chunk within each list of chunks
+    // for (const currentList of chunkLists) {
+    //     for (const chunk of currentList) {
+    //         const tokens = await tokenizeTextChunks(chunk);
+    //         allTokenizedChunks.push(tokens);
+    //     }
+    // }
+    // Return the output tokens? (which is a 2D array)
+    // return allTokenizedChunks;
+    console.log("Length of chunk lists 2d array:", chunkLists.length);
+    let count = 0;
+    for (const array of chunkLists) {
+        count += 1;
+        console.log(`Char length of chunk #${count} ?:`, array.length);
     }
-    // Return the output tokens (which is a 2D array)
-    return allTokenizedChunks;
+    return chunkLists;
 }
 
 async function createEmbeddingVectorsFromChunks(allChunks: string[][]) {
-    // TODO: Vector embedding functionality goes here bayBEEE!!!
+    // TODO (4/28/26): Pass chunked text (NOT TOKENS)
     // VoyageAI client
     let embeddings = [];
     
@@ -247,6 +254,13 @@ async function main() {
     // createEmbeddingVectorsFromChunks();
     const chunked_results = await chunkTextContent();
     // const bruh = await createEmbeddingVectorsFromChunks(chunked_results);
-    console.log("Chunked results: ", chunked_results);
+    // DEBUG: Reading text chunks for debugging
+    let chunkCount = 0;
+    for (const item of chunked_results) {
+        for (const chunk of item) {
+            chunkCount += 1;
+            console.log("Chunked result: ", chunk, "\n\n\n\n");
+        }
+    }
 }
 main();
