@@ -1,13 +1,18 @@
 import * as fs from 'fs';  // file-system module From NodeJS
 import path from 'path';
 import { MarkdownParser } from "markdown-parser";
-import { VoyageAIClient } from "voyageai";
+// import { VoyageAIClient } from "voyageai";
+import { createRequire } from "node:module";
 import dotenv from "dotenv";
 import { AutoTokenizer, PreTrainedTokenizer } from "@huggingface/transformers";
-import { Tiktoken } from "js-tiktoken/lite";
-import cl100k_base from "js-tiktoken/ranks/cl100k_base";
+// import { Tiktoken } from "js-tiktoken/lite";
+// import cl100k_base from "js-tiktoken/ranks/cl100k_base";
 // import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { TokenTextSplitter } from "@langchain/textsplitters";
+
+// Use CommonJS's (CJS) Node require() over ESM since VoyageAI (v0.2.1) module import for ESM is fkin broken.
+const require = createRequire(import.meta.url);
+const { VoyageAIClient } = require("voyageai") as typeof import("voyageai");
 
 dotenv.config();
 const voyageAPIKey: string | undefined = process.env.VOYAGE_API_KEY;
@@ -157,10 +162,10 @@ async function extractFileObjects(): Promise<(FileMetadata | MarkdownMetadata)[]
             }
         }
         // Function debugging logs
-        console.log(allMetadataObjects);
-        console.log("\n\nMetadata object's type:", typeof(allMetadataObjects));
-        console.log("\n\n");
-        console.log("Length of resulting metadata object array:", allMetadataObjects.length);
+        // console.log(allMetadataObjects);
+        // console.log("\n\nMetadata object's type:", typeof(allMetadataObjects));
+        // console.log("\n\n");
+        // console.log("Length of resulting metadata object array:", allMetadataObjects.length);
         return allMetadataObjects;
     } catch (err) {
         console.error('Error ingesting:', err);
@@ -240,7 +245,8 @@ async function createEmbeddingVectorsFromChunks(allChunks: string[][]) {
 
 async function main() {
     // createEmbeddingVectorsFromChunks();
-    const chunked_results = chunkTextContent();
+    const chunked_results = await chunkTextContent();
     // const bruh = await createEmbeddingVectorsFromChunks(chunked_results);
+    console.log("Chunked results: ", chunked_results);
 }
 main();
