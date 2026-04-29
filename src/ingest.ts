@@ -225,6 +225,8 @@ async function chunkTextContent() {
     return chunkLists;
 }
 
+// TODO (4/29): - How can I associate each split chunk to its corresponding metadata (i.e. filename, path, .markdown headings, etc.)?
+//              - How should chunking function output data look like? How should input data for embedding function look like? And the output?
 async function createEmbeddingVectorsFromChunks(allChunks: string[][]) {
     // TODO (4/28/26): Pass chunked text (NOT TOKENS)
     // VoyageAI client
