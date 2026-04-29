@@ -4,9 +4,7 @@ import { MarkdownParser } from "markdown-parser";
 // import { VoyageAIClient } from "voyageai";
 import { createRequire } from "node:module";
 import dotenv from "dotenv";
-import { AutoTokenizer, PreTrainedTokenizer } from "@huggingface/transformers";
-// import { Tiktoken } from "js-tiktoken/lite";
-// import cl100k_base from "js-tiktoken/ranks/cl100k_base";
+// import { AutoTokenizer, PreTrainedTokenizer } from "@huggingface/transformers";
 // import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { TokenTextSplitter } from "@langchain/textsplitters";
 
@@ -17,9 +15,6 @@ const { VoyageAIClient } = require("voyageai") as typeof import("voyageai");
 dotenv.config();
 const voyageAPIKey: string | undefined = process.env.VOYAGE_API_KEY;
 const client = new VoyageAIClient({ apiKey: voyageAPIKey});
-
-const tokenizer = await AutoTokenizer.from_pretrained("voyageai/voyage-code-3");
-// const enc = new Tiktoken(cl100k_base);
 
 interface FileMetadata {
     filename: string;
@@ -224,12 +219,9 @@ async function chunkTextContent() {
     // }
     // Return the output tokens? (which is a 2D array)
     // return allTokenizedChunks;
+
     console.log("Length of chunk lists 2d array:", chunkLists.length);
-    let count = 0;
-    for (const array of chunkLists) {
-        count += 1;
-        console.log(`Char length of chunk #${count} ?:`, array.length);
-    }
+
     return chunkLists;
 }
 
