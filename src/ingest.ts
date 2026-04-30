@@ -1,13 +1,9 @@
 import * as fs from 'fs';  // file-system module From NodeJS
 import path from 'path';
 import { MarkdownParser } from "markdown-parser";
-// import { VoyageAIClient } from "voyageai";
 import { createRequire } from "node:module";
 import dotenv from "dotenv";
-// import { AutoTokenizer, PreTrainedTokenizer } from "@huggingface/transformers";
-// import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { TokenTextSplitter } from "@langchain/textsplitters";
-
 // Use CommonJS's (CJS) Node require() over ESM since VoyageAI (v0.2.1) module import for ESM is fkin broken.
 const require = createRequire(import.meta.url);
 const { VoyageAIClient, VoyageAIError } = require("voyageai") as typeof import("voyageai");
@@ -168,29 +164,6 @@ async function extractFileObjects(): Promise<(FileMetadata | MarkdownMetadata)[]
     }
 }
 
-// // Helper function to create tokens from text chunks
-// async function tokenizeTextChunks(textContent: string) {
-//     const tokens = tokenizer.tokenize(textContent);
-//     // Return array of strings (tokens)
-//     return tokens;
-// }
-
-// async function estimateVoyageTokens(fileObject: (FileMetadata | MarkdownMetadata)): Promise<number> {
-//     // Get array of file metadata objects
-//     // const allFileObjects = await extractFileObjects();
-
-//     // Initialize var for token estimation
-//     let voyageEstimate: number = 0;
-//     // for (const fileObject of allFileObjects) {
-//     const tikTokens = enc.encode(fileObject.content);
-//     const tikCount = tikTokens.length;
-
-//     // voyage-code-3 model produces an average of 1.15x more tokens than Tiktoken tokenizer
-//     voyageEstimate = Math.ceil(tikCount * 1.15);
-//     // }
-//     return voyageEstimate;
-// }
-
 // Pipeline: Split all doc file text into chunks in prep for vector embedding
 async function chunkTextContent() {
     const allFileObjects = await extractFileObjects();
@@ -208,18 +181,6 @@ async function chunkTextContent() {
 
         chunkLists.push(chunkedText);
     }
-    // // Init 2D array to store tokenized chunk arrays
-    // let allTokenizedChunks: string[][] = []
-    // // Tokenize each chunk within each list of chunks
-    // for (const currentList of chunkLists) {
-    //     for (const chunk of currentList) {
-    //         const tokens = await tokenizeTextChunks(chunk);
-    //         allTokenizedChunks.push(tokens);
-    //     }
-    // }
-    // Return the output tokens? (which is a 2D array)
-    // return allTokenizedChunks;
-
     return chunkLists;
 }
 
@@ -236,8 +197,8 @@ async function createEmbeddingVectorsFromChunks(allChunks: string[][]) {
             model: "voyage-code-3"
         });
         // Debug logging and looking at output
-        console.log("Embedding for chunk:", response.data);
-        console.log("\n\n\n\n");
+        // console.log("Embedding for chunk:", response.data);
+        // console.log("\n\n\n\n");
         embeddings.push(response);
     }
     return embeddings;
@@ -255,7 +216,16 @@ async function main() {
     //     }
     // }
     try {
-        await createEmbeddingVectorsFromChunks(chunked_results);
+        const allEmbeddings = await createEmbeddingVectorsFromChunks(chunked_results);
+        console.log(allEmbeddings + "\n\n\n");
+
+        for (const embed of allEmbeddings) {
+            console.log(embed);
+            console.log("\n");
+            console.log("Embed object data:", embed.data);
+            console.log("\n\n"); 
+        }
+
     } catch (err) {
         if (err instanceof VoyageAIError) {
             console.log(err.statusCode);
