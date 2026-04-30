@@ -25,12 +25,9 @@
     },
     "homepage": "https://github.com/bayquen/rtfm-agent#readme",
     "dependencies": {
-        "@huggingface/transformers": "^3.8.1",
         "@langchain/core": "^1.1.41",
         "@langchain/textsplitters": "^1.0.1",
         "dotenv": "^17.4.2",
-        "js-tiktoken": "^1.0.21",
-        "upgrade": "^1.1.0",
         "voyageai": "^0.2.1"
     }
 }
