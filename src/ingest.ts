@@ -220,8 +220,6 @@ async function chunkTextContent() {
     // Return the output tokens? (which is a 2D array)
     // return allTokenizedChunks;
 
-    console.log("Length of chunk lists 2d array:", chunkLists.length);
-
     return chunkLists;
 }
 
@@ -238,7 +236,8 @@ async function createEmbeddingVectorsFromChunks(allChunks: string[][]) {
             model: "voyage-code-3"
         });
         // Debug logging and looking at output
-        console.log(response.data);
+        // console.log("Embedding for chunk:", response.data);
+        // console.log("\n\n\n\n");
         embeddings.push(response);
     }
     return embeddings;
@@ -247,14 +246,15 @@ async function createEmbeddingVectorsFromChunks(allChunks: string[][]) {
 async function main() {
     // createEmbeddingVectorsFromChunks();
     const chunked_results = await chunkTextContent();
-    // const bruh = await createEmbeddingVectorsFromChunks(chunked_results);
-    // DEBUG: Reading text chunks for debugging
-    let chunkCount = 0;
-    for (const item of chunked_results) {
-        for (const chunk of item) {
-            chunkCount += 1;
-            console.log("Chunked result: ", chunk, "\n\n\n\n");
-        }
-    }
+    // // DEBUG: Reading text chunks for debugging
+    // let chunkCount = 0;
+    // for (const item of chunked_results) {
+    //     for (const chunk of item) {
+    //         chunkCount += 1;
+    //         console.log("Chunked result: ", chunk, "\n\n\n\n");
+    //     }
+    // }
+
+    createEmbeddingVectorsFromChunks(chunked_results);
 }
 main();
