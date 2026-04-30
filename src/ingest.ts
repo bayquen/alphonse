@@ -10,7 +10,7 @@ import { TokenTextSplitter } from "@langchain/textsplitters";
 
 // Use CommonJS's (CJS) Node require() over ESM since VoyageAI (v0.2.1) module import for ESM is fkin broken.
 const require = createRequire(import.meta.url);
-const { VoyageAIClient } = require("voyageai") as typeof import("voyageai");
+const { VoyageAIClient, VoyageAIError } = require("voyageai") as typeof import("voyageai");
 
 dotenv.config();
 const voyageAPIKey: string | undefined = process.env.VOYAGE_API_KEY;
@@ -236,8 +236,8 @@ async function createEmbeddingVectorsFromChunks(allChunks: string[][]) {
             model: "voyage-code-3"
         });
         // Debug logging and looking at output
-        // console.log("Embedding for chunk:", response.data);
-        // console.log("\n\n\n\n");
+        console.log("Embedding for chunk:", response.data);
+        console.log("\n\n\n\n");
         embeddings.push(response);
     }
     return embeddings;
@@ -254,7 +254,15 @@ async function main() {
     //         console.log("Chunked result: ", chunk, "\n\n\n\n");
     //     }
     // }
-
-    createEmbeddingVectorsFromChunks(chunked_results);
+    try {
+        await createEmbeddingVectorsFromChunks(chunked_results);
+    } catch (err) {
+        if (err instanceof VoyageAIError) {
+            console.log(err.statusCode);
+            console.log(err.message);
+            console.log(err.body);
+            console.log(err.rawResponse);  
+        }
+    }
 }
 main();
