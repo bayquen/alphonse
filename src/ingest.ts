@@ -10,6 +10,7 @@ const require = createRequire(import.meta.url);
 const { VoyageAIClient, VoyageAIError } = require("voyageai") as typeof import("voyageai");
 
 dotenv.config();
+
 const voyageAPIKey: string | undefined = process.env.VOYAGE_API_KEY;
 const voyageClient = new VoyageAIClient({ apiKey: voyageAPIKey});
 
@@ -238,4 +239,27 @@ async function main() {
         }
     }
 }
-main();
+// main();
+
+async function testingRedis() {
+    redisClient.on('error', err => console.log('Redis Client Error', err));
+    await redisClient.connect();
+
+    await redisClient.set('testKeyHehe', 'testValueROFLMAOXD');
+    const value = await redisClient.get('testKeyHehe');
+    console.log(value);
+
+    await redisClient.hSet('user-session:123', {
+        name: 'Bruh',
+        surname: 'Momenteaux',
+        company: 'Brudda Inc.',
+        age: 26
+    })
+
+    let userSession = await redisClient.hGetAll('user-session:123');
+    console.log(JSON.stringify(userSession, null, 2));
+
+    await redisClient.quit();
+}
+
+testingRedis();
