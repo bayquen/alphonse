@@ -4,13 +4,16 @@ import { MarkdownParser } from "markdown-parser";
 import { createRequire } from "node:module";
 import dotenv from "dotenv";
 import { TokenTextSplitter } from "@langchain/textsplitters";
+import { createClient } from 'redis';
 // Use CommonJS's (CJS) Node require() over ESM since VoyageAI (v0.2.1) module import for ESM is fkin broken.
 const require = createRequire(import.meta.url);
 const { VoyageAIClient, VoyageAIError } = require("voyageai") as typeof import("voyageai");
 
 dotenv.config();
 const voyageAPIKey: string | undefined = process.env.VOYAGE_API_KEY;
-const client = new VoyageAIClient({ apiKey: voyageAPIKey});
+const voyageClient = new VoyageAIClient({ apiKey: voyageAPIKey});
+
+const redisClient = createClient();
 
 interface FileMetadata {
     filename: string;
@@ -192,7 +195,7 @@ async function createEmbeddingVectorsFromChunks(allChunks: string[][]) {
     let embeddings = [];
     
     for (const chunkList in allChunks) {
-        const response = await client.embed({
+        const response = await voyageClient.embed({
             input: chunkList,
             model: "voyage-code-3"
         });
