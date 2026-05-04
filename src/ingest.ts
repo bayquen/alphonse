@@ -4,7 +4,7 @@ import { MarkdownParser } from "markdown-parser";
 import { createRequire } from "node:module";
 import dotenv from "dotenv";
 import { TokenTextSplitter } from "@langchain/textsplitters";
-import { createClient } from 'redis';
+import { createClient, SCHEMA_FIELD_TYPE, SCHEMA_VECTOR_FIELD_ALGORITHM } from 'redis';  // Redis imports for Redis v5.x.x
 // Use CommonJS's (CJS) Node require() over ESM since VoyageAI (v0.2.1) module import for ESM is fkin broken.
 const require = createRequire(import.meta.url);
 const { VoyageAIClient, VoyageAIError } = require("voyageai") as typeof import("voyageai");
@@ -245,19 +245,35 @@ async function testingRedis() {
     redisClient.on('error', err => console.log('Redis Client Error', err));
     await redisClient.connect();
 
-    await redisClient.set('testKeyHehe', 'testValueROFLMAOXD');
-    const value = await redisClient.get('testKeyHehe');
-    console.log(value);
+    await redisClient.ft.create('vector_idx', {
+        'content': {
+            type: SCHEMA_FIELD_TYPE.TEXT,
+        },
+        'embedding': {
+            type: SCHEMA_FIELD_TYPE.VECTOR,
+            TYPE: 'FLOAT32',
+            ALGORITHM: SCHEMA_VECTOR_FIELD_ALGORITHM.HNSW,
+            DISTANCE_METRIC: 'L2',
+            DIM: 1024,
+        },
+    }, {
+        ON: 'HASH',
+        PREFIX: 'doc:'  
+    });
 
-    await redisClient.hSet('user-session:123', {
-        name: 'Bruh',
-        surname: 'Momenteaux',
-        company: 'Brudda Inc.',
-        age: 26
-    })
+    // await redisClient.set('testKeyHehe', 'testValueROFLMAOXD');
+    // const value = await redisClient.get('testKeyHehe');
+    // console.log(value);
 
-    let userSession = await redisClient.hGetAll('user-session:123');
-    console.log(JSON.stringify(userSession, null, 2));
+    // await redisClient.hSet('user-session:123', {
+    //     name: 'Bruh',
+    //     surname: 'Momenteaux',
+    //     company: 'Brudda Inc.',
+    //     age: 26
+    // })
+
+    // let userSession = await redisClient.hGetAll('user-session:123');
+    // console.log(JSON.stringify(userSession, null, 2));
 
     await redisClient.quit();
 }
