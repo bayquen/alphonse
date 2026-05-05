@@ -32,8 +32,7 @@ interface MarkdownMetadata {
     sourcePath: string;
 }
 
-// TODO: Does this make sense for my chunking needs???
-interface ChunkedFile {
+interface EmbeddedChunk {
     filename: string
     content: string;
     tokenCount: number;
