@@ -182,9 +182,6 @@ async function extractFileObjects(): Promise<(FileMetadata | MarkdownMetadata)[]
 // Pipeline: Split all doc file text into chunks in prep for vector embedding
 async function chunkTextContent() {
     const allFileObjects = await extractFileObjects();
-
-    // const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 800, chunkOverlap: 100 });
-
     // Token-aware text splitter, with added ~1.2x chunkSize multiplier since Voyage AI models use that ~1.2x more tokens 
     // than the OpenAI-based splitter (via LangChain library) used here.
     // Note that embedding model I'm using is voyage-code-3, which has a max context len. of 32k tokens.
@@ -204,8 +201,7 @@ async function chunkTextContent() {
 //              - How should chunking function output data look like? How should input data for embedding function look like? And the output?
 async function createEmbeddingVectorsFromChunks(allChunks: string[][]) {
     // VoyageAI client
-    let embeddings = [];
-    
+    let embeddings = [];   
     for (const chunkList of allChunks) {
         const response = await voyageClient.embed({
             input: chunkList,
