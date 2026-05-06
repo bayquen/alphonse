@@ -32,18 +32,30 @@ interface MarkdownMetadata {
     sourcePath: string;
 }
 
-interface EmbeddedChunk {
-    filename: string
+// interface EmbeddedChunkData {
+//     filename: string
+//     content: string;
+//     // tokenCount: number;
+//     sourcePath: string;
+//     contentMetadata: {
+//         paragraph: string;
+//         h1: string | null;
+//         h2: string | null;
+//         h3: string | null;
+//         chunkIndex: number;
+//     }
+// }
+
+interface EmbeddedChunkData {
     content: string;
-    tokenCount: number;
+    embedding: number;
+    chunkIndex: number;
+    filename: string;
     sourcePath: string;
-    contentMetadata: {
-        paragraph: string;
-        h1: string | null;
-        h2: string | null;
-        h3: string | null;
-        chunkIndex: number;
-    }
+    paragraph: string | null;
+    h1: string | null;
+    h2: string | null;
+    h3: string | null;
 }
 
 // Function for reading directory containing uploaded doc files (for now; TODO: read doc files from git repos or files shared by user)
@@ -187,10 +199,10 @@ async function chunkTextContent() {
     return chunkLists;
 }
 
+
 // TODO (4/29): - How can I associate each split chunk to its corresponding metadata (i.e. filename, path, .markdown headings, etc.)?
 //              - How should chunking function output data look like? How should input data for embedding function look like? And the output?
 async function createEmbeddingVectorsFromChunks(allChunks: string[][]) {
-    // TODO (4/28/26): Pass chunked text (NOT TOKENS)
     // VoyageAI client
     let embeddings = [];
     
@@ -229,6 +241,10 @@ async function main() {
             console.log("\n\n"); 
         }
 
+        await testingRedis();
+
+        await redisClient.quit();
+
     } catch (err) {
         if (err instanceof VoyageAIError) {
             console.log(err.statusCode);
@@ -255,6 +271,27 @@ async function testingRedis() {
             DISTANCE_METRIC: 'L2',
             DIM: 1024,
         },
+        'chunkIndex': {
+            type: SCHEMA_FIELD_TYPE.NUMERIC,
+        },
+        'filename': {
+            type: SCHEMA_FIELD_TYPE.TEXT,
+        },
+        'sourcePath': {
+            type: SCHEMA_FIELD_TYPE.TEXT,
+        },
+        'paragraph': {
+            type: SCHEMA_FIELD_TYPE.TEXT,
+        },
+        'h1': {
+            type: SCHEMA_FIELD_TYPE.TEXT,
+        },
+        'h2': {
+            type: SCHEMA_FIELD_TYPE.TEXT,
+        },
+        'h3': {
+            type: SCHEMA_FIELD_TYPE.TEXT,
+        }
     }, {
         ON: 'HASH',
         PREFIX: 'doc:'  
@@ -274,7 +311,7 @@ async function testingRedis() {
     // let userSession = await redisClient.hGetAll('user-session:123');
     // console.log(JSON.stringify(userSession, null, 2));
 
-    await redisClient.quit();
+    // await redisClient.quit();
 }
 
-testingRedis();
+// testingRedis();
