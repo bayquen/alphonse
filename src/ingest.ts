@@ -206,7 +206,7 @@ async function createEmbeddingVectorsFromChunks(allChunks: string[][]) {
     // VoyageAI client
     let embeddings = [];
     
-    for (const chunkList in allChunks) {
+    for (const chunkList of allChunks) {
         const response = await voyageClient.embed({
             input: chunkList,
             model: "voyage-code-3"
@@ -232,7 +232,6 @@ async function main() {
     // }
     try {
         const allEmbeddings = await createEmbeddingVectorsFromChunks(chunked_results);
-        console.log(allEmbeddings + "\n\n\n");
 
         for (const embed of allEmbeddings) {
             console.log(embed);
@@ -254,7 +253,7 @@ async function main() {
         }
     }
 }
-// main();
+main();
 
 async function testingRedis() {
     redisClient.on('error', err => console.log('Redis Client Error', err));
