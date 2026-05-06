@@ -17,12 +17,14 @@ const voyageClient = new VoyageAIClient({ apiKey: voyageAPIKey});
 const redisClient = createClient();
 
 interface FileMetadata {
+    type: "file",
     filename: string;
     content: string;
     sourcePath: string;
 }
 
 interface MarkdownMetadata {
+    type: "markdown",
     filename: string;
     content: string;
     paragraph: string;
@@ -83,6 +85,7 @@ function createFileObject(filePath: string): Promise<FileMetadata> {
             } else {
                 // Create file object
                 const metadata: FileMetadata = {
+                    type: "file",
                     filename: path.basename(filePath),
                     content: data,
                     sourcePath: filePath
@@ -123,6 +126,7 @@ async function extractMDHeadingsAndContent(
             const paragraphText = (node.children[0] as any).text;
 
             const metadata: MarkdownMetadata = {
+                type: "markdown",
                 filename: fileObject.filename,
                 content: fileObject.content,
                 paragraph: paragraphText,
@@ -187,12 +191,38 @@ async function chunkTextContent() {
     // Note that embedding model I'm using is voyage-code-3, which has a max context len. of 32k tokens.
     const splitter = new TokenTextSplitter({ encodingName: "cl100k_base", chunkSize: 480, chunkOverlap: 100 });
     // let chunkLists: string[][] = [];
-    let rows = [];
+    let rows: EmbeddedChunkData[] = [];
     for (const fileObject of allFileObjects) {
         // For given file text, split into chunks and save into an array
         const chunkedText = await splitter.splitText(fileObject.content);
         for (const chunks of chunkedText) {
-            const row = []
+            if (fileObject.type == "file") {
+                let row: EmbeddedChunkData = {
+                    content: fileObject.content,
+                    embedding: [],
+                    chunkIndex: 1,
+                    filename: fileObject.filename,
+                    sourcePath: fileObject.sourcePath,
+                    paragraph: "",
+                    h1: "",
+                    h2: "",
+                    h3: "",
+                }
+            }
+            if (fileObject.type == "markdown") {
+                let row: EmbeddedChunkData = {
+                    content: fileObject.content,
+                    embedding: [],
+                    chunkIndex: 1,
+                    filename: fileObject.filename,
+                    sourcePath: fileObject.sourcePath,
+                    paragraph: fileObject.paragraph,
+                    h1: fileObject.h1,
+                    h2: fileObject.h2,
+                    h3: fileObject.h3,
+                }          
+            }
+
         }
         // chunkLists.push(chunkedText);
     }
