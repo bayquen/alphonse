@@ -200,6 +200,7 @@ async function chunkTextContent() {
                 let row: EmbeddedChunkData = {
                     content: fileObject.content,
                     embedding: [],
+                    // TODO (5/6/26): Add chunk index nums corresponding to given file!
                     chunkIndex: 1,
                     filename: fileObject.filename,
                     sourcePath: fileObject.sourcePath,
@@ -220,7 +221,7 @@ async function chunkTextContent() {
                     h1: fileObject.h1,
                     h2: fileObject.h2,
                     h3: fileObject.h3,
-                }          
+                }
             }
 
         }
