@@ -48,7 +48,7 @@ interface MarkdownMetadata {
 
 interface EmbeddedChunkData {
     content: string;
-    embedding: number;
+    embedding: number[];
     chunkIndex: number;
     filename: string;
     sourcePath: string;
@@ -186,14 +186,17 @@ async function chunkTextContent() {
     // than the OpenAI-based splitter (via LangChain library) used here.
     // Note that embedding model I'm using is voyage-code-3, which has a max context len. of 32k tokens.
     const splitter = new TokenTextSplitter({ encodingName: "cl100k_base", chunkSize: 480, chunkOverlap: 100 });
-    let chunkLists: string[][] = [];
+    // let chunkLists: string[][] = [];
+    let rows = [];
     for (const fileObject of allFileObjects) {
         // For given file text, split into chunks and save into an array
         const chunkedText = await splitter.splitText(fileObject.content);
-
-        chunkLists.push(chunkedText);
+        for (const chunks of chunkedText) {
+            const row = []
+        }
+        // chunkLists.push(chunkedText);
     }
-    return chunkLists;
+    // return chunkLists;
 }
 
 
