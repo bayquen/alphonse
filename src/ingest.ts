@@ -192,16 +192,18 @@ async function chunkTextContent() {
     const splitter = new TokenTextSplitter({ encodingName: "cl100k_base", chunkSize: 480, chunkOverlap: 100 });
     // let chunkLists: string[][] = [];
     let rows: EmbeddedChunkData[] = [];
+    let chunkIndex: number = 1;
     for (const fileObject of allFileObjects) {
         // For given file text, split into chunks and save into an array
         const chunkedText = await splitter.splitText(fileObject.content);
+        
         for (const chunks of chunkedText) {
             if (fileObject.type == "file") {
                 let row: EmbeddedChunkData = {
                     content: fileObject.content,
                     embedding: [],
                     // TODO (5/6/26): Add chunk index nums corresponding to given file!
-                    chunkIndex: 1,
+                    chunkIndex: chunkIndex,
                     filename: fileObject.filename,
                     sourcePath: fileObject.sourcePath,
                     paragraph: "",
@@ -214,7 +216,7 @@ async function chunkTextContent() {
                 let row: EmbeddedChunkData = {
                     content: fileObject.content,
                     embedding: [],
-                    chunkIndex: 1,
+                    chunkIndex: chunkIndex,
                     filename: fileObject.filename,
                     sourcePath: fileObject.sourcePath,
                     paragraph: fileObject.paragraph,
@@ -223,6 +225,7 @@ async function chunkTextContent() {
                     h3: fileObject.h3,
                 }
             }
+            chunkIndex += 1;
 
         }
         // chunkLists.push(chunkedText);
