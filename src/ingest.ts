@@ -190,19 +190,16 @@ async function chunkTextContent() {
     // than the OpenAI-based splitter (via LangChain library) used here.
     // Note that embedding model I'm using is voyage-code-3, which has a max context len. of 32k tokens.
     const splitter = new TokenTextSplitter({ encodingName: "cl100k_base", chunkSize: 480, chunkOverlap: 100 });
-    // let chunkLists: string[][] = [];
     let rows: EmbeddedChunkData[] = [];
     let chunkIndex: number = 1;
     for (const fileObject of allFileObjects) {
         // For given file text, split into chunks and save into an array
         const chunkedText = await splitter.splitText(fileObject.content);
-        
         for (const chunks of chunkedText) {
             if (fileObject.type == "file") {
                 let row: EmbeddedChunkData = {
                     content: fileObject.content,
                     embedding: [],
-                    // TODO (5/6/26): Add chunk index nums corresponding to given file!
                     chunkIndex: chunkIndex,
                     filename: fileObject.filename,
                     sourcePath: fileObject.sourcePath,
@@ -226,7 +223,6 @@ async function chunkTextContent() {
                 }
             }
             chunkIndex += 1;
-
         }
         // chunkLists.push(chunkedText);
     }
