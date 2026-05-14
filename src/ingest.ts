@@ -208,6 +208,8 @@ async function chunkTextContent() {
                     h2: "",
                     h3: "",
                 }
+                // Add current chunk data inside of rows
+                rows.push(row);
             }
             if (fileObject.type == "markdown") {
                 let row: EmbeddedChunkData = {
@@ -221,12 +223,16 @@ async function chunkTextContent() {
                     h2: fileObject.h2,
                     h3: fileObject.h3,
                 }
+                // Add current chunk data inside of rows
+                rows.push(row);
             }
-            chunkIndex += 1;
+            // Increment chunkIndex after each chunk iteration of current file object
+            chunkIndex += 1;        
         }
         // chunkLists.push(chunkedText);
     }
-    // return chunkLists;
+    // Return chunked rows object (2D array, I think?)
+    return rows;
 }
 
 
