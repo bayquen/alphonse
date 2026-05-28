@@ -49,7 +49,7 @@ interface MarkdownMetadata {
 // }
 
 interface EmbeddedChunkData {
-    content: string;
+    chunkContent: string;
     embedding: number[];
     chunkIndex: number;
     filename: string;
@@ -198,7 +198,7 @@ async function chunkTextContent() {
         for (const chunk of chunkedText) {
             if (fileObject.type == "file") {
                 let row: EmbeddedChunkData = {
-                    content: chunk,
+                    chunkContent: chunk,
                     embedding: [],
                     chunkIndex: chunkIndex,
                     filename: fileObject.filename,
@@ -213,7 +213,7 @@ async function chunkTextContent() {
             }
             if (fileObject.type == "markdown") {
                 let row: EmbeddedChunkData = {
-                    content: fileObject.content,
+                    chunkContent: chunk,
                     embedding: [],
                     chunkIndex: chunkIndex,
                     filename: fileObject.filename,
@@ -238,12 +238,12 @@ async function chunkTextContent() {
 
 // TODO (4/29): - How can I associate each split chunk to its corresponding metadata (i.e. filename, path, .markdown headings, etc.)?
 //              - How should chunking function output data look like? How should input data for embedding function look like? And the output?
-async function createEmbeddingVectorsFromChunks(allChunks: string[][]) {
+async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkData[]) {
     // VoyageAI client
     let embeddings = [];   
     for (const chunkList of allChunks) {
         const response = await voyageClient.embed({
-            input: chunkList,
+            input: chunkList.chunkContent,
             model: "voyage-code-3"
         });
         // Debug logging and looking at output
