@@ -240,16 +240,24 @@ async function chunkTextContent() {
 //              - How should chunking function output data look like? How should input data for embedding function look like? And the output?
 async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkData[]) {
     // VoyageAI client
-    let embeddings = [];   
-    for (const chunkList of allChunks) {
+    // let embeddings = [];   
+    for (let chunk of allChunks) {
         const response = await voyageClient.embed({
-            input: chunkList.chunkContent,
+            input: chunk.chunkContent,
             model: "voyage-code-3"
         });
         // Debug logging and looking at output
         // console.log("Embedding for chunk:", response.data);
         // console.log("\n\n\n\n");
-        embeddings.push(response);
+
+        // embeddings.push(response.data);
+
+        // Push embedding back into corresponding EmbeddedChunkData
+        if (response.data !== undefined) {
+            chunk.embedding = response.data;
+        }
+
+        }
     }
     return embeddings;
 }
