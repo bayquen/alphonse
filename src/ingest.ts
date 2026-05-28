@@ -195,10 +195,10 @@ async function chunkTextContent() {
     for (const fileObject of allFileObjects) {
         // For given file text, split into chunks and save into an array
         const chunkedText = await splitter.splitText(fileObject.content);
-        for (const chunks of chunkedText) {
+        for (const chunk of chunkedText) {
             if (fileObject.type == "file") {
                 let row: EmbeddedChunkData = {
-                    content: fileObject.content,
+                    content: chunk,
                     embedding: [],
                     chunkIndex: chunkIndex,
                     filename: fileObject.filename,
