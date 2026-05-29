@@ -253,13 +253,18 @@ async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkData[]) 
             chunk.embedding = embedding;
         }
         
-        // Debugging chunk data object output
-        console.log("Current chunk object:", chunk);
+        // Debugging chunked data object output
+        // console.log("Current chunk object:", chunk);
 
         // Debugging VoyageAI output:
         // console.log("Response embedding from VoyageAi", response);
         }
-        return ;
+
+        // Debugging the new results of all chunked data objects:
+        console.log(allChunks);
+        console.log("\n\n\n");
+        console.log("Printed current chunk data objects! \n")
+        return allChunks;
 }
 
 async function main() {
