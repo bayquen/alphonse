@@ -222,8 +222,7 @@ async function chunkTextContent() {
 }
 
 
-// TODO (4/29): - How can I associate each split chunk to its corresponding metadata (i.e. filename, path, .markdown headings, etc.)?
-//              - How should chunking function output data look like? How should input data for embedding function look like? And the output?
+// Pipeline: Create a vector embedding for each (doc) text chunk using VoyageAI API
 async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkData[]) {
     // VoyageAI client
     // let embeddings = [];   
@@ -259,7 +258,8 @@ function embeddingToBuffer(embedding: number[]): Buffer {
     return Buffer.from(new Float32Array(embedding).buffer);
 }
 
-async function testingRedis(embeddedChunkObjects: EmbeddedChunkData[]) {
+// Pipeline: Store vector embeddings, chunk text, and their corresponding metadata in a Redis vector index
+async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: EmbeddedChunkData[]) {
     redisClient.on('error', err => console.log('Redis Client Error', err));
     await redisClient.connect();
 
@@ -325,6 +325,6 @@ async function testingRedis(embeddedChunkObjects: EmbeddedChunkData[]) {
 async function main() {
     const chunkedResults = await chunkTextContent();
     const embeddedChunkObjects = await createEmbeddingVectorsFromChunks(chunkedResults);
-    await testingRedis(embeddedChunkObjects);
+    await storeVectorsAndChunkedMetadata(embeddedChunkObjects);
 }
 main();
