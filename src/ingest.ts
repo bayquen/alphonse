@@ -268,9 +268,9 @@ async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkData[]) 
 }
 
 async function main() {
-    const chunked_results = await chunkTextContent();
-    await createEmbeddingVectorsFromChunks(chunked_results);
-    
+    const chunkedResults = await chunkTextContent();
+    const embeddedChunkObjects = await createEmbeddingVectorsFromChunks(chunkedResults);
+    await testingRedis(embeddedChunkObjects);
 }
 main();
 
