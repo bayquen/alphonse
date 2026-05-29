@@ -270,40 +270,11 @@ async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkData[]) 
 async function main() {
     const chunked_results = await chunkTextContent();
     await createEmbeddingVectorsFromChunks(chunked_results);
-    // // DEBUG: Reading text chunks for debugging
-    // let chunkCount = 0;
-    // for (const item of chunked_results) {
-    //     for (const chunk of item) {
-    //         chunkCount += 1;
-    //         console.log("Chunked result: ", chunk, "\n\n\n\n");
-    //     }
-    // }
-    // try {
-    //     const allEmbeddings = await createEmbeddingVectorsFromChunks(chunked_results);
-
-    //     for (const embed of allEmbeddings) {
-    //         console.log(embed);
-    //         console.log("\n");
-    //         console.log("Embed object data:", embed.data);
-    //         console.log("\n\n"); 
-    //     }
-
-    //     await testingRedis();
-
-    //     await redisClient.quit();
-
-    // } catch (err) {
-    //     if (err instanceof VoyageAIError) {
-    //         console.log(err.statusCode);
-    //         console.log(err.message);
-    //         console.log(err.body);
-    //         console.log(err.rawResponse);  
-    //     }
-    // }
+    
 }
 main();
 
-async function testingRedis() {
+async function testingRedis(embeddedChunkObjects: EmbeddedChunkData[]) {
     redisClient.on('error', err => console.log('Redis Client Error', err));
     await redisClient.connect();
 
