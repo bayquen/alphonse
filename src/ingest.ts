@@ -34,20 +34,6 @@ interface MarkdownMetadata {
     sourcePath: string;
 }
 
-// interface EmbeddedChunkData {
-//     filename: string
-//     content: string;
-//     // tokenCount: number;
-//     sourcePath: string;
-//     contentMetadata: {
-//         paragraph: string;
-//         h1: string | null;
-//         h2: string | null;
-//         h3: string | null;
-//         chunkIndex: number;
-//     }
-// }
-
 interface EmbeddedChunkData {
     chunkContent: string;
     embedding: number[];
@@ -279,7 +265,7 @@ async function testingRedis(embeddedChunkObjects: EmbeddedChunkData[]) {
     await redisClient.connect();
 
     await redisClient.ft.create('vector_idx', {
-        'content': {
+        'chunkContent': {
             type: SCHEMA_FIELD_TYPE.TEXT,
         },
         'embedding': {
@@ -312,6 +298,11 @@ async function testingRedis(embeddedChunkObjects: EmbeddedChunkData[]) {
         }
     }, {
         ON: 'HASH',
-        PREFIX: 'doc:'  
+        PREFIX: 'doc:'
     });
+
+    let num = 1;
+    for (const object of embeddedChunkObjects) {
+        redisClient.hSet(`doc:${num}`, object.embedding);
+    }
 }
