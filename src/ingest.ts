@@ -246,25 +246,25 @@ async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkData[]) 
             input: chunk.chunkContent,
             model: "voyage-code-3"
         });
-        // Debug logging and looking at output
-        // console.log("Embedding for chunk:", response.data);
-        // console.log("\n\n\n\n");
+        const embedding = response.data?.[0]?.embedding;
 
-        // embeddings.push(response.data);
-
-        // Push embedding back into corresponding EmbeddedChunkData
-        if (response.data !== undefined) {
-            chunk.embedding = response.data;
+        // Add embedding into corresponding EmbeddedChunkData for Redis vector storing later
+        if (embedding) {
+            chunk.embedding = embedding;
         }
+        
+        // Debugging chunk data object output
+        console.log("Current chunk object:", chunk);
 
+        // Debugging VoyageAI output:
+        // console.log("Response embedding from VoyageAi", response);
         }
-    }
-    return embeddings;
+        return ;
 }
 
 async function main() {
-    // createEmbeddingVectorsFromChunks();
     const chunked_results = await chunkTextContent();
+    await createEmbeddingVectorsFromChunks(chunked_results);
     // // DEBUG: Reading text chunks for debugging
     // let chunkCount = 0;
     // for (const item of chunked_results) {
@@ -273,28 +273,28 @@ async function main() {
     //         console.log("Chunked result: ", chunk, "\n\n\n\n");
     //     }
     // }
-    try {
-        const allEmbeddings = await createEmbeddingVectorsFromChunks(chunked_results);
+    // try {
+    //     const allEmbeddings = await createEmbeddingVectorsFromChunks(chunked_results);
 
-        for (const embed of allEmbeddings) {
-            console.log(embed);
-            console.log("\n");
-            console.log("Embed object data:", embed.data);
-            console.log("\n\n"); 
-        }
+    //     for (const embed of allEmbeddings) {
+    //         console.log(embed);
+    //         console.log("\n");
+    //         console.log("Embed object data:", embed.data);
+    //         console.log("\n\n"); 
+    //     }
 
-        await testingRedis();
+    //     await testingRedis();
 
-        await redisClient.quit();
+    //     await redisClient.quit();
 
-    } catch (err) {
-        if (err instanceof VoyageAIError) {
-            console.log(err.statusCode);
-            console.log(err.message);
-            console.log(err.body);
-            console.log(err.rawResponse);  
-        }
-    }
+    // } catch (err) {
+    //     if (err instanceof VoyageAIError) {
+    //         console.log(err.statusCode);
+    //         console.log(err.message);
+    //         console.log(err.body);
+    //         console.log(err.rawResponse);  
+    //     }
+    // }
 }
 main();
 
