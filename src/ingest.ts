@@ -253,12 +253,11 @@ async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkData[]) 
         return allChunks;
 }
 
-async function main() {
-    const chunkedResults = await chunkTextContent();
-    const embeddedChunkObjects = await createEmbeddingVectorsFromChunks(chunkedResults);
-    await testingRedis(embeddedChunkObjects);
+// For storing vector embeddings, Redis requires reading RAW BYTEs rather than a JSON array.
+// Thus, this functionality is necessary!
+function embeddingToBuffer(embedding: number[]): Buffer {
+    return Buffer.from(new Float32Array(embedding).buffer);
 }
-main();
 
 async function testingRedis(embeddedChunkObjects: EmbeddedChunkData[]) {
     redisClient.on('error', err => console.log('Redis Client Error', err));
@@ -300,9 +299,32 @@ async function testingRedis(embeddedChunkObjects: EmbeddedChunkData[]) {
         ON: 'HASH',
         PREFIX: 'doc:'
     });
+    
+    
+    for (const [i, chunk] of embeddedChunkObjects.entries()) {
+        // Skip current embedding store if not correct dimension.
+        if (chunk.embedding.length !== 1024) {
+            continue;
+        }
 
-    let num = 1;
-    for (const object of embeddedChunkObjects) {
-        redisClient.hSet(`doc:${num}`, object.embedding);
+        // One hash is set per chunked object. Hence, the for loop.
+        await redisClient.hSet(`doc:${i + 1}`, {
+            chunkContent: chunk.chunkContent,
+            embedding: embeddingToBuffer(chunk.embedding),
+            chunkIndex: chunk.chunkIndex,
+            filename: chunk.filename,
+            sourcePath: chunk.sourcePath,
+            paragraph: chunk.paragraph ?? '',
+            h1: chunk.h1 ?? '',
+            h2: chunk.h2 ?? '',
+            h3: chunk.h3 ?? '',
+        });
     }
 }
+
+async function main() {
+    const chunkedResults = await chunkTextContent();
+    const embeddedChunkObjects = await createEmbeddingVectorsFromChunks(chunkedResults);
+    await testingRedis(embeddedChunkObjects);
+}
+main();
