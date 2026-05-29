@@ -343,22 +343,4 @@ async function testingRedis() {
         ON: 'HASH',
         PREFIX: 'doc:'  
     });
-
-    // await redisClient.set('testKeyHehe', 'testValueROFLMAOXD');
-    // const value = await redisClient.get('testKeyHehe');
-    // console.log(value);
-
-    // await redisClient.hSet('user-session:123', {
-    //     name: 'Bruh',
-    //     surname: 'Momenteaux',
-    //     company: 'Brudda Inc.',
-    //     age: 26
-    // })
-
-    // let userSession = await redisClient.hGetAll('user-session:123');
-    // console.log(JSON.stringify(userSession, null, 2));
-
-    // await redisClient.quit();
 }
-
-// testingRedis();
