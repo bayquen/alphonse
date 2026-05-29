@@ -255,6 +255,7 @@ async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkData[]) 
 // For storing vector embeddings, Redis requires reading RAW BYTEs rather than a JSON array.
 // Thus, this functionality is necessary!
 function embeddingToBuffer(embedding: number[]): Buffer {
+    // `Buffer.from` is a Node.js native method for creating buffers.
     return Buffer.from(new Float32Array(embedding).buffer);
 }
 
