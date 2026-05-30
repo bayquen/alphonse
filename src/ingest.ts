@@ -338,6 +338,5 @@ async function main() {
     const chunkedResults = await chunkTextContent();
     const embeddedChunkObjects = await createEmbeddingVectorsFromChunks(chunkedResults);
     await storeVectorsAndChunkedMetadata(embeddedChunkObjects);
-    // TODO (5/29/26): Create logging test(s) to check that Redis vector index storing is working properly.
 }
 main();
