@@ -341,5 +341,11 @@ async function main() {
     const chunkedResults = await chunkTextContent();
     const embeddedChunkObjects = await createEmbeddingVectorsFromChunks(chunkedResults);
     await storeVectorsAndChunkedMetadata(embeddedChunkObjects);
+
+    // TESTS
+    // Test: Verify if our vector index exists and if the correct data is stored in it
+    await redisClient.ft.info('vector_idx');
+    // Test: Verify if one of my stored document keys exists and contains chunk text, metadata fields, and embedding vector
+    await redisClient.hGetAll('doc1');
 }
 main();
