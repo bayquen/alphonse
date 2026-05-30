@@ -332,6 +332,9 @@ async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: EmbeddedChun
         // const stored = await redisClient.hGetAll(`doc:${i + 1}`);
         // console.log("Successfully stored:\n", stored);
     }
+
+    // Close the Redis client manually, otherwise it stays open.
+    await redisClient.quit();
 }
 
 async function main() {
