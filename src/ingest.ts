@@ -1,16 +1,30 @@
 import * as fs from 'fs';  // file-system module From NodeJS
 import path from 'path';
 import { MarkdownParser } from "markdown-parser";
-import { Tiktoken } from "js-tiktoken/lite";
-import cl100k_base from "js-tiktoken/ranks/cl100k_base";  // General purpose tokenizer encoding (might be good enough for Claude models)
+import { createRequire } from "node:module";
+import dotenv from "dotenv";
+import { TokenTextSplitter } from "@langchain/textsplitters";
+import { createClient, SCHEMA_FIELD_TYPE, SCHEMA_VECTOR_FIELD_ALGORITHM } from 'redis';  // Redis imports for Redis v5.x.x
+// Use CommonJS's (CJS) Node require() over ESM since VoyageAI (v0.2.1) module import for ESM is fkin broken.
+const require = createRequire(import.meta.url);
+const { VoyageAIClient, VoyageAIError } = require("voyageai") as typeof import("voyageai");
+
+dotenv.config();
+
+const voyageAPIKey: string | undefined = process.env.VOYAGE_API_KEY;
+const voyageClient = new VoyageAIClient({ apiKey: voyageAPIKey});
+
+const redisClient = createClient();
 
 interface FileMetadata {
+    type: "file",
     filename: string;
     content: string;
     sourcePath: string;
 }
 
 interface MarkdownMetadata {
+    type: "markdown",
     filename: string;
     content: string;
     paragraph: string;
@@ -20,6 +34,17 @@ interface MarkdownMetadata {
     sourcePath: string;
 }
 
+interface EmbeddedChunkData {
+    chunkContent: string;
+    embedding: number[];
+    chunkIndex: number;
+    filename: string;
+    sourcePath: string;
+    paragraph: string | null;
+    h1: string | null;
+    h2: string | null;
+    h3: string | null;
+}
 
 // Function for reading directory containing uploaded doc files (for now; TODO: read doc files from git repos or files shared by user)
 function readDocsDir(docsPath: string): Promise<string[]> {
@@ -46,6 +71,7 @@ function createFileObject(filePath: string): Promise<FileMetadata> {
             } else {
                 // Create file object
                 const metadata: FileMetadata = {
+                    type: "file",
                     filename: path.basename(filePath),
                     content: data,
                     sourcePath: filePath
@@ -54,45 +80,6 @@ function createFileObject(filePath: string): Promise<FileMetadata> {
             }
         });
     });
-}
-
-// Pipeline: Read each file and create + return array of file metadata objects with their text to be chunked after
-async function extractFileObjects(): Promise<(FileMetadata | MarkdownMetadata)[]> {
-    try {
-        const filePaths = await readDocsDir('/home/bayquen/projects/rtfm-agent/docs');
-        const fileObjects = await Promise.all(
-            filePaths.map(filePath => createFileObject(filePath))
-        );
-        
-        let allMetadataObjects: (FileMetadata | MarkdownMetadata)[] = [];
-        let mdResults: MarkdownMetadata[] = []; 
-        let mdFiles: FileMetadata[] = [];
-        // Check if each file object is an .md file. If yes, then save into separate array 
-        // for .md metadata extraction
-        for (const fileObject of fileObjects) {
-            if (path.basename(fileObject.sourcePath).split('.').pop()?.toLowerCase() == 'md') {
-                mdFiles.push(fileObject);
-            } else {
-                allMetadataObjects.push(fileObject);  // Else, save file object directly in end-results array
-            }
-        }
-        // Extract .md metadata and save to end results array.
-        // TODO: Time (and space?) complexity is O(n^2), I think. Figure out O(n) or O(nlog(n)) way to do this?
-        for (const mdFile of mdFiles) {
-            const extractedMDObjects = await extractMDHeadingsAndContent(mdFile);
-            for (const object of extractedMDObjects) {
-                allMetadataObjects.push(object);
-            }
-        }
-        console.log(allMetadataObjects);
-        console.log("\n\nMetadata object's type:", typeof(allMetadataObjects));
-        console.log("\n\n");
-        console.log("Length of resulting metadata object array:", allMetadataObjects.length);
-        return allMetadataObjects;
-    } catch (err) {
-        console.error('Error ingesting:', err);
-        throw err;
-    }
 }
 
 // Pipeline: Parse any markdown doc files to extract headings (h1, h2, h3) and other metadata, then convert into
@@ -125,6 +112,7 @@ async function extractMDHeadingsAndContent(
             const paragraphText = (node.children[0] as any).text;
 
             const metadata: MarkdownMetadata = {
+                type: "markdown",
                 filename: fileObject.filename,
                 content: fileObject.content,
                 paragraph: paragraphText,
@@ -141,14 +129,217 @@ async function extractMDHeadingsAndContent(
     return results;
 }
 
-// Pipeline: Split all doc file text into chunks in prep for vector embedding
-function splitTextToChunks() {
-    const enc = new Tiktoken(cl100k_base);
-
+// Pipeline: Read each file and create + return array of file metadata objects with their text to be chunked after
+async function extractFileObjects(): Promise<(FileMetadata | MarkdownMetadata)[]> {
+    try {
+        const filePaths = await readDocsDir('/home/bayquen/projects/rtfm-agent/docs');
+        const fileObjects = await Promise.all(
+            filePaths.map(filePath => createFileObject(filePath))
+        );
+        
+        let allMetadataObjects: (FileMetadata | MarkdownMetadata)[] = [];
+        let mdResults: MarkdownMetadata[] = []; 
+        let mdFiles: FileMetadata[] = [];
+        // Check if each file object is an .md file. If yes, then save into separate array 
+        // for .md metadata extraction
+        for (const fileObject of fileObjects) {
+            if (path.basename(fileObject.sourcePath).split('.').pop()?.toLowerCase() == 'md') {
+                mdFiles.push(fileObject);
+            } else {
+                allMetadataObjects.push(fileObject);  // Else, save file object directly in end-results array
+            }
+        }
+        // Extract .md metadata and save to end results array.
+        // TODO: Time (and space?) complexity is O(n^2), I think. Figure out O(n) or O(nlog(n)) way to do this?
+        for (const mdFile of mdFiles) {
+            const extractedMDObjects = await extractMDHeadingsAndContent(mdFile);
+            for (const object of extractedMDObjects) {
+                allMetadataObjects.push(object);
+            }
+        }
+        // Function debugging logs
+        // console.log(allMetadataObjects);
+        // console.log("\n\nMetadata object's type:", typeof(allMetadataObjects));
+        // console.log("\n\n");
+        // console.log("Length of resulting metadata object array:", allMetadataObjects.length);
+        return allMetadataObjects;
+    } catch (err) {
+        console.error('Error ingesting:', err);
+        throw err;
+    }
 }
 
-function main() {
-    // Execute and print out results?
-    extractFileObjects();
-} 
+// Pipeline: Split all doc file text into chunks in prep for vector embedding
+async function chunkTextContent() {
+    const allFileObjects = await extractFileObjects();
+    // Token-aware text splitter, with added ~1.2x chunkSize multiplier since Voyage AI models use that ~1.2x more tokens 
+    // than the OpenAI-based splitter (via LangChain library) used here.
+    // Note that embedding model I'm using is voyage-code-3, which has a max context len. of 32k tokens.
+    const splitter = new TokenTextSplitter({ encodingName: "cl100k_base", chunkSize: 480, chunkOverlap: 100 });
+    let rows: EmbeddedChunkData[] = [];
+    let chunkIndex: number = 1;
+    for (const fileObject of allFileObjects) {
+        // For given file text, split into chunks and save into an array
+        const chunkedText = await splitter.splitText(fileObject.content);
+        for (const chunk of chunkedText) {
+            if (fileObject.type == "file") {
+                let row: EmbeddedChunkData = {
+                    chunkContent: chunk,
+                    embedding: [],
+                    chunkIndex: chunkIndex,
+                    filename: fileObject.filename,
+                    sourcePath: fileObject.sourcePath,
+                    paragraph: "",
+                    h1: "",
+                    h2: "",
+                    h3: "",
+                }
+                // Add current chunk data inside of rows
+                rows.push(row);
+            }
+            if (fileObject.type == "markdown") {
+                let row: EmbeddedChunkData = {
+                    chunkContent: chunk,
+                    embedding: [],
+                    chunkIndex: chunkIndex,
+                    filename: fileObject.filename,
+                    sourcePath: fileObject.sourcePath,
+                    paragraph: fileObject.paragraph,
+                    h1: fileObject.h1,
+                    h2: fileObject.h2,
+                    h3: fileObject.h3,
+                }
+                // Add current chunk data inside of rows
+                rows.push(row);
+            }
+            // Increment chunkIndex after each chunk iteration of current file object
+            chunkIndex += 1;        
+        }
+        // chunkLists.push(chunkedText);
+    }
+    // Return chunked rows object (2D array, I think?)
+    return rows;
+}
+
+
+// Pipeline: Create a vector embedding for each (doc) text chunk using VoyageAI API
+async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkData[]) {
+    // VoyageAI client
+    // let embeddings = [];   
+    for (let chunk of allChunks) {
+        const response = await voyageClient.embed({
+            input: chunk.chunkContent,
+            model: "voyage-code-3"
+        });
+        const embedding = response.data?.[0]?.embedding;
+
+        // Add embedding into corresponding EmbeddedChunkData for Redis vector storing later
+        if (embedding) {
+            chunk.embedding = embedding;
+        }
+        
+        // Debugging chunked data object output
+        // console.log("Current chunk object:", chunk);
+
+        // Debugging VoyageAI output:
+        // console.log("Response embedding from VoyageAi", response);
+        }
+
+        // Debugging the new results of all chunked data objects:
+        // console.log(allChunks);
+        // console.log("\n\n\n");
+        // console.log("Printed current chunk data objects! \n")
+        return allChunks;
+}
+
+// For storing vector embeddings, Redis requires reading RAW BYTEs rather than a JSON array.
+// Thus, this functionality is necessary!
+function embeddingToBuffer(embedding: number[]): Buffer {
+    // `Buffer.from` is a Node.js native method for creating buffers.
+    return Buffer.from(new Float32Array(embedding).buffer);
+}
+
+// Pipeline: Store vector embeddings, chunk text, and their corresponding metadata in a Redis vector index
+async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: EmbeddedChunkData[]) {
+    redisClient.on('error', err => console.log('Redis Client Error', err));
+    await redisClient.connect();
+
+    try {
+        await redisClient.ft.create('vector_idx', {
+            'chunkContent': {
+                type: SCHEMA_FIELD_TYPE.TEXT,
+            },
+            'embedding': {
+                type: SCHEMA_FIELD_TYPE.VECTOR,
+                TYPE: 'FLOAT32',
+                ALGORITHM: SCHEMA_VECTOR_FIELD_ALGORITHM.HNSW,
+                DISTANCE_METRIC: 'L2',
+                DIM: 1024,
+            },
+            'chunkIndex': {
+                type: SCHEMA_FIELD_TYPE.NUMERIC,
+            },
+            'filename': {
+                type: SCHEMA_FIELD_TYPE.TEXT,
+            },
+            'sourcePath': {
+                type: SCHEMA_FIELD_TYPE.TEXT,
+            },
+            'paragraph': {
+                type: SCHEMA_FIELD_TYPE.TEXT,
+            },
+            'h1': {
+                type: SCHEMA_FIELD_TYPE.TEXT,
+            },
+            'h2': {
+                type: SCHEMA_FIELD_TYPE.TEXT,
+            },
+            'h3': {
+                type: SCHEMA_FIELD_TYPE.TEXT,
+            }
+        }, {
+            ON: 'HASH',
+            PREFIX: 'doc:'
+        });
+        console.log("Successfully created Redis vector index!")
+    } catch (err: any) {
+        if (!err.message.includes('Index already exists')) {
+            throw err;
+        }
+        console.log("Redis vector index already exists.")
+    }
+    
+    
+    for (const [i, chunk] of embeddedChunkObjects.entries()) {
+        // Skip current embedding store if not correct dimension.
+        if (chunk.embedding.length !== 1024) {
+            continue;
+        }
+
+        // One hash is set per chunked object. Hence, the for loop.
+        await redisClient.hSet(`doc:${i + 1}`, {
+            chunkContent: chunk.chunkContent,
+            embedding: embeddingToBuffer(chunk.embedding),
+            chunkIndex: chunk.chunkIndex,
+            filename: chunk.filename,
+            sourcePath: chunk.sourcePath,
+            paragraph: chunk.paragraph ?? '',
+            h1: chunk.h1 ?? '',
+            h2: chunk.h2 ?? '',
+            h3: chunk.h3 ?? '',
+        });
+        // Debugging log to check if embeddings, along with chunks + metadata, were successfully stored in Redis.
+        // const stored = await redisClient.hGetAll(`doc:${i + 1}`);
+        // console.log("Successfully stored:\n", stored);
+    }
+
+    // Close the Redis client manually, otherwise it stays open.
+    await redisClient.quit();
+}
+
+async function main() {
+    const chunkedResults = await chunkTextContent();
+    const embeddedChunkObjects = await createEmbeddingVectorsFromChunks(chunkedResults);
+    await storeVectorsAndChunkedMetadata(embeddedChunkObjects);
+}
 main();
