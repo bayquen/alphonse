@@ -246,9 +246,9 @@ async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkData[]) 
         }
 
         // Debugging the new results of all chunked data objects:
-        console.log(allChunks);
-        console.log("\n\n\n");
-        console.log("Printed current chunk data objects! \n")
+        // console.log(allChunks);
+        // console.log("\n\n\n");
+        // console.log("Printed current chunk data objects! \n")
         return allChunks;
 }
 
@@ -264,42 +264,50 @@ async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: EmbeddedChun
     redisClient.on('error', err => console.log('Redis Client Error', err));
     await redisClient.connect();
 
-    await redisClient.ft.create('vector_idx', {
-        'chunkContent': {
-            type: SCHEMA_FIELD_TYPE.TEXT,
-        },
-        'embedding': {
-            type: SCHEMA_FIELD_TYPE.VECTOR,
-            TYPE: 'FLOAT32',
-            ALGORITHM: SCHEMA_VECTOR_FIELD_ALGORITHM.HNSW,
-            DISTANCE_METRIC: 'L2',
-            DIM: 1024,
-        },
-        'chunkIndex': {
-            type: SCHEMA_FIELD_TYPE.NUMERIC,
-        },
-        'filename': {
-            type: SCHEMA_FIELD_TYPE.TEXT,
-        },
-        'sourcePath': {
-            type: SCHEMA_FIELD_TYPE.TEXT,
-        },
-        'paragraph': {
-            type: SCHEMA_FIELD_TYPE.TEXT,
-        },
-        'h1': {
-            type: SCHEMA_FIELD_TYPE.TEXT,
-        },
-        'h2': {
-            type: SCHEMA_FIELD_TYPE.TEXT,
-        },
-        'h3': {
-            type: SCHEMA_FIELD_TYPE.TEXT,
+    try {
+        await redisClient.ft.create('vector_idx', {
+            'chunkContent': {
+                type: SCHEMA_FIELD_TYPE.TEXT,
+            },
+            'embedding': {
+                type: SCHEMA_FIELD_TYPE.VECTOR,
+                TYPE: 'FLOAT32',
+                ALGORITHM: SCHEMA_VECTOR_FIELD_ALGORITHM.HNSW,
+                DISTANCE_METRIC: 'L2',
+                DIM: 1024,
+            },
+            'chunkIndex': {
+                type: SCHEMA_FIELD_TYPE.NUMERIC,
+            },
+            'filename': {
+                type: SCHEMA_FIELD_TYPE.TEXT,
+            },
+            'sourcePath': {
+                type: SCHEMA_FIELD_TYPE.TEXT,
+            },
+            'paragraph': {
+                type: SCHEMA_FIELD_TYPE.TEXT,
+            },
+            'h1': {
+                type: SCHEMA_FIELD_TYPE.TEXT,
+            },
+            'h2': {
+                type: SCHEMA_FIELD_TYPE.TEXT,
+            },
+            'h3': {
+                type: SCHEMA_FIELD_TYPE.TEXT,
+            }
+        }, {
+            ON: 'HASH',
+            PREFIX: 'doc:'
+        });
+        console.log("Successfully created Redis vector index!")
+    } catch (err: any) {
+        if (!err.message.includes('Index already exists')) {
+            throw err;
         }
-    }, {
-        ON: 'HASH',
-        PREFIX: 'doc:'
-    });
+        console.log("Redis vector index already exists.")
+    }
     
     
     for (const [i, chunk] of embeddedChunkObjects.entries()) {
@@ -320,6 +328,9 @@ async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: EmbeddedChun
             h2: chunk.h2 ?? '',
             h3: chunk.h3 ?? '',
         });
+        // Debugging log to check if embeddings, along with chunks + metadata, were successfully stored in Redis.
+        // const stored = await redisClient.hGetAll(`doc:${i + 1}`);
+        // console.log("Successfully stored:\n", stored);
     }
 }
 
