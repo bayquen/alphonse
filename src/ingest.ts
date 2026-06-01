@@ -342,10 +342,26 @@ async function main() {
     const embeddedChunkObjects = await createEmbeddingVectorsFromChunks(chunkedResults);
     await storeVectorsAndChunkedMetadata(embeddedChunkObjects);
 
-    // TESTS
-    // Test: Verify if our vector index exists and if the correct data is stored in it
-    await redisClient.ft.info('vector_idx');
-    // Test: Verify if one of my stored document keys exists and contains chunk text, metadata fields, and embedding vector
-    await redisClient.hGetAll('doc1');
 }
 main();
+
+
+// PRE-PRODUCTION TESTS to check if Redis vector index works and to verify if the correct data
+// (i.e. chunk text, vector embeddings, and corresponding metadata) was stored.
+async function tests() {
+        // TESTS
+    // Connect to Redis client again
+    await redisClient.connect();
+    // Test: Verify if our vector index exists and if the correct data is stored in it
+    const vectorIndex = await redisClient.ft.info('vector_idx');
+    console.log(vectorIndex);
+    // Test: Verify if one of my stored document keys exists and contains chunk text, metadata fields, and embedding vector
+    const redisGetAll = await redisClient.hGetAll('doc:1');
+    console.log("\n\n\n");
+    console.log(redisGetAll);
+
+    // Manually exit Redis client (required)
+    await redisClient.quit();
+}
+
+// tests();
