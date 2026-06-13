@@ -14,6 +14,12 @@ const app = new App({
   appToken: process.env.SLACK_APP_LEVEL_TOKEN,
 });
 
+// Listens to incoming messages that contain "hi bot"
+app.message("hi bot", async ({ message, say }) => {
+  // say() sends a message to the channel where the event was triggered
+  await say(`What's up <@${message.user}>, my human from anotha brotha?`);
+});
+
 (async () => {
   // Start your app
   await app.start();
