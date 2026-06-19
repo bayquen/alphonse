@@ -1,6 +1,4 @@
 import { App } from "@slack/bolt";
-import path from "path";
-import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 
 // Note: When running my Slack Bolt app locally, make sure that I'm in my project root
