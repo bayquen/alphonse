@@ -15,7 +15,7 @@ const app = new App({
 // Listens to incoming messages that contain "hi bot"
 app.message("hi bot", async ({ message, say }) => {
   // say() sends a message to the channel where the event was triggered
-  await say(`What's up <@${message.user}>, my human from anotha brotha?`);
+  await say(`What's up my brotha <@${message.user}> from anotha motha?`);
 });
 
 (async () => {
