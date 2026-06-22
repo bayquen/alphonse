@@ -8,3 +8,4 @@ const systemPrompt = `You're a straightforward Q&A assistant. Answer user's ques
                     (i.e. retrieved technical doc info ). Do NOT research an answer directly online. If context does not contain 
                     enough info to answer the user's question/prompt, then kindly let the user know honestly without making anything up.`;
 
+const slackUserPrompt = ``;
