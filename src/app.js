@@ -1,5 +1,14 @@
 import { App } from "@slack/bolt";
 import dotenv from "dotenv";
+import dotenv from "dotenv";
+import OpenAI from "openai";
+
+const openAIClient = new OpenAI();
+const systemPrompt = `You're a straightforward Q&A assistant. Answer user's question/prompt using only the provided context 
+                    (i.e. the technical docs provided). Do NOT research an answer directly online. If context does not contain 
+                    enough info to answer the user's question/prompt, then kindly let the user know honestly without making anything up.`;
+
+const finalUserPrompt = getSlackUserPrompt();
 
 // Note: When running my Slack Bolt app locally, make sure that I'm in my project root
 //       Then run `node src/app.js`, since this program is in the /src directory
@@ -26,41 +35,44 @@ app.message("hi bot", async ({ message, say }) => {
     await say(`What's up my brotha <@${message.user}> from anotha motha?`);
 });
 
-app.event("app_mention", async({ event, say, client, message }) => {
-    const textMessage = event.text
-    // const channelId = event.channel;
-    // const threadTs = event.ts;
+async function getSlackUserPrompt() {
+    app.event("app_mention", async({ event, say, client, message }) => {
+        const textMessage = event.text
+        // const channelId = event.channel;
+        // const threadTs = event.ts;
 
-    try {
-        // Debugging log
-        // console.log(textMessage, "\n");
+        try {
+            // Debugging log
+            // console.log(textMessage, "\n");
 
-        const botMention = `<@${botUserId}>`;
-        const slackUserPrompt = event.text
-            .replace(botMention, "")
-            .trim();
-        const { user } = await client.users.info({ user: event.user });
-        const userDisplayName = user.profile.display_name || user.real_name || user.name;
-        
-        // Debugging log
-        // console.log("Cleaned up user prompt:", slackUserPrompt);
+            const botMention = `<@${botUserId}>`;
+            const slackUserPrompt = event.text
+                .replace(botMention, "")
+                .trim();
+            const { user } = await client.users.info({ user: event.user });
+            const userDisplayName = user.profile.display_name || user.real_name || user.name;
+            
+            // Debugging log
+            // console.log("Cleaned up user prompt:", slackUserPrompt);
 
-        // If user pings bot with NO message, notify user with a call-to-action
-        if (slackUserPrompt.trim() === "") {
-            // Edge case: Check to make sure user's display name exists or isn't empty
-            if (userDisplayName != null && userDisplayName.trim() !== "") {
-                // Have the Slack bot ping the user and respond with this message 
-                await say(`Howdy @${userDisplayName}, I'm here to help with any questions for your product's technical docs. Make sure to provide a prompt while mentioning me :)`)
-                return;
-            // Edge case (continued): If by any rare chance the user's display name is empty or can't be read, send alternate message
-            } else {
-                await say(`Howdy, I'm here to help with any questions for your product's technical docs. Make sure to provide a prompt while mentioning me :)`)
+            // If user pings bot with NO message, notify user with a call-to-action
+            if (slackUserPrompt.trim() === "") {
+                // Edge case: Check to make sure user's display name exists or isn't empty
+                if (userDisplayName != null && userDisplayName.trim() !== "") {
+                    // Have the Slack bot ping the user and respond with this message 
+                    await say(`Howdy @${userDisplayName}, I'm here to help with any questions for your product's technical docs. Make sure to provide a prompt while mentioning me :)`)
+                    return;
+                // Edge case (continued): If by any rare chance the user's display name is empty or can't be read, send alternate message
+                } else {
+                    await say(`Howdy, I'm here to help with any questions for your product's technical docs. Make sure to provide a prompt while mentioning me :)`)
+                }
             }
+            return slackUserPrompt;
+        } catch (error) {
+            console.log("Uh oh, an error has occurred:", error);
         }
-    } catch (error) {
-        console.log("Uh oh, an error has occurred:", error);
-    }
-});
+    });
+}
 
 // TODO: Make bot reply in thread rather than an individual message on Slack - keeps Slack Q&A convos organized!
 // [CODE HERE]
