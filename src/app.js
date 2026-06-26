@@ -40,15 +40,23 @@ app.event("app_mention", async({ event, say, client, message }) => {
         const slackUserPrompt = event.text
             .replace(botMention, "")
             .trim();
+        const { user } = await client.users.info({ user: event.user });
+        const userDisplayName = user.profile.display_name || user.real_name || user.name;
         
         // Debugging log
         // console.log("Cleaned up user prompt:", slackUserPrompt);
 
+        // If user pings bot with NO message, notify user with a call-to-action
         if (slackUserPrompt.trim() === "") {
-            // TODO: Change `event.user` to human user ping, NOT the bot.
-            // Have the Slack bot respond with this message if user sends no text after bot is mentioned
-            await say(`Hi @${event.username}, please ask a question or prompt when mentioning me.`)
-            return;
+            // Edge case: Check to make sure user's display name exists or isn't empty
+            if (userDisplayName != null && userDisplayName.trim() !== "") {
+                // Have the Slack bot ping the user and respond with this message 
+                await say(`Howdy @${userDisplayName}, I'm here to help with any questions for your product's technical docs. Make sure to provide a prompt while mentioning me :)`)
+                return;
+            // Edge case (continued): If by any rare chance the user's display name is empty or can't be read, send alternate message
+            } else {
+                await say(`Howdy, I'm here to help with any questions for your product's technical docs. Make sure to provide a prompt while mentioning me :)`)
+            }
         }
     } catch (error) {
         console.log("Uh oh, an error has occurred:", error);
