@@ -26,7 +26,6 @@ app.message("hi bot", async ({ message, say }) => {
     await say(`What's up my brotha <@${message.user}> from anotha motha?`);
 });
 
-// TODO: Slack event listener - Get Slack user's message when RTFM bot is mentioned (@)
 app.event("app_mention", async({ event, say, client, message }) => {
     const textMessage = event.text
     // const channelId = event.channel;
