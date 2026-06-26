@@ -27,26 +27,32 @@ app.message("hi bot", async ({ message, say }) => {
 });
 
 // TODO: Slack event listener - Get Slack user's message when RTFM bot is mentioned (@)
-app.event("app_mention", async({ event, client, message }) => {
-    const user = event.user
+app.event("app_mention", async({ event, say, client, message }) => {
     const textMessage = event.text
-    const channelId = event.channel;
-    const threadTs = event.ts;
+    // const channelId = event.channel;
+    // const threadTs = event.ts;
 
-    console.log(textMessage);
+    try {
+        // Debugging log
+        // console.log(textMessage, "\n");
 
-    const botMention = `<@${botUserId}>`;
-    const slackUserPrompt = event.text
-        .replace(botMention, "")
-        .trim();
-    
-    // Edge case: Check if user added any text at all, after mentioning the bot
-    if (!slackUserPrompt) {
-        await say(`Hi @${event.user}, please ask a question or prompt when mentioning me.`)
-        return;
+        const botMention = `<@${botUserId}>`;
+        const slackUserPrompt = event.text
+            .replace(botMention, "")
+            .trim();
+        
+        // Debugging log
+        // console.log("Cleaned up user prompt:", slackUserPrompt);
+
+        if (slackUserPrompt.trim() === "") {
+            // TODO: Change `event.user` to human user ping, NOT the bot.
+            // Have the Slack bot respond with this message if user sends no text after bot is mentioned
+            await say(`Hi @${event.username}, please ask a question or prompt when mentioning me.`)
+            return;
+        }
+    } catch (error) {
+        console.log("Uh oh, an error has occurred:", error);
     }
-    
-    console.log(slackUserPrompt);
 });
 
 // TODO: Make bot reply in thread rather than an individual message on Slack - keeps Slack Q&A convos organized!
