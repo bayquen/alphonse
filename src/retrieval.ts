@@ -40,7 +40,7 @@ export async function retrieveRelevantChunks(userPrompt: string) {
             SORTBY: "score",
             DIALECT: 2,
             // Return metadata and show top relevant results based on KNN score
-            RETURN: ["content", "filename", "sourcePath", "score"],
+            RETURN: ["chunkContent", "filename", "sourcePath", "score"],
         }
     )
     // TODO: Retrieve top matching chunks along with any metadata needed (e.g. filename, headings, source path, etc.)
