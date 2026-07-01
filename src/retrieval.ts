@@ -1,4 +1,6 @@
 import dotenv from "dotenv";
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
 const { VoyageAIClient, VoyageAIError } = require("voyageai") as typeof import("voyageai");
 import { createClient } from 'redis';
 
@@ -8,6 +10,9 @@ const voyageAPIKey: string | undefined = process.env.VOYAGE_API_KEY;
 const voyageClient = new VoyageAIClient({ apiKey: voyageAPIKey });
 
 const redisClient = createClient();
+
+// TESTING: EXAMPLE STRING PROMPT TO TEST FUNCTIONALITY LOCALLY ON TERMINAL
+const testPrompt: string = "How to make a new branch?";
 
 export async function retrieveRelevantChunks(userPrompt: string) {
     // TODO: Embed userPrompt with VoyageAI model via its API
@@ -22,6 +27,7 @@ export async function retrieveRelevantChunks(userPrompt: string) {
         throw new Error("Uh oh, VoyageAI did not return a query embedding for the user's text prompt.");
     }
     // TODO: Search existing Redis index that was made after technical docs ingestion
+    await redisClient.connect();
     const results = await redisClient.ft.search(
         'vector_idx', 
         // My Redis vector index uses HNSW algorithm, which is for K-Nearest (KNN) search.
@@ -38,6 +44,12 @@ export async function retrieveRelevantChunks(userPrompt: string) {
         }
     )
     // TODO: Retrieve top matching chunks along with any metadata needed (e.g. filename, headings, source path, etc.)
-
     // TODO: Return chunks (and optionally metadata) so they can be inserted into the LLM prompt
+    // Debug log for vector search results
+    console.log("Results: \n\n");
+    console.log(JSON.stringify(results, null, 2));
+
+    await redisClient.quit();
 }
+// TESTING: EXAMPLE STRING PROMPT TO TEST FUNCTIONALITY LOCALLY ON TERMINAL
+retrieveRelevantChunks(testPrompt);
