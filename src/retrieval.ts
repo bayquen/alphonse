@@ -15,7 +15,7 @@ const redisClient = createClient();
 const testPrompt: string = "How to make a new branch?";
 
 export async function retrieveRelevantChunks(userPrompt: string) {
-    // TODO: Embed userPrompt with VoyageAI model via its API
+    // Embed userPrompt with VoyageAI model via its API
     const response = await voyageClient.embed({
         input: userPrompt,
         model: "voyage-code-3"
@@ -26,7 +26,7 @@ export async function retrieveRelevantChunks(userPrompt: string) {
     if (!userQueryEmbedding) {
         throw new Error("Uh oh, VoyageAI did not return a query embedding for the user's text prompt.");
     }
-    // TODO: Search existing Redis index that was made after technical docs ingestion
+    // Search existing Redis index that was made after technical docs ingestion
     await redisClient.connect();
     const results = await redisClient.ft.search(
         'vector_idx', 
@@ -43,8 +43,8 @@ export async function retrieveRelevantChunks(userPrompt: string) {
             RETURN: ["chunkContent", "filename", "sourcePath", "score"],
         }
     )
-    // TODO: Retrieve top matching chunks along with any metadata needed (e.g. filename, headings, source path, etc.)
-    // TODO: Return chunks (and optionally metadata) so they can be inserted into the LLM prompt
+    // Retrieve top matching chunks along with any metadata needed (e.g. filename, headings, source path, etc.)
+    // Return chunks (and optionally metadata) so they can be inserted into the LLM prompt
     // Debug log for vector search results
     console.log("Results: \n\n");
     console.log(JSON.stringify(results, null, 2));
