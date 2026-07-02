@@ -1,18 +1,17 @@
 import { App } from "@slack/bolt";
 import dotenv from "dotenv";
-import dotenv from "dotenv";
 import OpenAI from "openai";
+import { retrieveRelevantChunks } from "./retrieval.ts";
 
-const openAIClient = new OpenAI();
 const systemPrompt = `You're a straightforward Q&A assistant. Answer user's question/prompt using only the provided context 
                     (i.e. the technical docs provided). Do NOT research an answer directly online. If context does not contain 
                     enough info to answer the user's question/prompt, then kindly let the user know honestly without making anything up.`;
 
-const finalUserPrompt = getSlackUserPrompt();
-
 // Note: When running my Slack Bolt app locally, make sure that I'm in my project root
 //       Then run `node src/app.js`, since this program is in the /src directory
 dotenv.config();
+const openAIAPIKey = process.env.OPENAI_API_KEY;
+const openAIClient = new OpenAI(openAIAPIKey);
 
 // Initializes your app with your Slack app and bot token
 const app = new App({
@@ -20,6 +19,7 @@ const app = new App({
     socketMode: true,
     appToken: process.env.SLACK_APP_LEVEL_TOKEN,
 });
+
 
 const grabBotUserId = await app.client.auth.test({
     token: process.env.SLACK_BOT_TOKEN
@@ -73,6 +73,7 @@ async function getSlackUserPrompt() {
         }
     });
 }
+const finalUserPrompt = getSlackUserPrompt();
 
 // TODO: Make bot reply in thread rather than an individual message on Slack - keeps Slack Q&A convos organized!
 // [CODE HERE]
@@ -82,4 +83,12 @@ async function getSlackUserPrompt() {
     // Start your app
     await app.start();
     app.logger.info("⚡️ Bolt app is running!");
+    const sampleUserPrompt = "What is a branch?"
+    const llmAnswerChunk = await retrieveRelevantChunks(sampleUserPrompt);
+    const retrievedContextForLLM = "Here is the relevant doc info you need to answer the user, denoted in triple ticks:"
+                                    + "\n```"
+                                    + llmAnswerChunk
+                                    + "\n```";
+    
+
 })();

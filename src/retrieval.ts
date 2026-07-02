@@ -12,7 +12,7 @@ const voyageClient = new VoyageAIClient({ apiKey: voyageAPIKey });
 const redisClient = createClient();
 
 // TESTING: EXAMPLE STRING PROMPT TO TEST FUNCTIONALITY LOCALLY ON TERMINAL
-const testPrompt: string = "How to make a new branch?";
+// const testPrompt: string = "How to make a new branch?";
 
 export async function retrieveRelevantChunks(userPrompt: string) {
     // Embed userPrompt with VoyageAI model via its API
@@ -29,7 +29,7 @@ export async function retrieveRelevantChunks(userPrompt: string) {
     // Search existing Redis index that was made after technical docs ingestion
     await redisClient.connect();
     const results = await redisClient.ft.search(
-        'vector_idx', 
+        'vector_idx',
         // My Redis vector index uses HNSW algorithm, which is for K-Nearest (KNN) search.
         // `queryVector` is the parameter name (indicated by prefix '$'), where the float-32 embedding is passed.
         '(*)=>[KNN 5 @embedding $queryVector AS score]',
