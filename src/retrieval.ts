@@ -49,7 +49,10 @@ export async function retrieveRelevantChunks(userPrompt: string) {
     console.log("Results: \n\n");
     console.log(JSON.stringify(results, null, 2));
 
+    // Return resulting string of chunks
+    return JSON.stringify(results, null, 2);
+
     await redisClient.quit();
 }
 // TESTING: EXAMPLE STRING PROMPT TO TEST FUNCTIONALITY LOCALLY ON TERMINAL
-retrieveRelevantChunks(testPrompt);
+// retrieveRelevantChunks(testPrompt);
