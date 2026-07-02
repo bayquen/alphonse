@@ -5,7 +5,8 @@ import { retrieveRelevantChunks } from "./retrieval.ts";
 
 const systemPrompt = `You're a straightforward Q&A assistant. Answer user's question/prompt using only the provided context 
                     (i.e. the technical docs provided). Do NOT research an answer directly online. If context does not contain 
-                    enough info to answer the user's question/prompt, then kindly let the user know honestly without making anything up.`;
+                    enough info to answer the user's question/prompt, then kindly let the user know honestly without making anything up.
+                    Then quickly give the user a short call-to-action to ask questions only about technical docs that were shared (literally).`;
 
 // Note: When running my Slack Bolt app locally, make sure that I'm in my project root
 //       Then run `node src/app.js`, since this program is in the /src directory
@@ -75,7 +76,7 @@ async function getSlackUserPrompt() {
 }
 const finalUserPrompt = getSlackUserPrompt();
 
-const sampleUserPrompt = "What is a branch?"
+const sampleUserPrompt = "How exactly do I merge commits and what is one advanced command for merging?"
 const llmAnswerChunk = await retrieveRelevantChunks(sampleUserPrompt);
 const retrievedContextForLLM = "Here is the relevant doc info you need to answer the user, denoted in triple ticks:"
                                 + "\n```"
@@ -91,7 +92,6 @@ const response = await openAIClient.responses.create({
     input: finalPrompt,
 });
 
-
 // TODO: Make bot reply in thread rather than an individual message on Slack - keeps Slack Q&A convos organized!
 // [CODE HERE]
 // ...
@@ -100,13 +100,7 @@ const response = await openAIClient.responses.create({
     // Start your app
     await app.start();
     app.logger.info("⚡️ Bolt app is running!");
-    // const sampleUserPrompt = "What is a branch?"
-    // const llmAnswerChunk = await retrieveRelevantChunks(sampleUserPrompt);
-    // const retrievedContextForLLM = "Here is the relevant doc info you need to answer the user, denoted in triple ticks:"
-    //                                 + "\n```"
-    //                                 + llmAnswerChunk
-    //                                 + "\n```";
-    console.log("Response:\n", response);
+    // Debug logging for retrieved doc-chunk text and LLM response message
+    console.log("Top relevant chunks cited:\n", llmAnswerChunk, "\n")
+    console.log("Response:\n", response.output_text);
 })();
-
-// TODO NEXT! (7/1/26): PASS FINAL LLM PROMPT TO THE OPENAI LLM API, THEN CHATBOT RESPONSE FUNCTIONALITY!
