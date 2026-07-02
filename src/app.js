@@ -84,7 +84,7 @@ const retrievedContextForLLM = "Here is the relevant doc info you need to answer
 
 const finalPrompt = systemPrompt
                     + `\n The user's prompt for you is: '${sampleUserPrompt}`
-                    + `\n ${relevantContextForLLM}`
+                    + `\n ${retrievedContextForLLM}`
 
 const response = await openAIClient.responses.create({
     model: "o4-mini",

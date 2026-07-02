@@ -46,8 +46,8 @@ export async function retrieveRelevantChunks(userPrompt: string) {
     // Retrieve top matching chunks along with any metadata needed (e.g. filename, headings, source path, etc.)
     // Return chunks (and optionally metadata) so they can be inserted into the LLM prompt
     // Debug log for vector search results
-    console.log("Results: \n\n");
-    console.log(JSON.stringify(results, null, 2));
+    // console.log("Results: \n\n");
+    // console.log(JSON.stringify(results, null, 2));
 
     // Return resulting string of chunks
     return JSON.stringify(results, null, 2);
