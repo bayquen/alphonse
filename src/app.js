@@ -3,11 +3,6 @@ import dotenv from "dotenv";
 import OpenAI from "openai";
 import { retrieveRelevantChunks } from "./retrieval.ts";
 
-const systemPrompt = `You're a straightforward Q&A assistant. Answer user's question/prompt using only the provided context 
-                    (i.e. the technical docs provided). Do NOT research an answer directly online. If context does not contain 
-                    enough info to answer the user's question/prompt, then kindly let the user know honestly without making anything up.
-                    Then quickly give the user a short call-to-action to ask questions only about technical docs that were shared (literally).`;
-
 // Note: When running my Slack Bolt app locally, make sure that I'm in my project root
 //       Then run `node src/app.js`, since this program is in the /src directory
 dotenv.config();
@@ -36,61 +31,70 @@ app.message("hi bot", async ({ message, say }) => {
     await say(`What's up my brotha <@${message.user}> from anotha motha?`);
 });
 
-async function getSlackUserPrompt() {
-    app.event("app_mention", async({ event, say, client, message }) => {
-        const textMessage = event.text
-        // const channelId = event.channel;
-        // const threadTs = event.ts;
+app.event("app_mention", async({ event, client, say }) => {
+    // const channelId = event.channel;
+    // const threadTs = event.ts;
 
-        try {
-            // Debugging log
-            // console.log(textMessage, "\n");
+    try {
+        // Debugging log
+        // console.log(textMessage, "\n");
 
-            const botMention = `<@${botUserId}>`;
-            const slackUserPrompt = event.text
-                .replace(botMention, "")
-                .trim();
-            const { user } = await client.users.info({ user: event.user });
-            const userDisplayName = user.profile.display_name || user.real_name || user.name;
-            
-            // Debugging log
-            // console.log("Cleaned up user prompt:", slackUserPrompt);
+        const botMention = `<@${botUserId}>`;
+        const slackUserPrompt = event.text
+            .replace(botMention, "")
+            .trim();
+        const { user } = await client.users.info({ user: event.user });
+        const userDisplayName = user.profile.display_name || user.real_name || user.name;
+        
+        // Debugging log
+        // console.log("Cleaned up user prompt:", slackUserPrompt);
 
-            // If user pings bot with NO message, notify user with a call-to-action
-            if (slackUserPrompt.trim() === "") {
-                // Edge case: Check to make sure user's display name exists or isn't empty
-                if (userDisplayName != null && userDisplayName.trim() !== "") {
-                    // Have the Slack bot ping the user and respond with this message 
-                    await say(`Howdy @${userDisplayName}, I'm here to help with any questions for your product's technical docs. Make sure to provide a prompt while mentioning me :)`)
-                    return;
-                // Edge case (continued): If by any rare chance the user's display name is empty or can't be read, send alternate message
-                } else {
-                    await say(`Howdy, I'm here to help with any questions for your product's technical docs. Make sure to provide a prompt while mentioning me :)`)
-                }
+        // If user pings bot with NO message, notify user with a call-to-action
+        if (slackUserPrompt.trim() === "") {
+            // Edge case: Check to make sure user's display name exists or isn't empty
+            if (userDisplayName != null && userDisplayName.trim() !== "") {
+                // Have the Slack bot ping the user and respond with this message 
+                await say(`Howdy @${userDisplayName}, I'm here to help with any questions for your product's technical docs. Make sure to provide a prompt while mentioning me :)`)
+                return;
+            // Edge case (continued): If by any rare chance the user's display name is empty or can't be read, send alternate message
+            } else {
+                await say(`Howdy, I'm here to help with any questions for your product's technical docs. Make sure to provide a prompt while mentioning me :)`)
             }
-            return slackUserPrompt;
-        } catch (error) {
-            console.log("Uh oh, an error has occurred:", error);
         }
-    });
-}
-const finalUserPrompt = getSlackUserPrompt();
 
-const sampleUserPrompt = "How exactly do I merge commits and what is one advanced command for merging?"
-const llmAnswerChunk = await retrieveRelevantChunks(sampleUserPrompt);
-const retrievedContextForLLM = "Here is the relevant doc info you need to answer the user, denoted in triple ticks:"
-                                + "\n```"
-                                + llmAnswerChunk
-                                + "\n```";
-
-const finalPrompt = systemPrompt
-                    + `\n The user's prompt for you is: '${sampleUserPrompt}`
-                    + `\n ${retrievedContextForLLM}`
-
-const response = await openAIClient.responses.create({
-    model: "o4-mini",
-    input: finalPrompt,
+        const systemPrompt = `You're a straightforward Q&A assistant. Answer user's question/prompt using only the provided context 
+                    (i.e. the technical docs provided). Do NOT research an answer directly online. If context does not contain 
+                    enough info to answer the user's question/prompt, then kindly let the user know honestly without making anything up.
+                    Then quickly give the user a short call-to-action to ask questions only about technical docs that were shared (literally).`;
+        const llmAnswerChunk = await retrieveRelevantChunks(slackUserPrompt);
+        const retrievedContextForLLM = "Here is the relevant doc info you need to answer the user, denoted in triple ticks:"
+                                        + "\n```"
+                                        + llmAnswerChunk
+                                        + "\n```";
+        // Combine system, user, and retrieve chunk prompts together to pass to the LLM for bot text response
+        const finalPrompt = systemPrompt
+                            + `\n The user's prompt for you is: '${slackUserPrompt}`
+                            + `\n ${retrievedContextForLLM}`
+        // Call LLM response function (OpenAI API)
+        const answer = await askLLM(finalPrompt);
+        // Then have Slack bot answer back with the LLM response to the user!
+        await say(answer);
+        
+    } catch (error) {
+        console.log("Uh oh, an error has occurred during app_mention event:\n", error);
+    }
 });
+
+// const slackUserPrompt = getSlackUserPrompt();
+
+async function askLLM(finalPrompt) {
+    const response = await openAIClient.responses.create({
+        model: "o4-mini",
+        input: finalPrompt,
+    });
+
+    return response.output_text;
+}                   
 
 // TODO: Make bot reply in thread rather than an individual message on Slack - keeps Slack Q&A convos organized!
 // [CODE HERE]
@@ -100,7 +104,4 @@ const response = await openAIClient.responses.create({
     // Start your app
     await app.start();
     app.logger.info("⚡️ Bolt app is running!");
-    // Debug logging for retrieved doc-chunk text and LLM response message
-    console.log("Top relevant chunks cited:\n", llmAnswerChunk, "\n")
-    console.log("Response:\n", response.output_text);
 })();
