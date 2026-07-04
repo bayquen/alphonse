@@ -2,12 +2,26 @@ import { App } from "@slack/bolt";
 import dotenv from "dotenv";
 import OpenAI from "openai";
 import { retrieveRelevantChunks } from "./retrieval.ts";
-
+import { createClient } from "redis";
 // Note: When running my Slack Bolt app locally, make sure that I'm in my project root
 //       Then run `node src/app.js`, since this program is in the /src directory
+
 dotenv.config();
+
 const openAIAPIKey = process.env.OPENAI_API_KEY;
 const openAIClient = new OpenAI(openAIAPIKey);
+// Connect and login to Redis Cloud
+export const redisClient = createClient({
+    username: process.env.REDIS_CLOUD_USERNAME,
+    password: process.env.REDIS_CLOUD_PASSWORD,
+    socket: {
+        host: process.env.REDIS_CLOUD_HOST,
+        port: process.env.REDIS_CLOUD_PORT,
+    }
+});
+// Return and handle any error gracefully BEFORE Redis Client attempts to connect(); Otherwise, Slack bot could miss an event
+// or end up with an unhandled error.
+redisClient.on('error', err => console.log('Redis Client Error', err));
 
 // Initializes your app with your Slack app and bot token
 const app = new App({
@@ -32,9 +46,6 @@ app.message("hi bot", async ({ message, say }) => {
 });
 
 app.event("app_mention", async({ event, client, say }) => {
-    // const channelId = event.channel;
-    // const threadTs = event.ts;
-
     try {
         // Debugging log
         // console.log(textMessage, "\n");
@@ -101,7 +112,9 @@ async function askLLM(finalPrompt) {
 // ...
 
 (async () => {
-    // Start your app
+    // Connect to Redis Client ONCE, first.
+    await redisClient.connect();
+    // Start Slack Bolt app
     await app.start();
     app.logger.info("⚡️ Bolt app is running!");
 })();

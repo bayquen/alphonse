@@ -26,8 +26,7 @@ export async function retrieveRelevantChunks(userPrompt: string) {
     if (!userQueryEmbedding) {
         throw new Error("Uh oh, VoyageAI did not return a query embedding for the user's text prompt.");
     }
-    // Search existing Redis index that was made after technical docs ingestion
-    await redisClient.connect();
+    // Search existing Redis vector index that was created during technical docs ingestion
     const results = await redisClient.ft.search(
         'vector_idx',
         // My Redis vector index uses HNSW algorithm, which is for K-Nearest (KNN) search.
