@@ -17,6 +17,7 @@ export const redisClient = createClient({
     socket: {
         host: process.env.REDIS_CLOUD_HOST,
         port: process.env.REDIS_CLOUD_PORT,
+        tls: true,
     }
 });
 // Return and handle any error gracefully BEFORE Redis Client attempts to connect(); Otherwise, Slack bot could miss an event
