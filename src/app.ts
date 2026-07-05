@@ -1,3 +1,11 @@
+/** 
+* Author: Brandon Bayquen
+* Program: app.ts
+* Purpose: To run the Slack Bolt app that activates the RTFM Agent Slack bot.
+* Converted from app.js => app.ts for TypeScript consistency and production-grade code.
+* Just run: `npm run build` and then `node dist/app.js` (NOTE THE .js replacement)
+*/
+
 import { App } from "@slack/bolt";
 import dotenv from "dotenv";
 import OpenAI from "openai";
