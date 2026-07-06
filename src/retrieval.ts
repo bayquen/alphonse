@@ -14,6 +14,8 @@ const voyageClient = new VoyageAIClient({ apiKey: voyageAPIKey });
 // const testPrompt: string = "How to make a new branch?";
 
 export async function retrieveRelevantChunks(userPrompt: string) {
+    console.log("Redis Client open during retrieveRelevantChunks()?:", redisClient.isOpen);
+    console.log("Redis Client ready during retrieveRelevantChunks()?:", redisClient.isReady);
     // Embed userPrompt with VoyageAI model via its API
     const response = await voyageClient.embed({
         input: userPrompt,

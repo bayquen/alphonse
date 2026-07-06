@@ -18,6 +18,6 @@ export const redisClient = createClient({
     socket: {
         host,
         port: Number(port),
-        tls: true,
+        // tls: true,
     }
 });

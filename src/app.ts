@@ -9,10 +9,10 @@
 import { App } from "@slack/bolt";
 import dotenv from "dotenv";
 import OpenAI from "openai";
-import { retrieveRelevantChunks } from "./retrieval.js";
-import { createClient } from "redis";
-
 dotenv.config();
+import { retrieveRelevantChunks } from "./retrieval.js";
+import { redisClient } from "./redisClient.js";
+
 
 const openAIAPIKey = process.env.OPENAI_API_KEY;
 if (!openAIAPIKey) {
@@ -23,26 +23,24 @@ const openAIClient = new OpenAI({
 });
 
 
-const username = process.env.REDIS_CLOUD_USERNAME;
-const password = process.env.REDIS_CLOUD_PASSWORD;
-const host = process.env.REDIS_CLOUD_HOST;
-const port = process.env.REDIS_CLOUD_PORT;
-if (!username || !password || !host || !port) {
-    throw new Error("Missing Redis Cloud environment variables.");
-}
+// const username = process.env.REDIS_CLOUD_USERNAME;
+// const password = process.env.REDIS_CLOUD_PASSWORD;
+// const host = process.env.REDIS_CLOUD_HOST;
+// const port = process.env.REDIS_CLOUD_PORT;
+// if (!username || !password || !host || !port) {
+//     throw new Error("Missing Redis Cloud environment variables.");
+// }
 // Connect and login to Redis Cloud
-export const redisClient = createClient({
-    username,
-    password,
-    socket: {
-        host,
-        port: Number(port),
-        // tls: true,
-    }
-});
-// Return and handle any error gracefully BEFORE Redis Client attempts to connect(); Otherwise, Slack bot could miss an event
-// or end up with an unhandled error.
-redisClient.on('error', err => console.log('Uh oh, a Redis Client Error has occurred:\n', err));
+// export const redisClient = createClient({
+//     username,
+//     password,
+//     socket: {
+//         host,
+//         port: Number(port),
+//         // tls: true,
+//     }
+// });
+
 
 
 const token = process.env.SLACK_BOT_TOKEN;
@@ -149,8 +147,13 @@ async function askLLM(finalPrompt: string) {
 // ...
 
 (async () => {
+    // Return and handle any error gracefully BEFORE Redis Client attempts to connect(); Otherwise, Slack bot could miss an event
+    // or end up with an unhandled error.
+    // redisClient.on('error', err => console.log('Uh oh, a Redis Client Error has occurred:\n', err));
     // Connect to Redis Client ONCE, first.
     await redisClient.connect();
+    console.log(redisClient.isOpen);   // should equal true
+    console.log(redisClient.isReady);  // should equal true
     // Start Slack Bolt app
     await app.start();
     app.logger.info("⚡️ Bolt app is running!");
