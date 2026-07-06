@@ -42,7 +42,7 @@ export const redisClient = createClient({
 });
 // Return and handle any error gracefully BEFORE Redis Client attempts to connect(); Otherwise, Slack bot could miss an event
 // or end up with an unhandled error.
-redisClient.on('error', err => console.log('Redis Client Error', err));
+redisClient.on('error', err => console.log('Uh oh, a Redis Client Error has occurred:\n', err));
 
 
 const token = process.env.SLACK_BOT_TOKEN;
