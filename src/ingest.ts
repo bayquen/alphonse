@@ -4,7 +4,9 @@ import { MarkdownParser } from "markdown-parser";
 import { createRequire } from "node:module";
 import dotenv from "dotenv";
 import { TokenTextSplitter } from "@langchain/textsplitters";
-import { createClient, SCHEMA_FIELD_TYPE, SCHEMA_VECTOR_FIELD_ALGORITHM } from 'redis';  // Redis imports for Redis v5.x.x
+// import { createClient, SCHEMA_FIELD_TYPE, SCHEMA_VECTOR_FIELD_ALGORITHM } from 'redis';  // Redis imports for Redis v5.x.x
+import { redisClient } from "./redisClient.js";
+import { SCHEMA_FIELD_TYPE, SCHEMA_VECTOR_FIELD_ALGORITHM } from 'redis';  // Redis imports for Redis v5.x.x
 // Use CommonJS's (CJS) Node require() over ESM since VoyageAI (v0.2.1) module import for ESM is fkin broken.
 const require = createRequire(import.meta.url);
 const { VoyageAIClient, VoyageAIError } = require("voyageai") as typeof import("voyageai");
@@ -14,7 +16,7 @@ dotenv.config();
 const voyageAPIKey: string | undefined = process.env.VOYAGE_API_KEY;
 const voyageClient = new VoyageAIClient({ apiKey: voyageAPIKey});
 
-const redisClient = createClient();
+// const redisClient = createClient();
 
 interface FileMetadata {
     type: "file",
