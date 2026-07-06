@@ -13,7 +13,7 @@ dotenv.config();
 import { retrieveRelevantChunks } from "./retrieval.js";
 import { redisClient } from "./redisClient.js";
 
-
+// API access for OpenAI (LLM) API
 const openAIAPIKey = process.env.OPENAI_API_KEY;
 if (!openAIAPIKey) {
     throw new Error("Missing OPENAI_API_KEY");
@@ -22,27 +22,7 @@ const openAIClient = new OpenAI({
     apiKey: openAIAPIKey,
 });
 
-
-// const username = process.env.REDIS_CLOUD_USERNAME;
-// const password = process.env.REDIS_CLOUD_PASSWORD;
-// const host = process.env.REDIS_CLOUD_HOST;
-// const port = process.env.REDIS_CLOUD_PORT;
-// if (!username || !password || !host || !port) {
-//     throw new Error("Missing Redis Cloud environment variables.");
-// }
-// Connect and login to Redis Cloud
-// export const redisClient = createClient({
-//     username,
-//     password,
-//     socket: {
-//         host,
-//         port: Number(port),
-//         // tls: true,
-//     }
-// });
-
-
-
+// Tokens for accessing Slack Bolt functionalities
 const token = process.env.SLACK_BOT_TOKEN;
 const appToken = process.env.SLACK_APP_LEVEL_TOKEN;
 if (!token || !appToken) {
@@ -61,6 +41,7 @@ const grabBotUserId = await app.client.auth.test({
     token,
 });
 
+
 // Listens to incoming messages that contain "hi bot"
 // app.message("hi bot", async ({ message, say }) => {
 //     // Add type guard to check if message has property called .user with JavaScript's `in` keyword
@@ -68,6 +49,7 @@ const grabBotUserId = await app.client.auth.test({
 //     // say() sends a message to the channel where the event was triggered
 //     await say(`What's up my brotha <@${message.user}> from anotha motha?`);
 // });
+
 
 // Get and store RTFM bot's user ID; needed to remove bot mention tag from Slack user's message.
 const botUserId = grabBotUserId.user_id;
@@ -132,28 +114,29 @@ app.event("app_mention", async({ event, client, say }) => {
     }
 });
 
-
+// Pass entire prompt (LLM system prompt, user's question, && relevant technical doc chunks) to LLM API so it can respond to Slack user
 async function askLLM(finalPrompt: string) {
     const response = await openAIClient.responses.create({
         model: "o4-mini",
         input: finalPrompt,
     });
-
+    // Messages the Slack user a Q&A answer!
     return response.output_text;
-}                   
+}
 
 // TODO: Make bot reply in thread rather than an individual message on Slack - keeps Slack Q&A convos organized!
 // [CODE HERE]
 // ...
 
 (async () => {
-    // Return and handle any error gracefully BEFORE Redis Client attempts to connect(); Otherwise, Slack bot could miss an event
-    // or end up with an unhandled error.
-    // redisClient.on('error', err => console.log('Uh oh, a Redis Client Error has occurred:\n', err));
-    // Connect to Redis Client ONCE, first.
+    // Return and handle any error gracefully BEFORE Redis Client attempts to connect(); 
+    // Otherwise, Slack bot could miss an event or end up with an unhandled error.
+    redisClient.on('error', err => console.log('Uh oh, a Redis Client Error has occurred:\n', err));
+    // Now connect to Redis Client before starting Slack Bolt app
     await redisClient.connect();
-    console.log(redisClient.isOpen);   // should equal true
-    console.log(redisClient.isReady);  // should equal true
+    // Debugging logs
+    // console.log(redisClient.isOpen);   // should equal true
+    // console.log(redisClient.isReady);  // should equal true
     // Start Slack Bolt app
     await app.start();
     app.logger.info("⚡️ Bolt app is running!");

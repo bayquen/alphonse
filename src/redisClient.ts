@@ -18,6 +18,6 @@ export const redisClient = createClient({
     socket: {
         host,
         port: Number(port),
-        // tls: true,
+        // tls: true,       // TODO: Getting errors when tls mode is on. Might need Socket Mode so that bot works 24/7.
     }
 });

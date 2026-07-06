@@ -5,13 +5,9 @@ const { VoyageAIClient, VoyageAIError } = require("voyageai") as typeof import("
 // Side note: convert `./redisClient.ts` to `./redisClient.js` since I'm using ES modules (ESM) with TypeScript, not CJS.
 import { redisClient } from './redisClient.js';
 
-// dotenv.config();
 
 const voyageAPIKey: string | undefined = process.env.VOYAGE_API_KEY;
 const voyageClient = new VoyageAIClient({ apiKey: voyageAPIKey });
-
-// TESTING: EXAMPLE STRING PROMPT TO TEST FUNCTIONALITY LOCALLY ON TERMINAL
-// const testPrompt: string = "How to make a new branch?";
 
 export async function retrieveRelevantChunks(userPrompt: string) {
     console.log("Redis Client open during retrieveRelevantChunks()?:", redisClient.isOpen);
@@ -39,12 +35,10 @@ export async function retrieveRelevantChunks(userPrompt: string) {
             },
             SORTBY: "score",
             DIALECT: 2,
-            // Return metadata and show top relevant results based on KNN score
+            // Return metadata and show top relevant chunk results based on KNN score so they can be inserted into the LLM prompt
             RETURN: ["chunkContent", "filename", "sourcePath", "score"],
         }
     )
-    // Retrieve top matching chunks along with any metadata needed (e.g. filename, headings, source path, etc.)
-    // Return chunks (and optionally metadata) so they can be inserted into the LLM prompt
     // Debug log for vector search results
     // console.log("Results: \n\n");
     // console.log(JSON.stringify(results, null, 2));
