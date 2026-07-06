@@ -5,7 +5,7 @@ const { VoyageAIClient, VoyageAIError } = require("voyageai") as typeof import("
 // Side note: convert `./redisClient.ts` to `./redisClient.js` since I'm using ES modules (ESM) with TypeScript, not CJS.
 import { redisClient } from './redisClient.js';
 
-dotenv.config();
+// dotenv.config();
 
 const voyageAPIKey: string | undefined = process.env.VOYAGE_API_KEY;
 const voyageClient = new VoyageAIClient({ apiKey: voyageAPIKey });
