@@ -105,10 +105,21 @@ app.event("app_mention", async({ event, client, say }) => {
                             + `\n The user's prompt for you is: '${slackUserPrompt}`
                             + `\n ${retrievedContextForLLM}`
         // Call LLM response function (OpenAI API)
-        const answer = await askLLM(finalPrompt);
+        const llmAnswer = await askLLM(finalPrompt);
         // Then have Slack bot answer back with the LLM response to the user!
-        await say(answer);
-        
+        // await say(llmAnswer);
+        const channel = event.channel;
+        const text = llmAnswer;
+        const thread_ts = event.ts;
+        if ( !channel || !text || !thread_ts) {
+            throw new Error("Within app_mention event function: Missing required param value(s) for client.chat.postMessage({})");
+        }
+
+        await client.chat.postMessage({
+            channel,
+            text,
+            thread_ts,  // Makes sure that bot replies to user in a thread
+        });
     } catch (error) {
         console.log("Uh oh, an error has occurred during app_mention event:\n", error);
     }
