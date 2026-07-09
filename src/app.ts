@@ -135,9 +135,37 @@ async function askLLM(finalPrompt: string) {
     return response.output_text;
 }
 
-// TODO: Make bot reply in thread rather than an individual message on Slack - keeps Slack Q&A convos organized!
-// [CODE HERE]
-// ...
+// Helper function for app.command("/add_repo") - checking if user's input is a valid GitHub URL
+function isGitHubRepoUrl(input: string): boolean {
+    try {
+        // If no protocol is present, assume https://
+        const normalized = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(input)
+        ? input
+        : `https://${input}`;
+        // Normalize URL with "https://" in it
+        const url = new URL(normalized);
+
+        if (url.hostname !== "github.com") {
+            return false;
+        }
+
+        const parts = url.pathname.split("/").filter(Boolean);
+        // Check if URL contains at least 2 segments after the domain name; I.e: "github.com/[user]/[repo_name]/..."
+        // E.g. valid URL: https://github.com/bayquen/rtfm-agent/
+        // E.g. valid URL: https://github.com/bayquen/rtfm-agent/tree/main
+        // E.g. valid URL: https://github.com/bayquen/rtfm-agent/tree/feature-branch
+        return parts.length >= 2;
+    } catch {
+        return false;
+    }
+}
+
+app.command("/add_repo", async ({ command, ack, say, respond }) => {
+    // If Slack user's /rtfm_add command contains valid GitHub repo URL, then backend should acknowledge request.
+    if (isGitHubRepoUrl(command.text)) {
+        await ack();
+    }
+});
 
 (async () => {
     // Return and handle any error gracefully BEFORE Redis Client attempts to connect(); 
