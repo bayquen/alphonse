@@ -23,12 +23,15 @@ interface RepositoryInfo {
 // Check if GitHub repo exists, and if so then grab relevant metadata needed for authentication
 export async function inspectGitHubRepo(repoUrl: string) {
     const url = new URL(repoUrl);
-    const [, owner, repo] = url.pathname.split("/");
+    const [, owner, repoName] = url.pathname.split("/");
 
-    if (!owner || !repo ) {
+    if (!owner || !repoName ) {
         console.log("Error: owner and/or repo name not found when parsing GitHub URL.");
         return;
     };
+
+    // If repo name has '.git' extension, remove it to normalize the repo name
+    const repo = repoName.replace(/\.git$/, "");
 
     const { data } = await octokit.repos.get({ owner: owner, repo: repo });
     // Debugging log (stringify() includes pretty print params)
