@@ -160,11 +160,28 @@ function isGitHubRepoUrl(input: string): boolean {
     }
 }
 
-app.command("/add_repo", async ({ command, ack, say, respond }) => {
+app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
     // If Slack user's /rtfm_add command contains valid GitHub repo URL, then backend should acknowledge request.
     if (isGitHubRepoUrl(command.text)) {
         await ack();
+    } else {
+       say(`Invalid URL, kindly make sure the public or private repository exists and its URL formatting is correct.`);
+       return;
     }
+
+    // const [subcommand, repoUrl] = command.text.split(/\s+/, 2);
+
+    // if (subcommand !== "connect") {
+    //     await respond(
+    //         "Usage: `/rtfm connect <GitHub Repository URL>` - agent connects to a repo and downloads its tech docs so users can ask questions regarding your repo!"
+    //     );
+    //     return;
+    // }
+
+    await respond(
+        "Request received. Checking repository accessibility..."
+    );
+    
 });
 
 (async () => {
