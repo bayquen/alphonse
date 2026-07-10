@@ -19,4 +19,4 @@ const repo: GitHubMetadata = {
 
 export async function inspectGitHubRepo(url: string): Promise<GitHubMetadata> {
     return repo;
-}
+} 
