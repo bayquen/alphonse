@@ -12,6 +12,8 @@ import OpenAI from "openai";
 dotenv.config();
 import { retrieveRelevantChunks } from "./retrieval.js";
 import { redisClient } from "./redisClient.js";
+import { InputTokens } from "openai/resources/responses.mjs";
+import { stringify } from "@langchain/core/utils/uuid";
 
 // API access for OpenAI (LLM) API
 const openAIAPIKey = process.env.OPENAI_API_KEY;
@@ -135,48 +137,71 @@ async function askLLM(finalPrompt: string) {
     return response.output_text;
 }
 
+// Helper function for isGitHubRepoUrl() function: remove unwanted '<' and '>' symbols when passing user text as a URL object
+function normalizeSlackUrl(input: string): string {
+    const [url = ""] = input
+        .trim()
+        .replace(/^</, "")
+        .replace(/>$/, "")
+        .split("|");
+    
+    return url;
+}
+
 // Helper function for app.command("/add_repo") - checking if user's input is a valid GitHub URL
 function isGitHubRepoUrl(input: string): boolean {
     try {
+        // Debugging log
+        console.log(`Raw input: "${input}"`);
+
+        const normalizedInput = normalizeSlackUrl(input);
+
         // If no protocol is present, assume https://
-        const normalized = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(input)
-        ? input
-        : `https://${input}`;
+        const normalizedUrl = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(normalizedInput)
+        ? normalizedInput
+        : `https://${normalizedInput}`;
+
+        // Debugging log
+        console.log("Normalized:", normalizedUrl);
+
         // Normalize URL with "https://" in it
-        const url = new URL(normalized);
+        const url = new URL(normalizedUrl);
+
+        // Debugging logs
+        console.log("Hostname:", url.hostname);
+        console.log("Pathname:", url.pathname);
 
         if (url.hostname !== "github.com") {
             return false;
         }
 
         const parts = url.pathname.split("/").filter(Boolean);
+        // Debugging logs
+        console.log("Parts:", parts);
+        console.log("Length:", parts.length);
+
         // Check if URL contains at least 2 segments after the domain name; I.e: "github.com/[user]/[repo_name]/..."
         // E.g. valid URL: https://github.com/bayquen/rtfm-agent/
         // E.g. valid URL: https://github.com/bayquen/rtfm-agent/tree/main
         // E.g. valid URL: https://github.com/bayquen/rtfm-agent/tree/feature-branch
-        return parts.length >= 2;
-    } catch {
+        return (url.hostname === "github.com" && parts.length >= 2);
+    } catch (err) {
+        console.log("Uh oh, an error has occurred during isGitHubRepoUrl() execution:\n", err);
         return false;
     }
 }
 
 app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
-    // If Slack user's /rtfm_add command contains valid GitHub repo URL, then backend should acknowledge request.
-    if (isGitHubRepoUrl(command.text)) {
-        await ack();
-    } else {
-       say(`Invalid URL, kindly make sure the public or private repository exists and its URL formatting is correct.`);
-       return;
+    // Acknowledge the command request right away, so 3000ms ping timeout doesn't occur.
+    await ack();
+
+    // If Slack user's /rtfm_add command DOESN'T contain a valid GitHub repo URL, then do nothing but return.
+    const userTextInput = command.text.trim();
+    if (!(isGitHubRepoUrl(userTextInput))) {
+        say(`Command text you entered: ${userTextInput}`)
+        say(`Invalid URL, kindly make sure the public or private repository exists and its URL formatting is correct.`);
+        return;
     }
-
-    // const [subcommand, repoUrl] = command.text.split(/\s+/, 2);
-
-    // if (subcommand !== "connect") {
-    //     await respond(
-    //         "Usage: `/rtfm connect <GitHub Repository URL>` - agent connects to a repo and downloads its tech docs so users can ask questions regarding your repo!"
-    //     );
-    //     return;
-    // }
 
     await respond(
         "Request received. Checking repository accessibility..."
