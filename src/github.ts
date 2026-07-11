@@ -48,6 +48,6 @@ export async function inspectGitHubRepo(repoUrl: string) {
     };
 }
 
-// Local, unintegrated test:
-const exampleUrl: string = "https://github.com/bayquen/dibsdash";
-inspectGitHubRepo(exampleUrl);
+// Local, non-integrated test for debugging:
+// const exampleUrl: string = "https://github.com/bayquen/dibsdash";
+// inspectGitHubRepo(exampleUrl);

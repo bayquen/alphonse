@@ -14,6 +14,7 @@ import { retrieveRelevantChunks } from "./retrieval.js";
 import { redisClient } from "./redisClient.js";
 import { InputTokens } from "openai/resources/responses.mjs";
 import { stringify } from "@langchain/core/utils/uuid";
+import { inspectGitHubRepo } from "./github.js";
 
 // API access for OpenAI (LLM) API
 const openAIAPIKey = process.env.OPENAI_API_KEY;
@@ -184,7 +185,8 @@ function isGitHubRepoUrl(input: string): boolean {
         // E.g. valid URL: https://github.com/bayquen/rtfm-agent/
         // E.g. valid URL: https://github.com/bayquen/rtfm-agent/tree/main
         // E.g. valid URL: https://github.com/bayquen/rtfm-agent/tree/feature-branch
-        return (url.hostname === "github.com" && parts.length >= 2);
+
+        return (url.hostname === "github.com" && parts.length >= 2);  // boolean should == true
     } catch (err) {
         console.log("Uh oh, an error has occurred during isGitHubRepoUrl() execution:\n", err);
         return false;
@@ -206,6 +208,20 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
     await respond(
         "Request received. Checking repository accessibility..."
     );
+    // Check repo access (is it public or private?) by using helper function from github.ts
+    // Then returns GitHub repo metadata needed
+    const gitHubRepoData = await inspectGitHubRepo(userTextInput);
+
+    // Do an error check to see if the repo metadata actually exists, otherwise log error message and return nothing
+    if (!gitHubRepoData) {
+        console.log("Uh oh. Error occurred while running `app.command(/add_repo)`: The GitHub repo metadata failed to extract, or it doesn't exist.");
+        return;
+    }
+    
+    // Check first if repo has public visibility
+    if (!gitHubRepoData.isPrivate) { // false = public repo
+        
+    }
     
 });
 
