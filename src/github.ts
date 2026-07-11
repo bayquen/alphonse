@@ -35,7 +35,7 @@ export async function inspectGitHubRepo(repoUrl: string) {
 
     const { data } = await octokit.repos.get({ owner: owner, repo: repo });
     // Debugging log (stringify() includes pretty print params)
-    console.log("GitHub Repo data:\n" + JSON.stringify(data.owner.name, null, 2) + "\n" + JSON.stringify(data.owner, null, 2));
+    console.log("GitHub Repo data:\n" + JSON.stringify(data.owner.name, null, 2) + "\n" + JSON.stringify(data.owner, null, 2)) + "\n\n";
     // Return object filtered with only the metadata that my app needs for GitHub authentication
     return {
         owner,
@@ -48,6 +48,41 @@ export async function inspectGitHubRepo(repoUrl: string) {
     };
 }
 
+export async function getGitHubRepoTree(repoUrl: string) {
+    // Grab repository metadata again, as needed
+    const metadata = await inspectGitHubRepo(repoUrl);
+    // the function call for `metadata` right above is not guaranteed to return any data, 
+    // so print an error log if so and return nothing gracefully.
+    if (!metadata) {
+        console.error("Uh oh, an error occurred during the getGitHubRepoTree() function call:\nNo metadata was retrieved from the provided repo");
+        return;
+    }
+    // Type guarding for octokit.request(...) params
+    const owner: string = metadata.owner;
+    const repo: string = metadata.repo;
+    const tree_sha: string = metadata.defaultBranch;
+    
+    // Now, call this Octokit request function to retrieve
+    const repoTreeData = await octokit.request('GET /repos/{owner}/{repo}/git/trees/{tree_sha}', {
+        owner,
+        repo,
+        tree_sha,  // branch name or repo's tree SHA
+        recursive: "1",
+    });
+
+    // Return the actual file objects in the repo tree directly all together (not iteratively);
+    return repoTreeData.data.tree;
+}
+
 // Local, non-integrated test for debugging:
 // const exampleUrl: string = "https://github.com/bayquen/dibsdash";
 // inspectGitHubRepo(exampleUrl);
+
+// Local, non-integrated test for debugging:
+const repoUrl: string = "https://github.com/bayquen/dibsdash";
+const getTree = await getGitHubRepoTree(repoUrl);
+if (!getTree) {
+    console.log("No data was returned");
+} else {
+    console.log(getTree);
+}

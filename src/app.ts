@@ -15,6 +15,7 @@ import { redisClient } from "./redisClient.js";
 import { InputTokens } from "openai/resources/responses.mjs";
 import { stringify } from "@langchain/core/utils/uuid";
 import { inspectGitHubRepo } from "./github.js";
+import { Octokit } from "@octokit/rest";
 
 // API access for OpenAI (LLM) API
 const openAIAPIKey = process.env.OPENAI_API_KEY;
@@ -218,11 +219,11 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
         return;
     }
     
-    // Check first if repo has public visibility
+    // Check if repo has public visibility
     if (!gitHubRepoData.isPrivate) { // false = public repo
-        
+        // TODO (7/11/26): Call my new function from github.ts!
+        return;
     }
-    
 });
 
 (async () => {
