@@ -15,7 +15,7 @@ import { redisClient } from "./redisClient.js";
 import { InputTokens } from "openai/resources/responses.mjs";
 import { stringify } from "@langchain/core/utils/uuid";
 import { inspectGitHubRepo } from "./github.js";
-import { Octokit } from "@octokit/rest";
+// import { Octokit } from "@octokit/rest";
 
 // API access for OpenAI (LLM) API
 const openAIAPIKey = process.env.OPENAI_API_KEY;
