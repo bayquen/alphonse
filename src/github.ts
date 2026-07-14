@@ -84,10 +84,10 @@ export async function getGitHubRepoTree(repoUrl: string) {
 // inspectGitHubRepo(exampleUrl);
 
 // Local, non-integrated test for debugging:
-const repoUrl: string = "https://github.com/bayquen/dibsdash";
-const getTree = await getGitHubRepoTree(repoUrl);
-if (!getTree) {
-    console.log("No data was returned");
-} else {
-    console.log(getTree);
-}
+// const repoUrl: string = "https://github.com/bayquen/dibsdash";
+// const getTree = await getGitHubRepoTree(repoUrl);
+// if (!getTree) {
+//     console.log("No data was returned");
+// } else {
+//     console.log(getTree);
+// }
