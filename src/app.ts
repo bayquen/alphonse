@@ -150,61 +150,63 @@ function normalizeSlackUrl(input: string): string {
     return url;
 }
 
-// Helper function for app.command("/add_repo") - checking if user's input is a valid GitHub URL
-function isGitHubRepoUrl(input: string): boolean {
-    try {
-        // Debugging log
-        console.log(`Raw input: "${input}"`);
+// // Helper function for app.command("/add_repo") - checking if user's input is a valid GitHub URL
+// function isGitHubRepoUrl(input: string): boolean {
+//     try {
+//         // Debugging log
+//         console.log(`Raw input during isGitHubRepoUrl() function call: "${input}"`);
 
-        const normalizedInput = normalizeSlackUrl(input);
+//         const normalizedInput = normalizeSlackUrl(input);
 
-        // If no protocol is present, assume https://
-        const normalizedUrl = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(normalizedInput)
-        ? normalizedInput
-        : `https://${normalizedInput}`;
+//         // If no protocol is present, assume https://
+//         const normalizedUrl = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(normalizedInput)
+//         ? normalizedInput
+//         : `https://${normalizedInput}`;
 
-        // Debugging log
-        console.log("Normalized:", normalizedUrl);
+//         // Debugging log
+//         console.log(`Normalized: "${normalizedUrl}"`);
 
-        // Normalize URL with "https://" in it
-        const url = new URL(normalizedUrl);
+//         // Normalize URL with "https://" in it
+//         const url = new URL(normalizedUrl);
 
-        // Debugging logs
-        console.log("Hostname:", url.hostname);
-        console.log("Pathname:", url.pathname);
+//         // Debugging logs
+//         console.log("Hostname:", url.hostname);
+//         console.log("Pathname:", url.pathname);
 
-        if (url.hostname !== "github.com") {
-            return false;
-        }
+//         if (url.hostname !== "github.com") {
+//             return false;
+//         }
 
-        const parts = url.pathname.split("/").filter(Boolean);
-        // Debugging logs
-        console.log("Parts:", parts);
-        console.log("Length:", parts.length);
+//         const parts = url.pathname.split("/").filter(Boolean);
+//         // Debugging logs
+//         console.log("Parts:", parts);
+//         console.log("Length:", parts.length);
 
-        // Check if URL contains at least 2 segments after the domain name; I.e: "github.com/[user]/[repo_name]/..."
-        // E.g. valid URL: https://github.com/bayquen/rtfm-agent/
-        // E.g. valid URL: https://github.com/bayquen/rtfm-agent/tree/main
-        // E.g. valid URL: https://github.com/bayquen/rtfm-agent/tree/feature-branch
+//         // Check if URL contains at least 2 segments after the domain name; I.e: "github.com/[user]/[repo_name]/..."
+//         // E.g. valid URL: https://github.com/bayquen/rtfm-agent/
+//         // E.g. valid URL: https://github.com/bayquen/rtfm-agent/tree/main
+//         // E.g. valid URL: https://github.com/bayquen/rtfm-agent/tree/feature-branch
 
-        return (url.hostname === "github.com" && parts.length >= 2);  // boolean should == true
-    } catch (err) {
-        console.log("Uh oh, an error has occurred during isGitHubRepoUrl() execution:\n", err);
-        return false;
-    }
-}
+//         return (url.hostname === "github.com" && parts.length >= 2);  // boolean should == true
+//     } catch (err) {
+//         console.log("Uh oh, an error has occurred during isGitHubRepoUrl() execution:\n");
+//         console.log(err);
+//         console.log("\n\n");
+//         return false;
+//     }
+// }
 
 app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
     // Acknowledge the command request right away, so 3000ms ping timeout doesn't occur.
     await ack();
 
     // If Slack user's /rtfm_add command DOESN'T contain a valid GitHub repo URL, then do nothing but return.
-    const userTextInput = command.text.trim();
-    if (!(isGitHubRepoUrl(userTextInput))) {
-        say(`Command text you entered: ${userTextInput}`)
-        say(`Invalid URL, kindly make sure the public or private repository exists and its URL formatting is correct.`);
-        return;
-    }
+    const userTextInput = command.text;
+    // Clean up GitHub URL given by user by removing any whitespaces and Slack's auto-formatted "<" and ">" symbols.
+    const cleanedUrl = userTextInput.replace(/[<>]/g, "").trim();
+
+    // Debugging log (7/14/26)
+    console.log("cleaned up GitHub repoURL in app.command() execution: " + cleanedUrl);
 
     await respond(
         "Request received. Checking repository accessibility..."
@@ -212,9 +214,8 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
     // Check repo access (is it public or private?) by using helper function from github.ts
     // Then returns GitHub repo metadata needed
     try {
-        // IMPORTANT NOTE: `userTextInput` is the GitHub repo URL string!
-        const gitHubRepoData = await inspectGitHubRepo(userTextInput);
-
+        // IMPORTANT NOTE: `cleanedUrl` is the cleaned-up GitHub repo URL string!
+        const gitHubRepoData = await inspectGitHubRepo(cleanedUrl);
         // Do an error check to see if the repo metadata actually exists, otherwise log error message and return nothing
         if (!gitHubRepoData) {
             console.log(`Uh oh. Error occurred while running app.command(/add_repo):\n 
@@ -227,16 +228,30 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
         
         // Check if it's a public repository, then return repository files to download.
         if (!gitHubRepoData.isPrivate) { // false = public repo
+            // TODO: MOVE THIS INNER CODE BLOCK INTO A NEW FUNCTION ADDED TO github.ts (separation of responsibilities)
             let desiredTechDocObjects = [];
-            // Parse through GitHub repo's files
-            const fileObjects = await getGitHubRepoTree(userTextInput);
-            for (const object in fileObjects) {
+            // Parse through GitHub repo's files; PASS IN cleaned-up GitHub URL only!
+            const fileObjects = await getGitHubRepoTree(cleanedUrl);
+            if (!fileObjects) {
+                console.error("Error: File objects not found.");
+                return;
+            }
+            for (const object of fileObjects) {
                 desiredTechDocObjects.push(object);
             }
-            console.log("Object 1:\n" + desiredTechDocObjects + "\n");
+            for (const [index, object] of desiredTechDocObjects.entries()) {
+                console.log(`Object ${index + 1}:\n`, object, "\n");
+            }
+
+            // TODO (7/14/26): RETURN FILE OBJECT ARRAY; THEN REFACTOR app.ts CODE so that all GITHUB-RETRIEVAL-related functions
+            //                 are implemented only in github.ts (SEPARATION OF RESPONSIBILITIES).
         }
     } catch (err) {
-        console.error("Uh oh, error occurred during app.command() execution:\n" + err +"\n\n");
+        console.log("\nUh oh, error occurred during app.command() execution:\n");
+        // Since app.command() is a Slack Bolt function, we can use Slack Bolt's logger for useful debugging stack-trace logs.
+        // Good alternative to try/catch block's console.log(err);
+        logger.error(err);
+        console.log("\n\n");
         await say(`An error occurred when attempting to inspect GitHub repo or extract the files.
                    \nPlease make sure the URL is correctly formatted or that the public/private repository exists!
                    \nTHEN, please try running /add_repo again.`);
@@ -247,7 +262,7 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
 (async () => {
     // Return and handle any error gracefully BEFORE Redis Client attempts to connect(); 
     // Otherwise, Slack bot could miss an event or end up with an unhandled error.
-    redisClient.on('error', err => console.log('Uh oh, a Redis Client Error has occurred:\n', err));
+    redisClient.on('error', err => console.log(err));
     // Now connect to Redis Client before starting Slack Bolt app
     await redisClient.connect();
     // Debugging logs

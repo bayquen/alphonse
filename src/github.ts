@@ -23,11 +23,6 @@ interface RepositoryInfo {
 // Check if GitHub repo exists, and if so then grab relevant metadata needed for authentication
 export async function inspectGitHubRepo(repoUrl: string) {
     const url = new URL(repoUrl.trim());
-    // Error handling if url is incorrectly formatted or invalid
-    if (!url) {
-        console.error("\nUh oh, an error occurred during inspectGitHubRepo() execution:\nGitHub URL provided is misformatted OR invalid.\n");
-        return;
-    }
     const [, owner, repoName] = url.pathname.split("/");
 
     if (!owner || !repoName ) {
@@ -39,8 +34,10 @@ export async function inspectGitHubRepo(repoUrl: string) {
     const repo = repoName.replace(/\.git$/, "");
 
     const { data } = await octokit.repos.get({ owner: owner, repo: repo });
+    
     // Debugging log (stringify() includes pretty print params)
-    console.log("\nGitHub Repo data:\n" + JSON.stringify(data.owner.name, null, 2) + "\n" + JSON.stringify(data.owner, null, 2)) + "\n\n";
+    // console.log("\nGitHub Repo data:\n" + JSON.stringify(data.owner.name, null, 2) + "\n" + JSON.stringify(data.owner, null, 2)) + "\n\n";
+
     // Return object filtered with only the metadata that my app needs for GitHub authentication
     return {
         owner,
