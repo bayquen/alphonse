@@ -211,23 +211,29 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
     );
     // Check repo access (is it public or private?) by using helper function from github.ts
     // Then returns GitHub repo metadata needed
-    const gitHubRepoData = await inspectGitHubRepo(userTextInput);
+    try {
+        // IMPORTANT NOTE: `userTextInput` is a string that should be a GitHub repo URL!
+        const gitHubRepoData = await inspectGitHubRepo(userTextInput);
 
-    // Do an error check to see if the repo metadata actually exists, otherwise log error message and return nothing
-    if (!gitHubRepoData) {
-        console.log("Uh oh. Error occurred while running `app.command(/add_repo)`: The GitHub repo metadata failed to extract, or it doesn't exist.");
-        return;
-    }
-    
-    // Check if it's a public repository, then return repository files to download.
-    if (!gitHubRepoData.isPrivate) { // false = public repo
-        // TODO (7/11/26): Call my new function from github.ts!
-        let desiredTechDocObjects = [];
-        const fileObjects = await getGitHubRepoTree(userTextInput);
-        for (const object in fileObjects) {
-            desiredTechDocObjects.push(object);
+        // Do an error check to see if the repo metadata actually exists, otherwise log error message and return nothing
+        if (!gitHubRepoData) {
+            console.log("Uh oh. Error occurred while running `app.command(/add_repo)`: The GitHub repo metadata failed to extract, or it doesn't exist.");
+            return;
         }
-        console.log("Object 1:\n" + desiredTechDocObjects + "\n");
+        
+        // Check if it's a public repository, then return repository files to download.
+        if (!gitHubRepoData.isPrivate) { // false = public repo
+            // TODO (7/11/26): Call my new function from github.ts!
+            let desiredTechDocObjects = [];
+            const fileObjects = await getGitHubRepoTree(userTextInput);
+            for (const object in fileObjects) {
+                desiredTechDocObjects.push(object);
+            }
+            console.log("Object 1:\n" + desiredTechDocObjects + "\n");
+        }
+    } catch (err) {
+        console.error("Uh oh, error occurred during app.command() execution:\n" + err +"\n\n");
+        return;
     }
 });
 
