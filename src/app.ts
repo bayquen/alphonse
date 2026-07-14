@@ -213,29 +213,34 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
     // Then returns GitHub repo metadata needed
     try {
         // IMPORTANT NOTE: `userTextInput` is a string that should be a GitHub repo URL!
-        const gitHubRepoData = await inspectGitHubRepo(userTextInput);
+        // const gitHubRepoData = await inspectGitHubRepo(userTextInput);
+        // TODO: TESTING AND DELETE AFTER
+        const gitHubRepoData = null;
 
         // Do an error check to see if the repo metadata actually exists, otherwise log error message and return nothing
         if (!gitHubRepoData) {
-            console.log("Uh oh. Error occurred while running `app.command(/add_repo)`: The GitHub repo metadata failed to extract, or it doesn't exist.");
-            await say(`Sorry, GitHub repo tech docs failed to extract. Please try running /add_repo again in a few seconds!`);
+            console.log(`Uh oh. Error occurred while running app.command(/add_repo):\n 
+                         The GitHub repo metadata failed to extract, or it doesn't exist.`);
+            await say(`Sorry, GitHub repo tech docs failed to extract.\n 
+                       Perhaps this public/private repo doesn't exist, OR your chosen repo has NO relevant tech docs to extract!\n
+                       Please run /add_repo again in a few seconds!\n\n`);
             return;
         }
         
-        // Check if it's a public repository, then return repository files to download.
-        if (!gitHubRepoData.isPrivate) { // false = public repo
-            // TODO (7/11/26): Call my new function from github.ts!
-            let desiredTechDocObjects = [];
-            const fileObjects = await getGitHubRepoTree(userTextInput);
-            for (const object in fileObjects) {
-                desiredTechDocObjects.push(object);
-            }
-            console.log("Object 1:\n" + desiredTechDocObjects + "\n");
-        }
+        // // Check if it's a public repository, then return repository files to download.
+        // if (!gitHubRepoData.isPrivate) { // false = public repo
+        //     // TODO (7/11/26): Call my new function from github.ts!
+        //     let desiredTechDocObjects = [];
+        //     const fileObjects = await getGitHubRepoTree(userTextInput);
+        //     for (const object in fileObjects) {
+        //         desiredTechDocObjects.push(object);
+        //     }
+        //     console.log("Object 1:\n" + desiredTechDocObjects + "\n");
+        // }
     } catch (err) {
         console.error("Uh oh, error occurred during app.command() execution:\n" + err +"\n\n");
         await say(`An error occurred when attempting to inspect GitHub repo or extract the files.
-                   \nPlease make sure the URL is correctly formatted or that the public or private repository still exists!
+                   \nPlease make sure the URL is correctly formatted or that the public/private repository exists!
                    \nTHEN, please try running /add_repo again.`);
         return;
     }
