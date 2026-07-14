@@ -212,10 +212,8 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
     // Check repo access (is it public or private?) by using helper function from github.ts
     // Then returns GitHub repo metadata needed
     try {
-        // IMPORTANT NOTE: `userTextInput` is a string that should be a GitHub repo URL!
-        // const gitHubRepoData = await inspectGitHubRepo(userTextInput);
-        // TODO: TESTING AND DELETE AFTER
-        const gitHubRepoData = null;
+        // IMPORTANT NOTE: `userTextInput` is the GitHub repo URL string!
+        const gitHubRepoData = await inspectGitHubRepo(userTextInput);
 
         // Do an error check to see if the repo metadata actually exists, otherwise log error message and return nothing
         if (!gitHubRepoData) {
@@ -227,16 +225,16 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
             return;
         }
         
-        // // Check if it's a public repository, then return repository files to download.
-        // if (!gitHubRepoData.isPrivate) { // false = public repo
-        //     // TODO (7/11/26): Call my new function from github.ts!
-        //     let desiredTechDocObjects = [];
-        //     const fileObjects = await getGitHubRepoTree(userTextInput);
-        //     for (const object in fileObjects) {
-        //         desiredTechDocObjects.push(object);
-        //     }
-        //     console.log("Object 1:\n" + desiredTechDocObjects + "\n");
-        // }
+        // Check if it's a public repository, then return repository files to download.
+        if (!gitHubRepoData.isPrivate) { // false = public repo
+            let desiredTechDocObjects = [];
+            // Parse through GitHub repo's files
+            const fileObjects = await getGitHubRepoTree(userTextInput);
+            for (const object in fileObjects) {
+                desiredTechDocObjects.push(object);
+            }
+            console.log("Object 1:\n" + desiredTechDocObjects + "\n");
+        }
     } catch (err) {
         console.error("Uh oh, error occurred during app.command() execution:\n" + err +"\n\n");
         await say(`An error occurred when attempting to inspect GitHub repo or extract the files.
