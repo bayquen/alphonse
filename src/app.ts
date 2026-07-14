@@ -218,6 +218,7 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
         // Do an error check to see if the repo metadata actually exists, otherwise log error message and return nothing
         if (!gitHubRepoData) {
             console.log("Uh oh. Error occurred while running `app.command(/add_repo)`: The GitHub repo metadata failed to extract, or it doesn't exist.");
+            await say(`Sorry, GitHub repo tech docs failed to extract. Please try running /add_repo again in a few seconds!`);
             return;
         }
         
@@ -233,6 +234,9 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
         }
     } catch (err) {
         console.error("Uh oh, error occurred during app.command() execution:\n" + err +"\n\n");
+        await say(`An error occurred when attempting to inspect GitHub repo or extract the files.
+                   \nPlease make sure the URL is correctly formatted or that the public or private repository still exists!
+                   \nTHEN, please try running /add_repo again.`);
         return;
     }
 });
