@@ -10,6 +10,8 @@ const octokit = new Octokit({
     userAgent: 'myApp v1.2.3',
 });
 
+const fileKeywords = [".md", ".asc", ".mdx", ".txt", ".rst", ".adoc", ".yaml", ".yml", ".asciidoc", ".xml", ".csv", "README", "CHANGELOG", "LICENSE", "architecture", "CODE_OF_CONDUCT", "codeOfConduct"];
+
 interface RepositoryInfo {
     owner: string;
     repo: string;
@@ -74,6 +76,42 @@ export async function getGitHubRepoTree(repoUrl: string) {
 
     // Return the actual file objects in the repo tree directly all together (not iteratively);
     return repoTreeData.data.tree;
+}
+
+export async function filterThruRepoFileTree(cleanedUrl: string) {
+    let desiredTechDocObjects: object[] = [];
+    // Parse through GitHub repo's files; PASS IN cleaned-up GitHub URL only!
+    const fileObjects = await getGitHubRepoTree(cleanedUrl);
+    if (!fileObjects) {
+        console.error("Error: File objects not found.");
+        return;
+    }
+    // Check if a given file object is a technical doc of interest
+
+    for (const object of fileObjects) {
+        // But first, split object's filepath string for filtering
+        const parts = object.path.split("/");
+        const fileNameItself = parts[parts.length - 1];
+        if (!fileNameItself) {
+            // Jump to next loop iteration if it doesn't exist
+            continue;
+        }
+        // Check for file types of interest
+        // else if (fileNameItself.includes(".md")) {
+        //     desiredTechDocObjects.push(object);
+        // }
+        // Case insensitive keyword-matching helper, yay!
+        const keywordMatches = fileKeywords.some(fileKeyword => fileNameItself.toLowerCase().includes(fileKeyword));
+        // If any match is found, add file object to the return array.
+        if (keywordMatches) {
+            desiredTechDocObjects.push(object);
+        }
+    }
+    for (const [index, object] of desiredTechDocObjects.entries()) {
+        console.log(`Doc object ${index + 1}:\n`, object, "\n");
+    }
+    
+    return desiredTechDocObjects;
 }
 
 // Local, non-integrated test for debugging:

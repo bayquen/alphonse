@@ -14,8 +14,7 @@ import { retrieveRelevantChunks } from "./retrieval.js";
 import { redisClient } from "./redisClient.js";
 import { InputTokens } from "openai/resources/responses.mjs";
 import { stringify } from "@langchain/core/utils/uuid";
-import { inspectGitHubRepo } from "./github.js";
-import { getGitHubRepoTree } from "./github.js";
+import { inspectGitHubRepo, getGitHubRepoTree, filterThruRepoFileTree } from "./github.js";
 
 // API access for OpenAI (LLM) API
 const openAIAPIKey = process.env.OPENAI_API_KEY;
@@ -211,6 +210,7 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
     await respond(
         "Request received. Checking repository accessibility..."
     );
+
     // Check repo access (is it public or private?) by using helper function from github.ts
     // Then returns GitHub repo metadata needed
     try {
@@ -226,26 +226,13 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
             return;
         }
         
-        // Check if it's a public repository, then return repository files to download.
+        // If it's a public repository...
         if (!gitHubRepoData.isPrivate) { // false = public repo
-            // TODO: MOVE THIS INNER CODE BLOCK INTO A NEW FUNCTION ADDED TO github.ts (separation of responsibilities)
-            let desiredTechDocObjects = [];
-            // Parse through GitHub repo's files; PASS IN cleaned-up GitHub URL only!
-            const fileObjects = await getGitHubRepoTree(cleanedUrl);
-            if (!fileObjects) {
-                console.error("Error: File objects not found.");
-                return;
-            }
-            for (const object of fileObjects) {
-                desiredTechDocObjects.push(object);
-            }
-            for (const [index, object] of desiredTechDocObjects.entries()) {
-                console.log(`Object ${index + 1}:\n`, object, "\n");
-            }
-
-            // TODO (7/14/26): RETURN FILE OBJECT ARRAY; THEN REFACTOR app.ts CODE so that all GITHUB-RETRIEVAL-related functions
-            //                 are implemented only in github.ts (SEPARATION OF RESPONSIBILITIES).
+            // First, return repo file objects to be passed on later for database storage.
+            const fileObjects = await filterThruRepoFileTree(cleanedUrl);
+            // TODO: PASS doc file objects to ingest.ts function here for embedding
         }
+
     } catch (err) {
         console.log("\nUh oh, error occurred during app.command() execution:\n");
         // Since app.command() is a Slack Bolt function, we can use Slack Bolt's logger for useful debugging stack-trace logs.
