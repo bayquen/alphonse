@@ -15,6 +15,7 @@ import { redisClient } from "./redisClient.js";
 import { InputTokens } from "openai/resources/responses.mjs";
 import { stringify } from "@langchain/core/utils/uuid";
 import { inspectGitHubRepo, getGitHubRepoTree, filterThruRepoFileTree } from "./github.js";
+import { createEmbeddingVectorsFromChunks, storeVectorsAndChunkedMetadata } from "./ingest.js";
 
 // API access for OpenAI (LLM) API
 const openAIAPIKey = process.env.OPENAI_API_KEY;
@@ -231,6 +232,7 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
             // First, return repo file objects to be passed on later for database storage.
             const fileObjects = await filterThruRepoFileTree(cleanedUrl);
             // TODO: PASS doc file objects to ingest.ts function here for embedding
+            
         }
 
     } catch (err) {

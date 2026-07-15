@@ -170,8 +170,9 @@ async function extractFileObjects(): Promise<(FileMetadata | MarkdownMetadata)[]
     }
 }
 
+// TODO (7/15/26): Refactor chunkTextContent() so that it takes in GitHub file objects as input data
 // Pipeline: Split all doc file text into chunks in prep for vector embedding
-async function chunkTextContent() {
+export async function chunkTextContentOld() {
     const allFileObjects = await extractFileObjects();
     // Token-aware text splitter, with added ~1.2x chunkSize multiplier since Voyage AI models use that ~1.2x more tokens 
     // than the OpenAI-based splitter (via LangChain library) used here.
@@ -223,8 +224,59 @@ async function chunkTextContent() {
 }
 
 
-// Pipeline: Create a vector embedding for each (doc) text chunk using VoyageAI API
-async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkData[]) {
+// (7/15/26): REFACTORED function that takes in GitHub repo file objects as input, then
+// splits all file text into chunks in prep for vector embedding
+// export async function chunkTextContentNew(fileObjects: object[]) {
+//     // Token-aware text splitter, with added ~1.2x chunkSize multiplier since Voyage AI models use that ~1.2x more tokens 
+//     // than the OpenAI-based splitter (via LangChain library) used here.
+//     // Note that embedding model I'm using is voyage-code-3, which has a max context len. of 32k tokens.
+//     const splitter = new TokenTextSplitter({ encodingName: "cl100k_base", chunkSize: 480, chunkOverlap: 100 });
+//     let rows: EmbeddedChunkData[] = [];
+//     let chunkIndex: number = 1;
+//     for (const fileObject of fileObjects) {
+//         // For given file text, split into chunks and save into an array
+//         const chunkedText = await splitter.splitText(fileObject.content);
+//         for (const chunk of chunkedText) {
+//             if (fileObject.type == "file") {
+//                 let row: EmbeddedChunkData = {
+//                     chunkContent: chunk,
+//                     embedding: [],
+//                     chunkIndex: chunkIndex,
+//                     filename: fileObject.filename,
+//                     sourcePath: fileObject.sourcePath,
+//                     paragraph: "",
+//                     h1: "",
+//                     h2: "",
+//                     h3: "",
+//                 }
+//                 // Add current chunk data inside of rows
+//                 rows.push(row);
+//             }
+//             if (fileObject.type == "markdown") {
+//                 let row: EmbeddedChunkData = {
+//                     chunkContent: chunk,
+//                     embedding: [],
+//                     chunkIndex: chunkIndex,
+//                     filename: fileObject.filename,
+//                     sourcePath: fileObject.sourcePath,
+//                     paragraph: fileObject.paragraph,
+//                     h1: fileObject.h1,
+//                     h2: fileObject.h2,
+//                     h3: fileObject.h3,
+//                 }
+//                 // Add current chunk data inside of rows
+//                 rows.push(row);
+//             }
+//             // Increment chunkIndex after each chunk iteration of current file object
+//             chunkIndex += 1;        
+//         }
+//         // chunkLists.push(chunkedText);
+//     }
+//     // Return chunked rows object (2D array, I think?)
+//     return rows;
+// }
+
+export async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkData[]) {
     // VoyageAI client
     // let embeddings = [];   
     for (let chunk of allChunks) {
@@ -261,7 +313,7 @@ function embeddingToBuffer(embedding: number[]): Buffer {
 }
 
 // Pipeline: Store vector embeddings, chunk text, and their corresponding metadata in a Redis vector index
-async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: EmbeddedChunkData[]) {
+export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: EmbeddedChunkData[]) {
     redisClient.on('error', err => console.log('Redis Client Error', err));
     await redisClient.connect();
 
@@ -338,13 +390,13 @@ async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: EmbeddedChun
     await redisClient.quit();
 }
 
-async function main() {
-    const chunkedResults = await chunkTextContent();
-    const embeddedChunkObjects = await createEmbeddingVectorsFromChunks(chunkedResults);
-    await storeVectorsAndChunkedMetadata(embeddedChunkObjects);
+// async function main() {
+//     const chunkedResults = await chunkTextContent();
+//     const embeddedChunkObjects = await createEmbeddingVectorsFromChunks(chunkedResults);
+//     await storeVectorsAndChunkedMetadata(embeddedChunkObjects);
 
-}
-main();
+// }
+// main();
 
 
 // PRE-PRODUCTION TESTS to check if Redis vector index works and to verify if the correct data

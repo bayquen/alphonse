@@ -67,15 +67,30 @@ export async function getGitHubRepoTree(repoUrl: string) {
     const tree_sha: string = metadata.defaultBranch;
     
     // Now, call this Octokit request function to retrieve
-    const repoTreeData = await octokit.request('GET /repos/{owner}/{repo}/git/trees/{tree_sha}', {
+    // const repoTree = await octokit.request('GET /repos/{owner}/{repo}/git/trees/{tree_sha}', {
+    //     owner,
+    //     repo,
+    //     tree_sha,  // branch name or repo's tree SHA
+    //     recursive: "1",
+    // });
+
+    const repoTree = await octokit.git.getTree({
         owner,
         repo,
         tree_sha,  // branch name or repo's tree SHA
-        recursive: "1",
+        recursive: "true",
     });
 
     // Return the actual file objects in the repo tree directly all together (not iteratively);
-    return repoTreeData.data.tree;
+    const files = repoTree.data.tree.filter(item => item.type === "blob");
+    let index = 0;
+    for (const file of files) {
+        console.log(`File object ${index + 1}:\n`)
+        console.log(file);
+        console.log(`\n`);
+        index += 1;
+    }
+    return files;
 }
 
 export async function filterThruRepoFileTree(cleanedUrl: string) {
@@ -119,10 +134,10 @@ export async function filterThruRepoFileTree(cleanedUrl: string) {
 // inspectGitHubRepo(exampleUrl);
 
 // Local, non-integrated test for debugging:
-// const repoUrl: string = "https://github.com/bayquen/dibsdash";
-// const getTree = await getGitHubRepoTree(repoUrl);
-// if (!getTree) {
-//     console.log("No data was returned");
-// } else {
-//     console.log(getTree);
-// }
+const repoUrl: string = "https://github.com/bayquen/dibsdash";
+const getTree = await getGitHubRepoTree(repoUrl);
+if (!getTree) {
+    console.log("No data was returned");
+} else {
+    console.log(getTree);
+}
