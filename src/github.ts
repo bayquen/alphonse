@@ -12,15 +12,14 @@ const octokit = new Octokit({
 
 const fileKeywords = [".md", ".asc", ".mdx", ".txt", ".rst", ".adoc", ".yaml", ".yml", ".asciidoc", ".xml", ".csv", "README", "CHANGELOG", "LICENSE", "architecture", "CODE_OF_CONDUCT", "codeOfConduct"];
 
-interface RepositoryInfo {
-    owner: string;
-    repo: string;
-    fullName: string;
-    isPrivate: boolean;
-    defaultBranch: string;
-    htmlUrl: string;
-    lastPushedAt: string;
-  }
+interface GitHubTreeObject {
+    path: string;
+    mode: string;
+    type: string;
+    sha: string;
+    size?: number;
+    url?: string;
+}
 
 // Check if GitHub repo exists, and if so then grab relevant metadata needed for authentication
 export async function inspectGitHubRepo(repoUrl: string) {
@@ -76,25 +75,25 @@ export async function getGitHubRepoTree(repoUrl: string) {
     // Return the actual file objects in the repo tree directly all together (not iteratively);
     const files = repoTree.data.tree.filter(item => item.type === "blob");
     let index = 0;
-    for (const file of files) {
-        console.log(`File object ${index + 1}:\n`)
-        console.log(file);
-        console.log(`\n`);
-        index += 1;
-    }
+    // // Debugging logs
+    // for (const file of files) {
+    //     console.log(`File object ${index + 1}:\n`)
+    //     console.log(file);
+    //     console.log(`\n`);
+    //     index += 1;
+    // }
     return files;
 }
 
-export async function getFilteredTechDocObjects(cleanedUrl: string) {
-    let desiredTechDocObjects: object[] = [];
+export async function getRelevantTechDocObjects(cleanedUrl: string) {
+    let relevantTechDocObjects: GitHubTreeObject[] = [];
     // Parse through GitHub repo's files; PASS IN cleaned-up GitHub URL only!
     const fileObjects = await getGitHubRepoTree(cleanedUrl);
     if (!fileObjects) {
         console.error("Error: File objects not found.");
         return;
     }
-    // Check if a given file object is a technical doc of interest
-
+    // Filtering for relevant doc files:
     for (const object of fileObjects) {
         // But first, split object's filepath string for filtering
         const parts = object.path.split("/");
@@ -105,15 +104,38 @@ export async function getFilteredTechDocObjects(cleanedUrl: string) {
         }
         // Case insensitive keyword-matching helper, yay!
         const keywordMatches = fileKeywords.some(fileKeyword => fileNameItself.toLowerCase().includes(fileKeyword));
-        // If any match is found, add file object to the return array.
+        // If any match is found, add file object to doc-object array
         if (keywordMatches) {
-            desiredTechDocObjects.push(object);
+            relevantTechDocObjects.push(object);
         }
     }
-    for (const [index, object] of desiredTechDocObjects.entries()) {
-        console.log(`Doc object ${index + 1}:\n`, object, "\n");
+
+    // for (const [index, object] of relevantTechDocObjects.entries()) {
+    //     console.log(`Doc object ${index + 1}:\n`, object, "\n");
+    // }
+
+    const metadata = await inspectGitHubRepo(cleanedUrl);
+    if (!metadata) {
+        console.error("Uh oh, an error occurred during the getRelevantTechDocObjects() function call:\nNo metadata was retrieved from the provided repo");
+        return;
     }
-    return desiredTechDocObjects;
+    const owner: string = metadata.owner;
+    const repo: string = metadata.repo;
+
+    for (const object of relevantTechDocObjects) {
+        // Get the content itself within each file
+        const response = await octokit.repos.getContent({
+            owner,
+            repo,
+            path: object.path,
+        });
+        console.log("\nResponse content:\n", response, "\n\n");
+        // TODO (7/16/25): Decode file content to human-readable format (i.e. UTF-8)
+        const content = response.data.content;
+    }
+
+    return relevantTechDocObjects;
+
 }
 
 // LOCAL FUNCTION TESTS:
@@ -131,6 +153,6 @@ export async function getFilteredTechDocObjects(cleanedUrl: string) {
 // }
 
 // TEST 3:
-// const exampleCleanedUrl = 'https://github.com/bayquen/dibsdash';
-// const getObjects = await getFilteredTechDocObjects(exampleCleanedUrl);
-// console.log(getObjects);
+const exampleCleanedUrl = 'https://github.com/bayquen/dibsdash';
+const getObjects = await getRelevantTechDocObjects(exampleCleanedUrl);
+console.log(getObjects);

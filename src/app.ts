@@ -14,7 +14,7 @@ import { retrieveRelevantChunks } from "./retrieval.js";
 import { redisClient } from "./redisClient.js";
 import { InputTokens } from "openai/resources/responses.mjs";
 import { stringify } from "@langchain/core/utils/uuid";
-import { inspectGitHubRepo, getGitHubRepoTree, getFilteredTechDocObjects } from "./github.js";
+import { inspectGitHubRepo, getRelevantTechDocObjects } from "./github.js";
 import { createEmbeddingVectorsFromChunks, storeVectorsAndChunkedMetadata } from "./ingest.js";
 
 // API access for OpenAI (LLM) API
