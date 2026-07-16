@@ -87,6 +87,7 @@ export async function getGitHubRepoTree(repoUrl: string) {
 
 export async function getRelevantTechDocObjects(cleanedUrl: string) {
     let relevantTechDocObjects: GitHubTreeObject[] = [];
+    // let finalTechDocObjects: 
     // Parse through GitHub repo's files; PASS IN cleaned-up GitHub URL only!
     const fileObjects = await getGitHubRepoTree(cleanedUrl);
     if (!fileObjects) {
@@ -137,7 +138,6 @@ export async function getRelevantTechDocObjects(cleanedUrl: string) {
             // Convert raw content into human-readable format (i.e. UTF-8)
             const content = Buffer.from(rawFileContent, "base64").toString("utf8");
 
-
             // Debugging logs
             // console.log("\nContent:\n");          
             // console.log(content);         
@@ -146,7 +146,7 @@ export async function getRelevantTechDocObjects(cleanedUrl: string) {
         
     }
 
-    return relevantTechDocObjects;
+    return;
 
 }
 
