@@ -130,8 +130,17 @@ export async function getRelevantTechDocObjects(cleanedUrl: string) {
             path: object.path,
         });
         console.log("\nResponse content:\n", response, "\n\n");
+
         // TODO (7/16/25): Decode file content to human-readable format (i.e. UTF-8)
-        const content = response.data.content;
+        if (!Array.isArray(response.data) && response.data.type === "file") {
+            const rawFileContent = response.data.content;
+            // Convert raw content into human-readable format (i.e. UTF-8)
+            const content = Buffer.from(rawFileContent, "base64").toString("utf8");
+            console.log("\nContent:\n");          
+            console.log(content);         
+        }
+
+        
     }
 
     return relevantTechDocObjects;
