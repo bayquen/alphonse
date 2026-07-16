@@ -65,14 +65,6 @@ export async function getGitHubRepoTree(repoUrl: string) {
     const owner: string = metadata.owner;
     const repo: string = metadata.repo;
     const tree_sha: string = metadata.defaultBranch;
-    
-    // Now, call this Octokit request function to retrieve
-    // const repoTree = await octokit.request('GET /repos/{owner}/{repo}/git/trees/{tree_sha}', {
-    //     owner,
-    //     repo,
-    //     tree_sha,  // branch name or repo's tree SHA
-    //     recursive: "1",
-    // });
 
     const repoTree = await octokit.git.getTree({
         owner,
@@ -111,10 +103,6 @@ export async function getFilteredTechDocObjects(cleanedUrl: string) {
             // Jump to next loop iteration if it doesn't exist
             continue;
         }
-        // Check for file types of interest
-        // else if (fileNameItself.includes(".md")) {
-        //     desiredTechDocObjects.push(object);
-        // }
         // Case insensitive keyword-matching helper, yay!
         const keywordMatches = fileKeywords.some(fileKeyword => fileNameItself.toLowerCase().includes(fileKeyword));
         // If any match is found, add file object to the return array.
