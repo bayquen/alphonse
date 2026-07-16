@@ -93,7 +93,7 @@ export async function getGitHubRepoTree(repoUrl: string) {
     return files;
 }
 
-export async function filterThruRepoFileTree(cleanedUrl: string) {
+export async function getFilteredTechDocObjects(cleanedUrl: string) {
     let desiredTechDocObjects: object[] = [];
     // Parse through GitHub repo's files; PASS IN cleaned-up GitHub URL only!
     const fileObjects = await getGitHubRepoTree(cleanedUrl);
@@ -125,19 +125,24 @@ export async function filterThruRepoFileTree(cleanedUrl: string) {
     for (const [index, object] of desiredTechDocObjects.entries()) {
         console.log(`Doc object ${index + 1}:\n`, object, "\n");
     }
-    
     return desiredTechDocObjects;
 }
 
-// Local, non-integrated test for debugging:
+// LOCAL FUNCTION TESTS:
+// TEST 1:
 // const exampleUrl: string = "https://github.com/bayquen/dibsdash";
 // inspectGitHubRepo(exampleUrl);
 
-// Local, non-integrated test for debugging:
-const repoUrl: string = "https://github.com/bayquen/dibsdash";
-const getTree = await getGitHubRepoTree(repoUrl);
-if (!getTree) {
-    console.log("No data was returned");
-} else {
-    console.log(getTree);
-}
+// TEST 2:
+// const repoUrl: string = "https://github.com/bayquen/dibsdash";
+// const getTree = await getGitHubRepoTree(repoUrl);
+// if (!getTree) {
+//     console.log("No data was returned");
+// } else {
+//     console.log(getTree);
+// }
+
+// TEST 3:
+// const exampleCleanedUrl = 'https://github.com/bayquen/dibsdash';
+// const getObjects = await getFilteredTechDocObjects(exampleCleanedUrl);
+// console.log(getObjects);

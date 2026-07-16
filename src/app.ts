@@ -14,7 +14,7 @@ import { retrieveRelevantChunks } from "./retrieval.js";
 import { redisClient } from "./redisClient.js";
 import { InputTokens } from "openai/resources/responses.mjs";
 import { stringify } from "@langchain/core/utils/uuid";
-import { inspectGitHubRepo, getGitHubRepoTree, filterThruRepoFileTree } from "./github.js";
+import { inspectGitHubRepo, getGitHubRepoTree, getFilteredTechDocObjects } from "./github.js";
 import { createEmbeddingVectorsFromChunks, storeVectorsAndChunkedMetadata } from "./ingest.js";
 
 // API access for OpenAI (LLM) API
@@ -230,7 +230,8 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
         // If it's a public repository...
         if (!gitHubRepoData.isPrivate) { // false = public repo
             // First, return repo file objects to be passed on later for database storage.
-            const fileObjects = await filterThruRepoFileTree(cleanedUrl);
+            const fileObjects = await getFilteredTechDocObjects(cleanedUrl);
+            
             // TODO: PASS doc file objects to ingest.ts function here for embedding
             
         }
