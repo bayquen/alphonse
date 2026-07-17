@@ -21,6 +21,13 @@ interface GitHubTreeObject {
     url?: string;
 }
 
+interface GitHubFileObject {
+    type: "file",
+    filename: string;
+    content: string;
+    sourcePath: string;
+}
+
 // Check if GitHub repo exists, and if so then grab relevant metadata needed for authentication
 export async function inspectGitHubRepo(repoUrl: string) {
     const url = new URL(repoUrl.trim());
@@ -87,7 +94,7 @@ export async function getGitHubRepoTree(repoUrl: string) {
 
 export async function getRelevantTechDocObjects(cleanedUrl: string) {
     let relevantTechDocObjects: GitHubTreeObject[] = [];
-    // let finalTechDocObjects: 
+    let finalTechDocObjects: GitHubFileObject[] = [];
     // Parse through GitHub repo's files; PASS IN cleaned-up GitHub URL only!
     const fileObjects = await getGitHubRepoTree(cleanedUrl);
     if (!fileObjects) {
@@ -128,7 +135,7 @@ export async function getRelevantTechDocObjects(cleanedUrl: string) {
         const response = await octokit.repos.getContent({
             owner,
             repo,
-            path: object.path,
+            path: object.path, // e.g. "/README.md"
         });
         console.log("\nResponse content:\n", response, "\n\n");
 
@@ -137,10 +144,11 @@ export async function getRelevantTechDocObjects(cleanedUrl: string) {
             const rawFileContent = response.data.content;
             // Convert raw content into human-readable format (i.e. UTF-8)
             const content = Buffer.from(rawFileContent, "base64").toString("utf8");
-
+            
             // Debugging logs
             // console.log("\nContent:\n");          
-            // console.log(content);         
+            // console.log(content);  
+
         }
 
         

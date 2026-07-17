@@ -130,24 +130,24 @@ async function extractMDHeadingsAndContent(
     return results;
 }
 
-// Pipeline: Read each file and create + return array of file metadata objects with their text to be chunked after
-async function extractFileObjects(): Promise<(FileMetadata | MarkdownMetadata)[]> {
+// Pipeline: Read each GitHub file and create + return array of file metadata objects with their text so they can be chunked after
+async function extractFileObjects(githubFileObjects: FileMetadata[]): Promise<(FileMetadata | MarkdownMetadata)[]> {
     try {
-        const filePaths = await readDocsDir('/home/bayquen/projects/rtfm-agent/docs');
-        const fileObjects = await Promise.all(
-            filePaths.map(filePath => createFileObject(filePath))
-        );
+        // const filePaths = await readDocsDir('/home/bayquen/projects/rtfm-agent/docs');
+        // const fileObjects = await Promise.all(
+        //     filePaths.map(filePath => createFileObject(filePath))
+        // );
         
         let allMetadataObjects: (FileMetadata | MarkdownMetadata)[] = [];
         let mdResults: MarkdownMetadata[] = []; 
         let mdFiles: FileMetadata[] = [];
         // Check if each file object is an .md file. If yes, then save into separate array 
         // for .md metadata extraction
-        for (const fileObject of fileObjects) {
-            if (path.basename(fileObject.sourcePath).split('.').pop()?.toLowerCase() == 'md') {
-                mdFiles.push(fileObject);
+        for (const object of githubFileObjects) {
+            if (path.basename(object.sourcePath).split('.').pop()?.toLowerCase() == 'md') {
+                mdFiles.push(object);
             } else {
-                allMetadataObjects.push(fileObject);  // Else, save file object directly in end-results array
+                allMetadataObjects.push(object);  // Else, save file object directly in end-results array
             }
         }
         // Extract .md metadata and save to end results array.
@@ -170,111 +170,58 @@ async function extractFileObjects(): Promise<(FileMetadata | MarkdownMetadata)[]
     }
 }
 
-// TODO (7/15/26): Refactor chunkTextContent() so that it takes in GitHub file objects as input data
-// Pipeline: Split all doc file text into chunks in prep for vector embedding
-export async function chunkTextContentOld() {
-    const allFileObjects = await extractFileObjects();
+// Pipeline: (7/15/26) Refactored function that takes in GitHub repo file metadata objects, then
+// splits + returns all file-text chunks in prep for vector embeddings extraction.
+export async function chunkTextContent(allMetadataObjects: FileMetadata[]) {
+    const fileObjects = await extractFileObjects(allMetadataObjects);
     // Token-aware text splitter, with added ~1.2x chunkSize multiplier since Voyage AI models use that ~1.2x more tokens 
     // than the OpenAI-based splitter (via LangChain library) used here.
     // Note that embedding model I'm using is voyage-code-3, which has a max context len. of 32k tokens.
     const splitter = new TokenTextSplitter({ encodingName: "cl100k_base", chunkSize: 480, chunkOverlap: 100 });
-    let rows: EmbeddedChunkData[] = [];
+    let allChunks: EmbeddedChunkData[] = [];
     let chunkIndex: number = 1;
-    for (const fileObject of allFileObjects) {
+    for (const object of fileObjects) {
         // For given file text, split into chunks and save into an array
-        const chunkedText = await splitter.splitText(fileObject.content);
+        const chunkedText = await splitter.splitText(object.content);
         for (const chunk of chunkedText) {
-            if (fileObject.type == "file") {
+            if (object.type == "file") {
                 let row: EmbeddedChunkData = {
                     chunkContent: chunk,
                     embedding: [],
                     chunkIndex: chunkIndex,
-                    filename: fileObject.filename,
-                    sourcePath: fileObject.sourcePath,
+                    filename: object.filename,
+                    sourcePath: object.sourcePath,
                     paragraph: "",
                     h1: "",
                     h2: "",
                     h3: "",
                 }
                 // Add current chunk data inside of rows
-                rows.push(row);
+                allChunks.push(row);
             }
-            if (fileObject.type == "markdown") {
+            if (object.type == "markdown") {
                 let row: EmbeddedChunkData = {
                     chunkContent: chunk,
                     embedding: [],
                     chunkIndex: chunkIndex,
-                    filename: fileObject.filename,
-                    sourcePath: fileObject.sourcePath,
-                    paragraph: fileObject.paragraph,
-                    h1: fileObject.h1,
-                    h2: fileObject.h2,
-                    h3: fileObject.h3,
+                    filename: object.filename,
+                    sourcePath: object.sourcePath,
+                    paragraph: object.paragraph,
+                    h1: object.h1,
+                    h2: object.h2,
+                    h3: object.h3,
                 }
-                // Add current chunk data inside of rows
-                rows.push(row);
+                // Add current chunk data row inside the return array
+                allChunks.push(row);
             }
             // Increment chunkIndex after each chunk iteration of current file object
             chunkIndex += 1;        
         }
         // chunkLists.push(chunkedText);
     }
-    // Return chunked rows object (2D array, I think?)
-    return rows;
+    // Return chunked-rows object array
+    return allChunks;
 }
-
-
-// (7/15/26): REFACTORED function that takes in GitHub repo file objects as input, then
-// splits all file text into chunks in prep for vector embedding
-// export async function chunkTextContentNew(fileObjects: object[]) {
-//     // Token-aware text splitter, with added ~1.2x chunkSize multiplier since Voyage AI models use that ~1.2x more tokens 
-//     // than the OpenAI-based splitter (via LangChain library) used here.
-//     // Note that embedding model I'm using is voyage-code-3, which has a max context len. of 32k tokens.
-//     const splitter = new TokenTextSplitter({ encodingName: "cl100k_base", chunkSize: 480, chunkOverlap: 100 });
-//     let rows: EmbeddedChunkData[] = [];
-//     let chunkIndex: number = 1;
-//     for (const fileObject of fileObjects) {
-//         // For given file text, split into chunks and save into an array
-//         const chunkedText = await splitter.splitText(fileObject.content);
-//         for (const chunk of chunkedText) {
-//             if (fileObject.type == "file") {
-//                 let row: EmbeddedChunkData = {
-//                     chunkContent: chunk,
-//                     embedding: [],
-//                     chunkIndex: chunkIndex,
-//                     filename: fileObject.filename,
-//                     sourcePath: fileObject.sourcePath,
-//                     paragraph: "",
-//                     h1: "",
-//                     h2: "",
-//                     h3: "",
-//                 }
-//                 // Add current chunk data inside of rows
-//                 rows.push(row);
-//             }
-//             if (fileObject.type == "markdown") {
-//                 let row: EmbeddedChunkData = {
-//                     chunkContent: chunk,
-//                     embedding: [],
-//                     chunkIndex: chunkIndex,
-//                     filename: fileObject.filename,
-//                     sourcePath: fileObject.sourcePath,
-//                     paragraph: fileObject.paragraph,
-//                     h1: fileObject.h1,
-//                     h2: fileObject.h2,
-//                     h3: fileObject.h3,
-//                 }
-//                 // Add current chunk data inside of rows
-//                 rows.push(row);
-//             }
-//             // Increment chunkIndex after each chunk iteration of current file object
-//             chunkIndex += 1;        
-//         }
-//         // chunkLists.push(chunkedText);
-//     }
-//     // Return chunked rows object (2D array, I think?)
-//     return rows;
-// }
 
 export async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkData[]) {
     // VoyageAI client
