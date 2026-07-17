@@ -15,7 +15,7 @@ import { redisClient } from "./redisClient.js";
 import { InputTokens } from "openai/resources/responses.mjs";
 import { stringify } from "@langchain/core/utils/uuid";
 import { inspectGitHubRepo, getRelevantTechDocObjects } from "./github.js";
-import { createEmbeddingVectorsFromChunks, storeVectorsAndChunkedMetadata } from "./ingest.js";
+import { extractFileObjects, chunkTextContent, createEmbeddingVectorsFromChunks, storeVectorsAndChunkedMetadata } from "./ingest.js";
 
 // API access for OpenAI (LLM) API
 const openAIAPIKey = process.env.OPENAI_API_KEY;
@@ -228,12 +228,17 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
         }
         
         // If it's a public repository...
-        if (!gitHubRepoData.isPrivate) { // false = public repo
-            // First, return repo file objects to be passed on later for database storage.
-            const fileObjects = "foo";
-            
-            // TODO: PASS doc file objects to ingest.ts function here for embedding
-            
+        if (!gitHubRepoData.isPrivate) { // false = public repo           
+            const githubMetadataObjects = await getRelevantTechDocObjects(cleanedUrl);
+            if (!githubMetadataObjects) {
+                throw new Error("\nError: failed to extract any relevant GitHub-metadata file objects after running /add_repo\n");
+            }
+            const techDocObjects = await extractFileObjects(githubMetadataObjects);
+            const textChunks = await chunkTextContent(techDocObjects);
+            const embeddings = await createEmbeddingVectorsFromChunks(textChunks);
+            const storedVectorsAndChunks= await storeVectorsAndChunkedMetadata(embeddings);
+            // Debugging logs
+            console.log(`\nStored data in Redis index:\n${storedVectorsAndChunks}\n`);
         }
 
     } catch (err) {

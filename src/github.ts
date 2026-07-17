@@ -129,7 +129,7 @@ export async function getRelevantTechDocObjects(cleanedUrl: string) {
     }
     const owner: string = metadata.owner;
     const repo: string = metadata.repo;
-
+    // Let's get the relevant tech docs, create formatted file objects, then return those objects all at once as an array
     for (const object of relevantTechDocObjects) {
         // Get the content itself within each file
         const response = await octokit.repos.getContent({
@@ -137,25 +137,34 @@ export async function getRelevantTechDocObjects(cleanedUrl: string) {
             repo,
             path: object.path, // e.g. "/README.md"
         });
-        console.log("\nResponse content:\n", response, "\n\n");
-
+        // Debugging log
+        // console.log("\nResponse content:\n", response, "\n\n");
         // Type guarding for response.data, then convert and store file text content
         if (!Array.isArray(response.data) && response.data.type === "file") {
             const rawFileContent = response.data.content;
             // Convert raw content into human-readable format (i.e. UTF-8)
-            const content = Buffer.from(rawFileContent, "base64").toString("utf8");
-            
+            const cleanedContent = Buffer.from(rawFileContent, "base64").toString("utf8");
+            // Create a tech doc file object given current GitHub file response data
+            const githubFileObject: GitHubFileObject = {
+                type: "file",
+                filename: response.data.name,
+                content: cleanedContent,
+                sourcePath: response.data.path,
+            }
+            // Add current tech doc file object into the return-array
+            finalTechDocObjects.push(githubFileObject);
             // Debugging logs
-            // console.log("\nContent:\n");          
-            // console.log(content);  
-
+            // for (const obj of finalTechDocObjects) {
+            //     console.log(`\nTech doc object: \n`);
+            //     console.log(obj);
+            //     console.log("\n");
+            // }
+            // [End of debugging logs]
+        } else {
+            continue;
         }
-
-        
     }
-
-    return;
-
+    return finalTechDocObjects;
 }
 
 // LOCAL FUNCTION TESTS:
@@ -173,6 +182,6 @@ export async function getRelevantTechDocObjects(cleanedUrl: string) {
 // }
 
 // TEST 3:
-const exampleCleanedUrl = 'https://github.com/bayquen/dibsdash';
+const exampleCleanedUrl = 'https://github.com/bayquen/better-git-standup';
 const getObjects = await getRelevantTechDocObjects(exampleCleanedUrl);
-console.log(getObjects);
+// console.log(getObjects);

@@ -9,6 +9,7 @@ import { SCHEMA_FIELD_TYPE, SCHEMA_VECTOR_FIELD_ALGORITHM } from 'redis';  // Re
 // Use CommonJS's (CJS) Node require() over ESM since VoyageAI (v0.2.1) module import for ESM is fkin broken.
 const require = createRequire(import.meta.url);
 const { VoyageAIClient, VoyageAIError } = require("voyageai") as typeof import("voyageai");
+import { getRelevantTechDocObjects } from "./github.js";
 
 dotenv.config();
 
@@ -47,20 +48,20 @@ interface EmbeddedChunkData {
     h3: string | null;
 }
 
-// Function for reading directory containing uploaded doc files (for now; TODO: read doc files from git repos or files shared by user)
-function readDocsDir(docsPath: string): Promise<string[]> {
-    return new Promise((resolve, reject) => {
-        fs.readdir(docsPath, (err, files) => {
-            if (err)
-                reject(err);
-            else {
-                // Prepend full path to each file (i.e. [directory path] + '/' + [file name])
-                const filePaths = files.map(file => path.join(docsPath, file));
-                resolve(filePaths);
-            }
-        });
-    });
-}
+// // Function for reading directory containing uploaded doc files (for now; TODO: read doc files from git repos or files shared by user)
+// function readDocsDir(docsPath: string): Promise<string[]> {
+//     return new Promise((resolve, reject) => {
+//         fs.readdir(docsPath, (err, files) => {
+//             if (err)
+//                 reject(err);
+//             else {
+//                 // Prepend full path to each file (i.e. [directory path] + '/' + [file name])
+//                 const filePaths = files.map(file => path.join(docsPath, file));
+//                 resolve(filePaths);
+//             }
+//         });
+//     });
+// }
 
 // Function for reading a single file and create file object from it
 function createFileObject(filePath: string): Promise<FileMetadata> {
@@ -131,7 +132,7 @@ async function extractMDHeadingsAndContent(
 }
 
 // Pipeline: Read each GitHub file and create + return array of file metadata objects with their text so they can be chunked after
-async function extractFileObjects(githubFileObjects: FileMetadata[]): Promise<(FileMetadata | MarkdownMetadata)[]> {
+export async function extractFileObjects(githubFileObjects: FileMetadata[]): Promise<(FileMetadata | MarkdownMetadata)[]> {
     try {
         // const filePaths = await readDocsDir('/home/bayquen/projects/rtfm-agent/docs');
         // const fileObjects = await Promise.all(
@@ -165,15 +166,15 @@ async function extractFileObjects(githubFileObjects: FileMetadata[]): Promise<(F
         // console.log("Length of resulting metadata object array:", allMetadataObjects.length);
         return allMetadataObjects;
     } catch (err) {
-        console.error('Error ingesting:', err);
+        console.error('Error ingesting:\n');
+        console.error(err);
         throw err;
     }
 }
 
 // Pipeline: (7/15/26) Refactored function that takes in GitHub repo file metadata objects, then
 // splits + returns all file-text chunks in prep for vector embeddings extraction.
-export async function chunkTextContent(allMetadataObjects: FileMetadata[]) {
-    const fileObjects = await extractFileObjects(allMetadataObjects);
+export async function chunkTextContent(fileObjects: (FileMetadata | MarkdownMetadata)[]) {
     // Token-aware text splitter, with added ~1.2x chunkSize multiplier since Voyage AI models use that ~1.2x more tokens 
     // than the OpenAI-based splitter (via LangChain library) used here.
     // Note that embedding model I'm using is voyage-code-3, which has a max context len. of 32k tokens.
