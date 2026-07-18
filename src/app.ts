@@ -217,7 +217,7 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
     try {
         // IMPORTANT NOTE: `cleanedUrl` is the cleaned-up GitHub repo URL string!
         const gitHubRepoData = await inspectGitHubRepo(cleanedUrl);
-        // Do an error check to see if the repo metadata actually exists, otherwise log error message and return nothing
+        // Make a VALIDATION CHECK to see if the repo metadata actually exists, otherwise log error message and return nothing
         if (!gitHubRepoData) {
             console.log(`Uh oh. Error occurred while running app.command(/add_repo):\n 
                          The GitHub repo metadata failed to extract, or it doesn't exist.`);

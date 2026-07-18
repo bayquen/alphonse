@@ -4,6 +4,10 @@
 //          This checks to see the repo's credentials and its visibility (if private, 
 //          then the repo needs authentication from admin/owner).
 import { Octokit } from "@octokit/rest";
+import * as fs from 'fs';  // file-system module From NodeJS
+import path from 'path';
+import { execFile } from "child_process";
+import { promisify } from "util";
 
 const octokit = new Octokit({
     // auth: "secret123"
