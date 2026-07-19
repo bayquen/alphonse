@@ -166,16 +166,16 @@ const UNWANTED_FILENAMES = new Set([
   ".swo",
 ]);
 
-interface GitHubTreeObject {
-    path: string;
-    mode: string;
-    type: string;
-    sha: string;
-    size?: number;
-    url?: string;
-}
+// interface GitHubTreeObject {
+//     path: string;
+//     mode: string;
+//     type: string;
+//     sha: string;
+//     size?: number;
+//     url?: string;
+// }
 
-interface GitHubFileObject {
+export interface GitHubFileObject {
     type: string,
     filename: string;
     content: string;
@@ -284,18 +284,18 @@ export async function getRelevantTechDocObjects(cleanedUrl: string) {
     const repoRoot = cloneDirectory;
     await execFileAsync("git", [
         "clone",
-        "--depth-1",
+        "--depth=1",
         cleanedUrl,  // Repository URL
         cloneDirectory,
     ]);
 
     // Walk (i.e. parse thru) the repository and process each repo file
-    async function walk(dir: string) {
-        const entries = await fs.readdir(dir, {
+    async function walk(repoRoot: string) {
+        const entries = await fs.readdir(repoRoot, {
             withFileTypes: true
         });
         for (const entry of entries) {
-            const fullPath = path.join(dir, entry.name)
+            const fullPath = path.join(repoRoot, entry.name)
             // VALIDATION: If helper function call returns boolean of true, then skip this entry because it's irrelevant 
             // (i.e., not useful / not a technical doc)
             if (shouldSkipEntry(entry)) {
@@ -319,6 +319,7 @@ export async function getRelevantTechDocObjects(cleanedUrl: string) {
             }
         }
     }
+    await walk(repoRoot);
     return relevantTechDocObjects;
 }
 
@@ -337,6 +338,6 @@ export async function getRelevantTechDocObjects(cleanedUrl: string) {
 // }
 
 // TEST 3:
-const exampleCleanedUrl = 'https://github.com/bayquen/better-git-standup';
+const exampleCleanedUrl = 'https://github.com/firecrawl/firecrawl';
 const getObjects = await getRelevantTechDocObjects(exampleCleanedUrl);
 // console.log(getObjects);

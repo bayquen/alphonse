@@ -9,23 +9,35 @@ import { SCHEMA_FIELD_TYPE, SCHEMA_VECTOR_FIELD_ALGORITHM } from 'redis';  // Re
 // Use CommonJS's (CJS) Node require() over ESM since VoyageAI (v0.2.1) module import for ESM is fkin broken.
 const require = createRequire(import.meta.url);
 const { VoyageAIClient, VoyageAIError } = require("voyageai") as typeof import("voyageai");
-import { getRelevantTechDocObjects } from "./github.js";
+import { getRelevantTechDocObjects, } from "./github.js";
+import type { GitHubFileObject } from "./github.js";
 
 dotenv.config();
 
 const voyageAPIKey: string | undefined = process.env.VOYAGE_API_KEY;
 const voyageClient = new VoyageAIClient({ apiKey: voyageAPIKey});
 
-// const redisClient = createClient();
+await redisClient.connect();
 
-interface FileMetadata {
+redisClient.on('error', err => {
+    console.log('Redis Client Error', err)
+});
+
+export async function connectRedis() {
+    // VALIDATION: Make sure redis Client isn't already open!
+    if (!redisClient.isOpen) {
+        await redisClient.connect();
+    }
+}
+
+interface FileObject {
     type: "file",
     filename: string;
     content: string;
     sourcePath: string;
 }
 
-interface MarkdownMetadata {
+interface MarkdownObject {
     type: "markdown",
     filename: string;
     content: string;
@@ -64,7 +76,7 @@ interface EmbeddedChunkData {
 // }
 
 // Function for reading a single file and create file object from it
-function createFileObject(filePath: string): Promise<FileMetadata> {
+function createFileObject(filePath: string): Promise<FileObject> {
     return new Promise((resolve, reject) => { 
         // Asynchronously read files for server load efficiency (esp. for large-sized docs)
         fs.readFile(filePath, 'utf8', (err, data) => {
@@ -72,7 +84,7 @@ function createFileObject(filePath: string): Promise<FileMetadata> {
                 reject(err);
             } else {
                 // Create file object
-                const metadata: FileMetadata = {
+                const metadata: FileObject = {
                     type: "file",
                     filename: path.basename(filePath),
                     content: data,
@@ -87,8 +99,8 @@ function createFileObject(filePath: string): Promise<FileMetadata> {
 // Pipeline: Parse any markdown doc files to extract headings (h1, h2, h3) and other metadata, then convert into
 // file metadata objects. Enriches metadata to improve context for agent (vector) search.
 async function extractMDHeadingsAndContent(
-    fileObject: FileMetadata
- ): Promise<MarkdownMetadata[]> {
+    fileObject: GitHubFileObject
+ ): Promise<MarkdownObject[]> {
     const fileText = fileObject.content;
 
     const parser = new MarkdownParser();
@@ -97,7 +109,7 @@ async function extractMDHeadingsAndContent(
     let currentH1 = null;
     let currentH2 = null;
     let currentH3 = null;
-    const results: MarkdownMetadata[] = [];
+    const results: MarkdownObject[] = [];
 
     for (const node of nodes) {
         if (node.type === "heading") {
@@ -113,7 +125,7 @@ async function extractMDHeadingsAndContent(
         } else if (node.type === "paragraph") {
             const paragraphText = (node.children[0] as any).text;
 
-            const metadata: MarkdownMetadata = {
+            const metadata: MarkdownObject = {
                 type: "markdown",
                 filename: fileObject.filename,
                 content: fileObject.content,
@@ -132,23 +144,23 @@ async function extractMDHeadingsAndContent(
 }
 
 // Pipeline: Read each GitHub file and create + return array of file metadata objects with their text so they can be chunked after
-export async function extractFileObjects(githubFileObjects: FileMetadata[]): Promise<(FileMetadata | MarkdownMetadata)[]> {
+export async function extractFileObjects(githubFileObjects: GitHubFileObject[]): Promise<(GitHubFileObject | MarkdownObject)[]> {
     try {
         // const filePaths = await readDocsDir('/home/bayquen/projects/rtfm-agent/docs');
         // const fileObjects = await Promise.all(
         //     filePaths.map(filePath => createFileObject(filePath))
         // );
         
-        let allMetadataObjects: (FileMetadata | MarkdownMetadata)[] = [];
-        let mdResults: MarkdownMetadata[] = []; 
-        let mdFiles: FileMetadata[] = [];
+        let allRepoFileObjects: (GitHubFileObject | MarkdownObject)[] = [];
+        let mdResults: MarkdownObject[] = []; 
+        let mdFiles: GitHubFileObject[] = [];
         // Check if each file object is an .md file. If yes, then save into separate array 
         // for .md metadata extraction
         for (const object of githubFileObjects) {
             if (path.basename(object.sourcePath).split('.').pop()?.toLowerCase() == 'md') {
                 mdFiles.push(object);
             } else {
-                allMetadataObjects.push(object);  // Else, save file object directly in end-results array
+                allRepoFileObjects.push(object);  // Else, save file object directly in end-results array
             }
         }
         // Extract .md metadata and save to end results array.
@@ -156,15 +168,15 @@ export async function extractFileObjects(githubFileObjects: FileMetadata[]): Pro
         for (const mdFile of mdFiles) {
             const extractedMDObjects = await extractMDHeadingsAndContent(mdFile);
             for (const object of extractedMDObjects) {
-                allMetadataObjects.push(object);
+                allRepoFileObjects.push(object);
             }
         }
         // Function debugging logs
-        // console.log(allMetadataObjects);
-        // console.log("\n\nMetadata object's type:", typeof(allMetadataObjects));
+        // console.log(allRepoFileObjects);
+        // console.log("\n\nMetadata object's type:", typeof(allRepoFileObjects));
         // console.log("\n\n");
-        // console.log("Length of resulting metadata object array:", allMetadataObjects.length);
-        return allMetadataObjects;
+        // console.log("Length of resulting metadata object array:", allRepoFileObjects.length);
+        return allRepoFileObjects;
     } catch (err) {
         console.error('Error ingesting:\n');
         console.error(err);
@@ -172,9 +184,14 @@ export async function extractFileObjects(githubFileObjects: FileMetadata[]): Pro
     }
 }
 
+// Helper function: Check whether a given file object is a markdown file object or not, via it's unique property (i.e. type: "markdown").
+function isMarkdownObject(object: GitHubFileObject | MarkdownObject): object is MarkdownObject {
+    return object.type === "markdown";
+}
+
 // Pipeline: (7/15/26) Refactored function that takes in GitHub repo file metadata objects, then
 // splits + returns all file-text chunks in prep for vector embeddings extraction.
-export async function chunkTextContent(fileObjects: (FileMetadata | MarkdownMetadata)[]) {
+export async function chunkTextContent(fileObjects: (GitHubFileObject | MarkdownObject)[]) {
     // Token-aware text splitter, with added ~1.2x chunkSize multiplier since Voyage AI models use that ~1.2x more tokens 
     // than the OpenAI-based splitter (via LangChain library) used here.
     // Note that embedding model I'm using is voyage-code-3, which has a max context len. of 32k tokens.
@@ -200,7 +217,9 @@ export async function chunkTextContent(fileObjects: (FileMetadata | MarkdownMeta
                 // Add current chunk data inside of rows
                 allChunks.push(row);
             }
-            if (object.type == "markdown") {
+            // Check if object is a markdown object;
+            // Passes when (object === MarkdownObject) === true ),
+            if (isMarkdownObject(object)) {
                 let row: EmbeddedChunkData = {
                     chunkContent: chunk,
                     embedding: [],
@@ -262,9 +281,6 @@ function embeddingToBuffer(embedding: number[]): Buffer {
 
 // Pipeline: Store vector embeddings, chunk text, and their corresponding metadata in a Redis vector index
 export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: EmbeddedChunkData[]) {
-    redisClient.on('error', err => console.log('Redis Client Error', err));
-    await redisClient.connect();
-
     try {
         await redisClient.ft.create('vector_idx', {
             'chunkContent': {
@@ -349,20 +365,20 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
 
 // PRE-PRODUCTION TESTS to check if Redis vector index works and to verify if the correct data
 // (i.e. chunk text, vector embeddings, and corresponding metadata) was stored.
-async function tests() {
-        // TESTS
-    // Connect to Redis client again
-    await redisClient.connect();
-    // Test: Verify if our vector index exists and if the correct data is stored in it
-    const vectorIndex = await redisClient.ft.info('vector_idx');
-    console.log(vectorIndex);
-    // Test: Verify if one of my stored document keys exists and contains chunk text, metadata fields, and embedding vector
-    const redisGetAll = await redisClient.hGetAll('doc:1');
-    console.log("\n\n\n");
-    console.log(redisGetAll);
+// async function tests() {
+//         // TESTS
+//     // Connect to Redis client again
+//     await redisClient.connect();
+//     // Test: Verify if our vector index exists and if the correct data is stored in it
+//     const vectorIndex = await redisClient.ft.info('vector_idx');
+//     console.log(vectorIndex);
+//     // Test: Verify if one of my stored document keys exists and contains chunk text, metadata fields, and embedding vector
+//     const redisGetAll = await redisClient.hGetAll('doc:1');
+//     console.log("\n\n\n");
+//     console.log(redisGetAll);
 
-    // Manually exit Redis client (required)
-    await redisClient.quit();
-}
+//     // Manually exit Redis client (required)
+//     await redisClient.quit();
+// }
 
 // tests();

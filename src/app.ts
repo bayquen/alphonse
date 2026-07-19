@@ -15,7 +15,7 @@ import { redisClient } from "./redisClient.js";
 import { InputTokens } from "openai/resources/responses.mjs";
 import { stringify } from "@langchain/core/utils/uuid";
 import { inspectGitHubRepo, getRelevantTechDocObjects } from "./github.js";
-import { extractFileObjects, chunkTextContent, createEmbeddingVectorsFromChunks, storeVectorsAndChunkedMetadata } from "./ingest.js";
+import { connectRedis, extractFileObjects, chunkTextContent, createEmbeddingVectorsFromChunks, storeVectorsAndChunkedMetadata } from "./ingest.js";
 
 // API access for OpenAI (LLM) API
 const openAIAPIKey = process.env.OPENAI_API_KEY;
@@ -233,11 +233,23 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
             if (!githubMetadataObjects) {
                 throw new Error("\nError: failed to extract any relevant GitHub-metadata file objects after running /add_repo\n");
             }
+            // Pipeline for extracting and formatting relevant file objects, then passing those objects to extract embeddings, 
+            // then embeddings to stored vectors + text chunks for chatbot tech-docs memory and accurate Q&A responses!!!
             const techDocObjects = await extractFileObjects(githubMetadataObjects);
+            // Debugging logs
+            console.log("\n\n");
+            let index = 0;
+            for (const obj of techDocObjects) {
+                index += 1;
+                console.log(`Object ${index}:\n`)
+                console.log(obj);
+                console.log("\n");
+            }
+
             const textChunks = await chunkTextContent(techDocObjects);
             const embeddings = await createEmbeddingVectorsFromChunks(textChunks);
             const storedVectorsAndChunks= await storeVectorsAndChunkedMetadata(embeddings);
-            // Debugging logs
+            // Debugging log
             console.log(`\nStored data in Redis index:\n${storedVectorsAndChunks}\n`);
         }
 
@@ -255,11 +267,9 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
 });
 
 (async () => {
-    // Return and handle any error gracefully BEFORE Redis Client attempts to connect(); 
-    // Otherwise, Slack bot could miss an event or end up with an unhandled error.
-    redisClient.on('error', err => console.log(err));
-    // Now connect to Redis Client before starting Slack Bolt app
-    await redisClient.connect();
+ 
+    // Connect to Redis Client (with connection open/closed validation check) before starting Slack Bolt app 
+    connectRedis();
     // Debugging logs
     // console.log(redisClient.isOpen);   // should equal true
     // console.log(redisClient.isReady);  // should equal true
