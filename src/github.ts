@@ -4,8 +4,12 @@
 //          This checks to see the repo's credentials and its visibility (if private, 
 //          then the repo needs authentication from admin/owner).
 import { Octokit } from "@octokit/rest";
-import * as fs from 'fs';  // file-system module From NodeJS
-import path from 'path';
+// import * as fs from 'fs';  // file-system module From NodeJS
+import fs from "node:fs/promises";
+import { Dirent } from "node:fs";
+import path from "path";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { execFile } from "child_process";
 import { promisify } from "util";
 
@@ -14,7 +18,153 @@ const octokit = new Octokit({
     userAgent: 'myApp v1.2.3',
 });
 
-const fileKeywords = [".md", ".asc", ".mdx", ".txt", ".rst", ".adoc", ".yaml", ".yml", ".asciidoc", ".xml", ".csv", "README", "CHANGELOG", "LICENSE", "architecture", "CODE_OF_CONDUCT", "codeOfConduct"];
+// Sets for filtering out unwanted files (i.e. which have certain filenames OR file extensions), and directories.
+// Note: Sets are more efficient than arrays for membership lookup (NOT ITERATION) - O(1) average for sets VS. O(n) for lists
+const UNWANTED_EXTENSIONS = new Set([
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".svg",
+    ".ico",
+    ".pdf",
+    ".zip",
+    ".exe",
+    ".dll",
+]);
+const UNWANTED_DIRECTORIES = new Set([
+  // Version control
+  ".git",
+
+  // Dependencies
+  "node_modules",
+  "vendor",
+  "packages-cache",
+
+  // Build outputs
+  "dist",
+  "build",
+  "out",
+  "bin",
+  "obj",
+  "target",
+  "release",
+  "debug",
+
+  // Framework-specific build folders
+  ".next",
+  ".nuxt",
+  ".output",
+  ".svelte-kit",
+  ".angular",
+  ".expo",
+  ".parcel-cache",
+
+  // Python
+  "__pycache__",
+  ".pytest_cache",
+  ".mypy_cache",
+  ".ruff_cache",
+  ".tox",
+  ".venv",
+  "venv",
+  "env",
+  ".eggs",
+
+  // Java / Kotlin / Gradle
+  ".gradle",
+
+  // Rust
+  "target",
+
+  // C / C++
+  "cmake-build-debug",
+  "cmake-build-release",
+  "CMakeFiles",
+
+  // Coverage / test artifacts
+  "coverage",
+  ".coverage",
+  ".nyc_output",
+  "htmlcov",
+
+  // Logs
+  "logs",
+  "log",
+
+  // Temporary files
+  "tmp",
+  "temp",
+  ".tmp",
+  ".cache",
+  ".sass-cache",
+
+  // IDE / editor
+  ".idea",
+  ".vscode",
+  ".vs",
+
+  // OS metadata
+  ".Trash",
+  ".Spotlight-V100",
+  ".fseventsd",
+
+  // Package manager caches
+  ".yarn",
+  ".pnpm-store",
+  ".npm",
+
+  // Documentation generators
+  "_site",
+  ".docusaurus",
+
+  // Terraform
+  ".terraform",
+
+  // Docker / Dev Containers
+  ".devcontainer",
+
+  // Serverless
+  ".serverless",
+  ".aws-sam",
+
+  // Misc generated
+  "generated",
+  "__generated__",
+  "gen",
+]);
+const UNWANTED_FILENAMES = new Set([
+  // Dependency lockfiles
+  "package-lock",
+  "yarn.lock",
+  "pnpm-lock",
+  "bun.lockb",
+  "Cargo.lock",
+  "composer.lock",
+  "Gemfile.lock",
+  "Podfile.lock",
+
+  // Logs
+  "npm-debug",
+  "yarn-error",
+  "yarn-debug",
+
+  // OS metadata
+  ".DS_Store",
+  "Thumbs.db",
+  "Desktop.ini",
+
+  // Git internals
+  "HEAD",
+  "ORIG_HEAD",
+  "FETCH_HEAD",
+  "MERGE_HEAD",
+  "COMMIT_EDITMSG",
+
+  // Vim swap files
+  ".swp",
+  ".swo",
+]);
 
 interface GitHubTreeObject {
     path: string;
@@ -26,7 +176,7 @@ interface GitHubTreeObject {
 }
 
 interface GitHubFileObject {
-    type: "file",
+    type: string,
     filename: string;
     content: string;
     sourcePath: string;
@@ -96,79 +246,80 @@ export async function getGitHubRepoTree(repoUrl: string) {
     return files;
 }
 
-export async function getRelevantTechDocObjects(cleanedUrl: string) {
-    let relevantTechDocObjects: GitHubTreeObject[] = [];
-    let finalTechDocObjects: GitHubFileObject[] = [];
-    // Parse through GitHub repo's files; PASS IN cleaned-up GitHub URL only!
-    const fileObjects = await getGitHubRepoTree(cleanedUrl);
-    if (!fileObjects) {
-        console.error("Error: File objects not found.");
-        return;
+// HELPER FUNCTION for getRelevantTechDocObjects()
+// Purpose: Validates a given 'entry' (i.e. either a Dirent file object or Dirent directory object)
+//          to check if it's not irrelevant for our Q&A technical docs.
+//          It returns true if the entry object is irrelevant (i.e., unwanted).
+function shouldSkipEntry(entry: Dirent): boolean {
+    // If current entry is a directory folder object
+    if (entry.isDirectory()) {
+        // Check if it's an unwanted directory and return a boolean
+        return UNWANTED_DIRECTORIES.has(entry.name);
     }
-    // Filtering for relevant doc files:
-    for (const object of fileObjects) {
-        // But first, split object's filepath string for filtering
-        const parts = object.path.split("/");
-        const fileNameItself = parts[parts.length - 1];
-        if (!fileNameItself) {
-            // Jump to next loop iteration if it doesn't exist
-            continue;
-        }
-        // Case insensitive keyword-matching helper, yay!
-        const keywordMatches = fileKeywords.some(fileKeyword => fileNameItself.toLowerCase().includes(fileKeyword));
-        // If any match is found, add file object to doc-object array
-        if (keywordMatches) {
-            relevantTechDocObjects.push(object);
-        }
+    // Else, current entry must be a file object itself
+    else {
+        // Check if it's an unwanted file and return a boolean
+        return (UNWANTED_FILENAMES.has(entry.name) && UNWANTED_EXTENSIONS.has(entry.name));
     }
+}
 
-    // for (const [index, object] of relevantTechDocObjects.entries()) {
-    //     console.log(`Doc object ${index + 1}:\n`, object, "\n");
+// REFACTORED (7/17/26) function to get GitHub documents via efficient `git clone` on backend server, which avoids any GitHub API request limit reaching.
+export async function getRelevantTechDocObjects(cleanedUrl: string) {
+    let relevantTechDocObjects: GitHubFileObject[] = [];
+
+    // // Parse through GitHub repo's files; PASS IN cleaned-up GitHub URL only!
+    // const fileObjects = await getGitHubRepoTree(cleanedUrl);
+    // if (!fileObjects) {
+    //     console.error("Error: File objects not found.");
+    //     return;
     // }
 
-    const metadata = await inspectGitHubRepo(cleanedUrl);
-    if (!metadata) {
-        console.error("Uh oh, an error occurred during the getRelevantTechDocObjects() function call:\nNo metadata was retrieved from the provided repo");
-        return;
-    }
-    const owner: string = metadata.owner;
-    const repo: string = metadata.repo;
-    // Let's get the relevant tech docs, create formatted file objects, then return those objects all at once as an array
-    for (const object of relevantTechDocObjects) {
-        // Get the content itself within each file
-        const response = await octokit.repos.getContent({
-            owner,
-            repo,
-            path: object.path, // e.g. "/README.md"
+    const execFileAsync = promisify(execFile);
+    // Create a unique temp directory by appending random chars to the prefix "rtfm-repo"
+    // This prevents directory collisions when multiple directories are made
+    const cloneDirectory = await mkdtemp(
+        path.join(tmpdir(), "rtfm-repo-")
+    );
+    // A repository root directory variable for later - named differently for better context
+    const repoRoot = cloneDirectory;
+    await execFileAsync("git", [
+        "clone",
+        "--depth-1",
+        cleanedUrl,  // Repository URL
+        cloneDirectory,
+    ]);
+
+    // Walk (i.e. parse thru) the repository and process each repo file
+    async function walk(dir: string) {
+        const entries = await fs.readdir(dir, {
+            withFileTypes: true
         });
-        // Debugging log
-        // console.log("\nResponse content:\n", response, "\n\n");
-        // Type guarding for response.data, then convert and store file text content
-        if (!Array.isArray(response.data) && response.data.type === "file") {
-            const rawFileContent = response.data.content;
-            // Convert raw content into human-readable format (i.e. UTF-8)
-            const cleanedContent = Buffer.from(rawFileContent, "base64").toString("utf8");
-            // Create a tech doc file object given current GitHub file response data
-            const githubFileObject: GitHubFileObject = {
-                type: "file",
-                filename: response.data.name,
-                content: cleanedContent,
-                sourcePath: response.data.path,
+        for (const entry of entries) {
+            const fullPath = path.join(dir, entry.name)
+            // VALIDATION: If helper function call returns boolean of true, then skip this entry because it's irrelevant 
+            // (i.e., not useful / not a technical doc)
+            if (shouldSkipEntry(entry)) {
+                continue;
             }
-            // Add current tech doc file object into the return-array
-            finalTechDocObjects.push(githubFileObject);
-            // Debugging logs
-            // for (const obj of finalTechDocObjects) {
-            //     console.log(`\nTech doc object: \n`);
-            //     console.log(obj);
-            //     console.log("\n");
-            // }
-            // [End of debugging logs]
-        } else {
-            continue;
+            // Check if current validated entry is a subdirectory
+            if (entry.isDirectory()) {
+                // Walk through subdirectory [O(n^2) time, recursive]
+                await walk(fullPath);
+            } else {
+                // Process the validated file object
+                const content = await fs.readFile(fullPath, "utf8");
+                const fileObject = {
+                    type: "file",
+                    filename: path.basename(fullPath),
+                    content: content,
+                    sourcePath: path.relative(repoRoot, fullPath)
+               }
+               // Push object!
+               relevantTechDocObjects.push(fileObject);
+            }
         }
     }
-    return finalTechDocObjects;
+    return relevantTechDocObjects;
 }
 
 // LOCAL FUNCTION TESTS:
