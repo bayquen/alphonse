@@ -15,6 +15,7 @@ import type { GitHubFileObject } from "./github.js";
 // retrieved by the Slack bot is only from the Workspace's installed repo 
 // (security + privacy enforcement, AND user confusion reduction!!)
 import type { IngestContext } from "./app.js";
+import { randomUUID } from "crypto";  // UUID key-generator package; built directly into Node.js!
 
 dotenv.config();
 
@@ -53,6 +54,8 @@ interface MarkdownObject {
 }
 
 interface EmbeddedChunkData {
+    slackTeamId: string;
+    embeddingKey: string;
     chunkContent: string;
     embedding: number[];
     chunkIndex: number;
@@ -208,6 +211,9 @@ export async function chunkTextContent(fileObjects: (GitHubFileObject | Markdown
         for (const chunk of chunkedText) {
             if (object.type == "file") {
                 let row: EmbeddedChunkData = {
+                    // 'Slack Team ID' and 'Key' will be definitely set later, right before Redis stores each chunk!
+                    slackTeamId: "",
+                    embeddingKey: "",
                     chunkContent: chunk,
                     embedding: [],
                     chunkIndex: chunkIndex,
@@ -225,6 +231,9 @@ export async function chunkTextContent(fileObjects: (GitHubFileObject | Markdown
             // Passes when (object === MarkdownObject) === true ),
             if (isMarkdownObject(object)) {
                 let row: EmbeddedChunkData = {
+                    // 'Slack Team ID' and 'Key' will be definitely set later, right before Redis stores each chunk!
+                    slackTeamId: "",
+                    embeddingKey: "",
                     chunkContent: chunk,
                     embedding: [],
                     chunkIndex: chunkIndex,
@@ -276,11 +285,24 @@ export async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkD
         return allChunks;
 }
 
-// For storing vector embeddings, Redis requires reading RAW BYTEs rather than a JSON array.
+// Private helper function for storing vector embeddings, Redis requires reading RAW BYTEs rather than a JSON array.
 // Thus, this functionality is necessary!
 function embeddingToBuffer(embedding: number[]): Buffer {
     // `Buffer.from` is a Node.js native method for creating buffers.
     return Buffer.from(new Float32Array(embedding).buffer);
+}
+
+// Private helper function for deleting all pre-existing Workspace tech-doc embeddings in the application's storage.
+// This is used before Redis adds the new file data when user requests to save a new repo within the bot 
+// application's integrated cloud storage.
+async function deleteExistingWorkspaceVectors(teamId: string, embeddedChunkObjects: EmbeddedChunkData[]) {
+    for (const dataChunk of embeddedChunkObjects) {
+        // If existing vector exists that is tied with current Slack Workspace,
+        if (dataChunk.slackTeamId === teamId && dataChunk.embeddingKey) {
+            // then delete current embedded chunk
+            await redisClient.del(dataChunk.embeddingKey);
+        }
+    }
 }
 
 // Pipeline: Store vector embeddings, chunk text, and their corresponding metadata in a Redis vector index
@@ -335,12 +357,21 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
         if (chunk.embedding.length !== 1024) {
             continue;
         }
+        // A string key is created for each embedding so that it can be properly accessed outside of 
+        // this function's scope whenever an embedding needs to be deleted from storage.
+        const embeddingKey = `chunk:${crypto.randomUUID()}`;
+
+        // Delete all existing vector embeddings in storage (I.E. CLEAR REPO DOC FILE STORAGE)
+        // before storing all embeddings for newly instated GitHub repository!
+        const slackTeamId = context.slackTeamId;
+        deleteExistingWorkspaceVectors(slackTeamId, embeddedChunkObjects);
 
         // One hash is set per chunked object. Hence, the for loop.
         await redisClient.hSet(`doc:${i + 1}`, {
             // Added Slack Workspace 'team ID' so that Slack bot ONLY accesses data within given Workspace's repo.
             // (SECURITY & PRIVACY enforcement!! Prevents legal issues, too)
             slackTeamId: context.slackTeamId,
+            embeddingKey: embeddingKey,
             chunkContent: chunk.chunkContent,
             embedding: embeddingToBuffer(chunk.embedding),
             chunkIndex: chunk.chunkIndex,
