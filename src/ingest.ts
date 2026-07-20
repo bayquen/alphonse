@@ -256,9 +256,16 @@ export async function chunkTextContent(fileObjects: (GitHubFileObject | Markdown
     return allChunks;
 }
 
-export async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkData[]) {
-    // VoyageAI client
-    // let embeddings = [];   
+export async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkData[], context: IngestContext ) {
+    const slackTeamId = context.slackTeamId;
+    // REMOVE THIS CODE AFTER - JUST DELETING ALL EMBEDDINGS CURRENT SINCE THEY DONT HAVE ANY KEYS STORED RIGHT NOW
+    await deleteCurrentWorkspaceVectors(allChunks);
+
+    // This function call deletes all existing vector embeddings in storage (I.E. CLEAR REPO DOC FILE STORAGE)
+    // before storing all embeddings for newly instated GitHub repository!
+    deleteExistingWorkspaceVectors(slackTeamId, allChunks);
+
+    // EMBEDDINGS CREATION LOOP: VoyageAI client is used here 
     for (let chunk of allChunks) {
         const response = await voyageClient.embed({
             input: chunk.chunkContent,
@@ -302,6 +309,13 @@ async function deleteExistingWorkspaceVectors(teamId: string, embeddedChunkObjec
             // then delete current embedded chunk
             await redisClient.del(dataChunk.embeddingKey);
         }
+    }
+}
+
+// DELETE AFTER, NOT NEEDED
+async function deleteCurrentWorkspaceVectors(embeddedChunkObjects: EmbeddedChunkData[]) {
+    for (const dataChunk of embeddedChunkObjects) {
+        await redisClient.del(dataChunk.embeddingKey);
     }
 }
 
@@ -352,19 +366,15 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
         console.log("Redis vector index already exists.");
     }
     
+    // Loop for storing embeddings inside Redis
     for (const [i, chunk] of embeddedChunkObjects.entries()) {
+        // A string key is created for EACH embedding so that it can be properly accessed outside of 
+        // this function's scope whenever an embedding needs to be deleted from storage.
+        const embeddingKey = `chunk:${crypto.randomUUID()}`;
         // Skip current embedding store if not correct dimension.
         if (chunk.embedding.length !== 1024) {
             continue;
         }
-        // A string key is created for each embedding so that it can be properly accessed outside of 
-        // this function's scope whenever an embedding needs to be deleted from storage.
-        const embeddingKey = `chunk:${crypto.randomUUID()}`;
-
-        // Delete all existing vector embeddings in storage (I.E. CLEAR REPO DOC FILE STORAGE)
-        // before storing all embeddings for newly instated GitHub repository!
-        const slackTeamId = context.slackTeamId;
-        deleteExistingWorkspaceVectors(slackTeamId, embeddedChunkObjects);
 
         // One hash is set per chunked object. Hence, the for loop.
         await redisClient.hSet(`doc:${i + 1}`, {
