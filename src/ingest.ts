@@ -11,6 +11,10 @@ const require = createRequire(import.meta.url);
 const { VoyageAIClient, VoyageAIError } = require("voyageai") as typeof import("voyageai");
 import { getRelevantTechDocObjects, } from "./github.js";
 import type { GitHubFileObject } from "./github.js";
+// Interface type included here so that every data embedding (i.e. text chunks and other repo data) 
+// retrieved by the Slack bot is only from the Workspace's installed repo 
+// (security + privacy enforcement, AND user confusion reduction!!)
+import type { IngestContext } from "./app.js";
 
 dotenv.config();
 
@@ -280,7 +284,7 @@ function embeddingToBuffer(embedding: number[]): Buffer {
 }
 
 // Pipeline: Store vector embeddings, chunk text, and their corresponding metadata in a Redis vector index
-export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: EmbeddedChunkData[]) {
+export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: EmbeddedChunkData[], context: IngestContext) {
     try {
         await redisClient.ft.create('vector_idx', {
             'chunkContent': {
@@ -318,14 +322,13 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
             ON: 'HASH',
             PREFIX: 'doc:'
         });
-        console.log("Successfully created Redis vector index!")
+        console.log("Successfully created Redis vector index!");
     } catch (err: any) {
         if (!err.message.includes('Index already exists')) {
             throw err;
         }
-        console.log("Redis vector index already exists.")
+        console.log("Redis vector index already exists.");
     }
-    
     
     for (const [i, chunk] of embeddedChunkObjects.entries()) {
         // Skip current embedding store if not correct dimension.
@@ -335,6 +338,9 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
 
         // One hash is set per chunked object. Hence, the for loop.
         await redisClient.hSet(`doc:${i + 1}`, {
+            // Added Slack Workspace 'team ID' so that Slack bot ONLY accesses data within given Workspace's repo.
+            // (SECURITY & PRIVACY enforcement!! Prevents legal issues, too)
+            slackTeamId: context.slackTeamId,
             chunkContent: chunk.chunkContent,
             embedding: embeddingToBuffer(chunk.embedding),
             chunkIndex: chunk.chunkIndex,

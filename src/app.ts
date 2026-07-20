@@ -17,6 +17,10 @@ import { stringify } from "@langchain/core/utils/uuid";
 import { inspectGitHubRepo, getRelevantTechDocObjects } from "./github.js";
 import { connectRedis, extractFileObjects, chunkTextContent, createEmbeddingVectorsFromChunks, storeVectorsAndChunkedMetadata } from "./ingest.js";
 
+export interface IngestContext {
+    slackTeamId: string;
+}
+
 // API access for OpenAI (LLM) API
 const openAIAPIKey = process.env.OPENAI_API_KEY;
 if (!openAIAPIKey) {
@@ -200,6 +204,9 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
     // Acknowledge the command request right away, so 3000ms ping timeout doesn't occur.
     await ack();
 
+    const context: IngestContext = {
+        slackTeamId: command.team_id
+    };
     // If Slack user's /rtfm_add command DOESN'T contain a valid GitHub repo URL, then do nothing but return.
     const userTextInput = command.text;
     // Clean up GitHub URL given by user by removing any whitespaces and Slack's auto-formatted "<" and ">" symbols.
@@ -241,14 +248,14 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
             let index = 0;
             for (const obj of techDocObjects) {
                 index += 1;
-                console.log(`Object ${index}:\n`)
+                console.log(`Object ${index}:\n`);
                 console.log(obj);
                 console.log("\n");
             }
 
             const textChunks = await chunkTextContent(techDocObjects);
             const embeddings = await createEmbeddingVectorsFromChunks(textChunks);
-            const storedVectorsAndChunks= await storeVectorsAndChunkedMetadata(embeddings);
+            const storedVectorsAndChunks = await storeVectorsAndChunkedMetadata(embeddings, context);
             // Debugging log
             console.log(`\nStored data in Redis index:\n${storedVectorsAndChunks}\n`);
         }
