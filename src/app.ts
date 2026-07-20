@@ -254,7 +254,7 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
             }
 
             const textChunks = await chunkTextContent(techDocObjects);
-            const embeddings = await createEmbeddingVectorsFromChunks(textChunks);
+            const embeddings = await createEmbeddingVectorsFromChunks(textChunks, context);
             const storedVectorsAndChunks = await storeVectorsAndChunkedMetadata(embeddings, context);
             // Debugging log
             console.log(`\nStored data in Redis index:\n${storedVectorsAndChunks}\n`);
