@@ -4,12 +4,13 @@ import { MarkdownParser } from "markdown-parser";
 import { createRequire } from "node:module";
 import dotenv from "dotenv";
 import { TokenTextSplitter } from "@langchain/textsplitters";
-import { redisClient } from "./redisClient.js";
+import { redisClient, redisConnect } from "./redisClient.js";
+import type { SearchReply } from "@redis/search";
 import { SCHEMA_FIELD_TYPE, SCHEMA_VECTOR_FIELD_ALGORITHM } from 'redis';  // Redis imports for Redis v5.x.x
 // Use CommonJS's (CJS) Node require() over ESM since VoyageAI (v0.2.1) module import for ESM is fkin broken.
 const require = createRequire(import.meta.url);
 const { VoyageAIClient, VoyageAIError } = require("voyageai") as typeof import("voyageai");
-import { getRelevantTechDocObjects, } from "./github.js";
+// import { getRelevantTechDocObjects, } from "./github.js";
 import type { GitHubFileObject } from "./github.js";
 // Interface type included here so that every data embedding (i.e. text chunks and other repo data) 
 // retrieved by the Slack bot is only from the Workspace's installed repo 
@@ -21,19 +22,6 @@ dotenv.config();
 
 const voyageAPIKey: string | undefined = process.env.VOYAGE_API_KEY;
 const voyageClient = new VoyageAIClient({ apiKey: voyageAPIKey});
-
-await redisClient.connect();
-
-redisClient.on('error', err => {
-    console.log('Redis Client Error', err)
-});
-
-export async function connectRedis() {
-    // VALIDATION: Make sure redis Client isn't already open!
-    if (!redisClient.isOpen) {
-        await redisClient.connect();
-    }
-}
 
 interface FileObject {
     type: "file",
@@ -82,26 +70,26 @@ interface EmbeddedChunkData {
 //     });
 // }
 
-// Function for reading a single file and create file object from it
-function createFileObject(filePath: string): Promise<FileObject> {
-    return new Promise((resolve, reject) => { 
-        // Asynchronously read files for server load efficiency (esp. for large-sized docs)
-        fs.readFile(filePath, 'utf8', (err, data) => {
-            if (err) {
-                reject(err);
-            } else {
-                // Create file object
-                const metadata: FileObject = {
-                    type: "file",
-                    filename: path.basename(filePath),
-                    content: data,
-                    sourcePath: filePath
-                };
-                resolve(metadata);
-            }
-        });
-    });
-}
+// // Function for reading a single file and create file object from it
+// function createFileObject(filePath: string): Promise<FileObject> {
+//     return new Promise((resolve, reject) => { 
+//         // Asynchronously read files for server load efficiency (esp. for large-sized docs)
+//         fs.readFile(filePath, 'utf8', (err, data) => {
+//             if (err) {
+//                 reject(err);
+//             } else {
+//                 // Create file object
+//                 const metadata: FileObject = {
+//                     type: "file",
+//                     filename: path.basename(filePath),
+//                     content: data,
+//                     sourcePath: filePath
+//                 };
+//                 resolve(metadata);
+//             }
+//         });
+//     });
+// }
 
 // Pipeline: Parse any markdown doc files to extract headings (h1, h2, h3) and other metadata, then convert into
 // file metadata objects. Enriches metadata to improve context for agent (vector) search.
@@ -258,12 +246,9 @@ export async function chunkTextContent(fileObjects: (GitHubFileObject | Markdown
 
 export async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkData[], context: IngestContext ) {
     const slackTeamId = context.slackTeamId;
-    // REMOVE THIS CODE AFTER - JUST DELETING ALL EMBEDDINGS CURRENT SINCE THEY DONT HAVE ANY KEYS STORED RIGHT NOW
-    await deleteCurrentWorkspaceVectors(allChunks);
-
     // This function call deletes all existing vector embeddings in storage (I.E. CLEAR REPO DOC FILE STORAGE)
     // before storing all embeddings for newly instated GitHub repository!
-    deleteExistingWorkspaceVectors(slackTeamId, allChunks);
+    deleteExistingWorkspaceVectors(slackTeamId);
 
     // EMBEDDINGS CREATION LOOP: VoyageAI client is used here 
     for (let chunk of allChunks) {
@@ -302,26 +287,35 @@ function embeddingToBuffer(embedding: number[]): Buffer {
 // Private helper function for deleting all pre-existing Workspace tech-doc embeddings in the application's storage.
 // This is used before Redis adds the new file data when user requests to save a new repo within the bot 
 // application's integrated cloud storage.
-async function deleteExistingWorkspaceVectors(teamId: string, embeddedChunkObjects: EmbeddedChunkData[]) {
-    for (const dataChunk of embeddedChunkObjects) {
-        // If existing vector exists that is tied with current Slack Workspace,
-        if (dataChunk.slackTeamId === teamId && dataChunk.embeddingKey) {
-            // then delete current embedded chunk
-            await redisClient.del(dataChunk.embeddingKey);
-        }
-    }
-}
+async function deleteExistingWorkspaceVectors(teamId: string) {
+    try {
+        // Connect to Redis client if it isn't already open; (with validation check)
+        redisConnect();
 
-// DELETE AFTER, NOT NEEDED
-async function deleteCurrentWorkspaceVectors(embeddedChunkObjects: EmbeddedChunkData[]) {
-    for (const dataChunk of embeddedChunkObjects) {
-        await redisClient.del(dataChunk.embeddingKey);
+        const result = await redisClient.ft.search(
+            "vector_idx",
+            `@teamId:{${teamId}}`
+        ) as {
+            total: number;
+            documents: { id: string }[];
+        };
+
+        if (!result) {
+            throw new Error("No resulting embeddings in the Redis vector index found.");
+        }
+
+        for (const doc of result.documents) {
+            await redisClient.del(doc.id);
+        }
+    } catch (err) {
+        console.log(err);
     }
 }
 
 // Pipeline: Store vector embeddings, chunk text, and their corresponding metadata in a Redis vector index
 export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: EmbeddedChunkData[], context: IngestContext) {
     try {
+        console.log("\nCreating vector index...\n")
         await redisClient.ft.create('vector_idx', {
             'chunkContent': {
                 type: SCHEMA_FIELD_TYPE.TEXT,
@@ -358,12 +352,17 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
             ON: 'HASH',
             PREFIX: 'doc:'
         });
-        console.log("Successfully created Redis vector index!");
+        // const indexes = await redisClient.ft._list();
+        // console.log(indexes);
+        return;
     } catch (err: any) {
-        if (!err.message.includes('Index already exists')) {
-            throw err;
-        }
-        console.log("Redis vector index already exists.");
+        // if (!err.message.includes('Index already exists')) {
+        //     throw err;
+        // } else {
+        //     console.log("Redis vector index already exists.");
+        // }
+        console.log(err);
+        return;
     }
     
     // Loop for storing embeddings inside Redis
@@ -412,20 +411,26 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
 
 // PRE-PRODUCTION TESTS to check if Redis vector index works and to verify if the correct data
 // (i.e. chunk text, vector embeddings, and corresponding metadata) was stored.
-// async function tests() {
-//         // TESTS
-//     // Connect to Redis client again
-//     await redisClient.connect();
-//     // Test: Verify if our vector index exists and if the correct data is stored in it
-//     const vectorIndex = await redisClient.ft.info('vector_idx');
-//     console.log(vectorIndex);
-//     // Test: Verify if one of my stored document keys exists and contains chunk text, metadata fields, and embedding vector
-//     const redisGetAll = await redisClient.hGetAll('doc:1');
-//     console.log("\n\n\n");
-//     console.log(redisGetAll);
+async function tests() {
+    // Connect to Redis client if it isn't already open; (with validation check)
+    redisConnect();
+    // Test: Verify if our vector index exists and if the correct data is stored in it
+    const vectorIndex = await redisClient.ft.info('vector_idx');
+    console.log(vectorIndex);
+    // Test: Verify if one of my stored document keys exists and contains chunk text, metadata fields, and embedding vector
+    const redisGetAll = await redisClient.hGetAll('doc:1');
+    console.log("\n\n\n");
+    console.log(redisGetAll);
 
-//     // Manually exit Redis client (required)
-//     await redisClient.quit();
-// }
+    // Manually exit Redis client
+    await redisClient.quit();
+}
 
 // tests();
+
+// async function flush(){
+//     const flushing = await redisClient.flushAll();
+//     console.log(flushing);
+//     console.log("\nflushing done!");
+// }
+// flush();

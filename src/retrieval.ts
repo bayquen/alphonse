@@ -3,8 +3,10 @@ import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const { VoyageAIClient, VoyageAIError } = require("voyageai") as typeof import("voyageai");
 // Side note: convert `./redisClient.ts` to `./redisClient.js` since I'm using ES modules (ESM) with TypeScript, not CJS.
-import { redisClient } from './redisClient.js';
+import { redisClient, redisConnect } from './redisClient.js';
 
+// Connect to Redis client if it isn't already open; (with validation check)
+redisConnect();
 
 const voyageAPIKey: string | undefined = process.env.VOYAGE_API_KEY;
 const voyageClient = new VoyageAIClient({ apiKey: voyageAPIKey });

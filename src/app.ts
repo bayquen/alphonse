@@ -11,11 +11,11 @@ import dotenv from "dotenv";
 import OpenAI from "openai";
 dotenv.config();
 import { retrieveRelevantChunks } from "./retrieval.js";
-import { redisClient } from "./redisClient.js";
+import { redisClient, redisConnect } from "./redisClient.js";
 import { InputTokens } from "openai/resources/responses.mjs";
 import { stringify } from "@langchain/core/utils/uuid";
 import { inspectGitHubRepo, getRelevantTechDocObjects } from "./github.js";
-import { connectRedis, extractFileObjects, chunkTextContent, createEmbeddingVectorsFromChunks, storeVectorsAndChunkedMetadata } from "./ingest.js";
+import { extractFileObjects, chunkTextContent, createEmbeddingVectorsFromChunks, storeVectorsAndChunkedMetadata } from "./ingest.js";
 
 export interface IngestContext {
     slackTeamId: string;
@@ -204,6 +204,11 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
     // Acknowledge the command request right away, so 3000ms ping timeout doesn't occur.
     await ack();
 
+    const indexes = await redisClient.ft._list();
+    console.log("\n\n");
+    console.log(indexes);
+    console.log("\n\n");
+
     const context: IngestContext = {
         slackTeamId: command.team_id
     };
@@ -258,6 +263,7 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
             const storedVectorsAndChunks = await storeVectorsAndChunkedMetadata(embeddings, context);
             // Debugging log
             console.log(`\nStored data in Redis index:\n${storedVectorsAndChunks}\n`);
+            
         }
 
     } catch (err) {
@@ -276,7 +282,7 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
 (async () => {
  
     // Connect to Redis Client (with connection open/closed validation check) before starting Slack Bolt app 
-    connectRedis();
+    redisConnect();
     // Debugging logs
     // console.log(redisClient.isOpen);   // should equal true
     // console.log(redisClient.isReady);  // should equal true
