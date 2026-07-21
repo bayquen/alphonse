@@ -65,6 +65,7 @@ console.log("Bot ID:", botUserId);
 
 app.event("app_mention", async({ event, client, say }) => {
     try {
+        redisConnect();
         // Debugging log
         // console.log(textMessage, "\n");
 
@@ -128,8 +129,10 @@ app.event("app_mention", async({ event, client, say }) => {
             text,
             thread_ts,  // Makes sure that bot replies to user in a thread
         });
+        redisClient.quit();
     } catch (error) {
         console.log("Uh oh, an error has occurred during app_mention event:\n", error);
+        redisClient.quit();
     }
 });
 
@@ -204,6 +207,8 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
     // Acknowledge the command request right away, so 3000ms ping timeout doesn't occur.
     await ack();
 
+    redisConnect();
+
     const indexes = await redisClient.ft._list();
     console.log("\n\n");
     console.log(indexes);
@@ -260,12 +265,10 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
 
             const textChunks = await chunkTextContent(techDocObjects);
             const embeddings = await createEmbeddingVectorsFromChunks(textChunks, context);
-            const storedVectorsAndChunks = await storeVectorsAndChunkedMetadata(embeddings, context);
-            // Debugging log
-            console.log(`\nStored data in Redis index:\n${storedVectorsAndChunks}\n`);
-            
+            const storedVectorsAndChunks = await storeVectorsAndChunkedMetadata(embeddings, context);   
+            await say("Repo ingestion complete.");      
         }
-
+        redisClient.quit(); 
     } catch (err) {
         console.log("\nUh oh, error occurred during app.command() execution:\n");
         // Since app.command() is a Slack Bolt function, we can use Slack Bolt's logger for useful debugging stack-trace logs.
@@ -275,6 +278,7 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
         await say(`An error occurred when attempting to inspect GitHub repo or extract the files.
                    \nPlease make sure the URL is correctly formatted or that the public/private repository exists!
                    \nTHEN, please try running /add_repo again.`);
+        redisClient.quit()
         return;
     }
 });

@@ -294,7 +294,7 @@ async function deleteExistingWorkspaceVectors(teamId: string) {
 
         const result = await redisClient.ft.search(
             "vector_idx",
-            `@teamId:{${teamId}}`
+            `@slackTeamId:{${teamId}}`
         ) as {
             total: number;
             documents: { id: string }[];
@@ -315,6 +315,7 @@ async function deleteExistingWorkspaceVectors(teamId: string) {
 // Pipeline: Store vector embeddings, chunk text, and their corresponding metadata in a Redis vector index
 export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: EmbeddedChunkData[], context: IngestContext) {
     try {
+        redisConnect();
         console.log("\nCreating vector index...\n")
         await redisClient.ft.create('vector_idx', {
             'chunkContent': {
@@ -326,6 +327,12 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
                 ALGORITHM: SCHEMA_VECTOR_FIELD_ALGORITHM.HNSW,
                 DISTANCE_METRIC: 'L2',
                 DIM: 1024,
+            },
+            'slackTeamId': {
+                type: SCHEMA_FIELD_TYPE.TAG,
+            },
+            'embeddingKey': {
+                type: SCHEMA_FIELD_TYPE.TEXT,
             },
             'chunkIndex': {
                 type: SCHEMA_FIELD_TYPE.NUMERIC,
@@ -352,16 +359,15 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
             ON: 'HASH',
             PREFIX: 'doc:'
         });
-        // const indexes = await redisClient.ft._list();
-        // console.log(indexes);
-        return;
-    } catch (err: any) {
+        const indexes = await redisClient.ft._list();
+        console.log(indexes);
+    } catch (err) {
         // if (!err.message.includes('Index already exists')) {
         //     throw err;
         // } else {
         //     console.log("Redis vector index already exists.");
         // }
-        console.log(err);
+        console.error(err);
         return;
     }
     
@@ -428,9 +434,12 @@ async function tests() {
 
 // tests();
 
+// // WARNING: DO NOT USE THIS IN PRODUCTION, WHEN USERS ARE USING MY APPLICATION ALREADY!
 // async function flush(){
+//     redisConnect();
 //     const flushing = await redisClient.flushAll();
 //     console.log(flushing);
 //     console.log("\nflushing done!");
+//     redisClient.quit();
 // }
 // flush();
