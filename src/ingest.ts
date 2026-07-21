@@ -250,31 +250,37 @@ export async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkD
     // before storing all embeddings for newly instated GitHub repository!
     await deleteExistingWorkspaceVectors(slackTeamId);
 
-    // EMBEDDINGS CREATION LOOP: VoyageAI client is used here 
-    for (let chunk of allChunks) {
-        const response = await voyageClient.embed({
-            input: chunk.chunkContent,
-            model: "voyage-code-3"
-        });
-        const embedding = response.data?.[0]?.embedding;
+    const BATCH_SIZE = 50;
 
-        // Add embedding into corresponding EmbeddedChunkData for Redis vector storing later
-        if (embedding) {
-            chunk.embedding = embedding;
+    // EMBEDDINGS CREATION LOOP: VoyageAI client is used here 
+    for (let i = 0; i < allChunks.length; i += BATCH_SIZE) {
+        const batch = allChunks.slice(i, i + BATCH_SIZE)
+        const response = await voyageClient.embed({
+            model: "voyage-code-3",
+            input: batch.map(chunk => chunk.chunkContent),
+        });
+
+        if (!response.data) {
+            continue;
         }
-        
-        // Debugging chunked data object output
-        // console.log("Current chunk object:", chunk);
+
+        response.data.forEach((result, index) => {
+            if (!result.embedding) {
+                throw new Error(`No embedding returned for batch item ${index}`)
+            }
+            // Since we just type guarded result.embedding above, we know both that and batch[index].embedding is of the same type.
+            // So we use the non-null assertion operator, '!', to assume the left side of the assignment is never null or undefined.
+            batch[index]!.embedding = result.embedding;
+        });
 
         // Debugging VoyageAI output:
         // console.log("Response embedding from VoyageAi", response);
-        }
-
-        // Debugging the new results of all chunked data objects:
-        // console.log(allChunks);
-        // console.log("\n\n\n");
-        // console.log("Printed current chunk data objects! \n")
-        return allChunks;
+    }
+    // Debugging the new results of all chunked data objects:
+    console.log(allChunks);
+    console.log("\n\n\n");
+    console.log("Printed current chunk data objects! \n")
+    return allChunks;
 }
 
 // Private helper function for storing vector embeddings, Redis requires reading RAW BYTEs rather than a JSON array.
