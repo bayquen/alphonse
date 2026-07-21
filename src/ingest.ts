@@ -248,7 +248,7 @@ export async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkD
     const slackTeamId = context.slackTeamId;
     // This function call deletes all existing vector embeddings in storage (I.E. CLEAR REPO DOC FILE STORAGE)
     // before storing all embeddings for newly instated GitHub repository!
-    deleteExistingWorkspaceVectors(slackTeamId);
+    await deleteExistingWorkspaceVectors(slackTeamId);
 
     // EMBEDDINGS CREATION LOOP: VoyageAI client is used here 
     for (let chunk of allChunks) {
