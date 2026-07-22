@@ -129,10 +129,10 @@ app.event("app_mention", async({ event, client, say }) => {
             text,
             thread_ts,  // Makes sure that bot replies to user in a thread
         });
-        redisClient.quit();
+        // redisClient.quit();
     } catch (error) {
         console.log("Uh oh, an error has occurred during app_mention event:\n", error);
-        redisClient.quit();
+        // redisClient.quit();
     }
 });
 
@@ -264,11 +264,28 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
             }
 
             const textChunks = await chunkTextContent(techDocObjects);
+            // DEBUGGING LOG (7/21/26)
+            console.log("\n3. Starting embeddings...");
             const embeddings = await createEmbeddingVectorsFromChunks(textChunks, context);
-            const storedVectorsAndChunks = await storeVectorsAndChunkedMetadata(embeddings, context);   
-            await say("Repo ingestion complete.");      
+            console.log("\n\n4. Embeddings complete.");
+            console.log("\n5. Starting Redis store...");
+            // const storedVectorsAndChunks = await storeVectorsAndChunkedMetadata(embeddings, context);
+
+            await new Promise(resolve => setTimeout(resolve, 30000));
+
+            console.log("30 second wait finished.");
+
+            await say("Embeddings finished.");  
+            //
+            //
+            //
+            console.log("6. Redis store complete.");
+
+            console.log("7. Sending completion message...");
+            await say("Repo ingestion complete.");
+            console.log("8. Done.");
         }
-        redisClient.quit(); 
+        // redisClient.quit();
     } catch (err) {
         console.log("\nUh oh, error occurred during app.command() execution:\n");
         // Since app.command() is a Slack Bolt function, we can use Slack Bolt's logger for useful debugging stack-trace logs.
@@ -278,19 +295,35 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
         await say(`An error occurred when attempting to inspect GitHub repo or extract the files.
                    \nPlease make sure the URL is correctly formatted or that the public/private repository exists!
                    \nTHEN, please try running /add_repo again.`);
-        redisClient.quit()
+        // redisClient.quit()
         return;
     }
 });
 
 (async () => {
- 
     // Connect to Redis Client (with connection open/closed validation check) before starting Slack Bolt app 
-    redisConnect();
+    await redisConnect();
     // Debugging logs
     // console.log(redisClient.isOpen);   // should equal true
     // console.log(redisClient.isReady);  // should equal true
+
     // Start Slack Bolt app
     await app.start();
+
     app.logger.info("⚡️ Bolt app is running!");
+
+    // DEBUGGING LOGS
+    process.on("unhandledRejection", (reason) => {
+        console.error("UNHANDLED REJECTION:", reason);
+    });
+
+    process.on("uncaughtException", (err) => {
+        console.error("UNCAUGHT EXCEPTION:", err);
+    });
+
+    process.on("exit", (code) => {
+        console.log("PROCESS EXIT:", code);
+    });
+
+    await redisClient.quit();
 })();

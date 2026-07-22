@@ -248,10 +248,12 @@ export async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkD
     const slackTeamId = context.slackTeamId;
     // This function call deletes all existing vector embeddings in storage (I.E. CLEAR REPO DOC FILE STORAGE)
     // before storing all embeddings for newly instated GitHub repository!
+    // DEBUGGING LOG (7/21/26)
+    console.log("1. Starting old vector embeddings deletion...");
     await deleteExistingWorkspaceVectors(slackTeamId);
+    console.log("2. Delete complete.");
 
     const BATCH_SIZE = 50;
-
     // EMBEDDINGS CREATION LOOP: VoyageAI client is used here 
     for (let i = 0; i < allChunks.length; i += BATCH_SIZE) {
         const batch = allChunks.slice(i, i + BATCH_SIZE)
@@ -296,7 +298,7 @@ function embeddingToBuffer(embedding: number[]): Buffer {
 async function deleteExistingWorkspaceVectors(teamId: string) {
     try {
         // Connect to Redis client if it isn't already open; (with validation check)
-        redisConnect();
+        // await redisConnect();
 
         const result = await redisClient.ft.search(
             "vector_idx",
@@ -321,7 +323,7 @@ async function deleteExistingWorkspaceVectors(teamId: string) {
 // Pipeline: Store vector embeddings, chunk text, and their corresponding metadata in a Redis vector index
 export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: EmbeddedChunkData[], context: IngestContext) {
     try {
-        redisConnect();
+        // await redisConnect();
         console.log("\nCreating vector index...\n")
         await redisClient.ft.create('vector_idx', {
             'chunkContent': {
@@ -365,6 +367,9 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
             ON: 'HASH',
             PREFIX: 'doc:'
         });
+        // DEBUGGING LOG (7/21/26)
+        console.log("After FT.CREATE");
+        
         const indexes = await redisClient.ft._list();
         console.log(indexes);
     } catch (err) {
@@ -379,6 +384,8 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
     
     // Loop for storing embeddings inside Redis
     for (const [i, chunk] of embeddedChunkObjects.entries()) {
+        // DEBUGGING LOG (7/21/26)
+        console.log(`Writing ${i}`);
         // A string key is created for EACH embedding so that it can be properly accessed outside of 
         // this function's scope whenever an embedding needs to be deleted from storage.
         const embeddingKey = `chunk:${crypto.randomUUID()}`;
@@ -403,13 +410,16 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
             h2: chunk.h2 ?? '',
             h3: chunk.h3 ?? '',
         });
+        // DEBUGGING LOG (7/21/26)
+        console.log(`Finished ${i}`);
+
         // Debugging log to check if embeddings, along with chunks + metadata, were successfully stored in Redis.
         // const stored = await redisClient.hGetAll(`doc:${i + 1}`);
         // console.log("Successfully stored:\n", stored);
     }
 
     // Close the Redis client manually, otherwise it stays open.
-    await redisClient.quit();
+    // await redisClient.quit();
 }
 
 // async function main() {
@@ -425,7 +435,7 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
 // (i.e. chunk text, vector embeddings, and corresponding metadata) was stored.
 async function tests() {
     // Connect to Redis client if it isn't already open; (with validation check)
-    redisConnect();
+    // await redisConnect();
     // Test: Verify if our vector index exists and if the correct data is stored in it
     const vectorIndex = await redisClient.ft.info('vector_idx');
     console.log(vectorIndex);
@@ -442,7 +452,7 @@ async function tests() {
 
 // // WARNING: DO NOT USE THIS IN PRODUCTION, WHEN USERS ARE USING MY APPLICATION ALREADY!
 // async function flush(){
-//     redisConnect();
+//     await redisConnect();
 //     const flushing = await redisClient.flushAll();
 //     console.log(flushing);
 //     console.log("\nflushing done!");
