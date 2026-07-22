@@ -269,21 +269,20 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
             const embeddings = await createEmbeddingVectorsFromChunks(textChunks, context);
             console.log("\n\n4. Embeddings complete.");
             console.log("\n5. Starting Redis store...");
-            // const storedVectorsAndChunks = await storeVectorsAndChunkedMetadata(embeddings, context);
+            await storeVectorsAndChunkedMetadata(embeddings, context);
+            // await new Promise(resolve => setTimeout(resolve, 30000));
 
-            await new Promise(resolve => setTimeout(resolve, 30000));
+            // console.log("30 second wait finished.");
 
-            console.log("30 second wait finished.");
-
-            await say("Embeddings finished.");  
-            //
-            //
-            //
+            // await say("Embeddings finished.");  
+            // //
+            // //
+            // //
             console.log("6. Redis store complete.");
 
-            console.log("7. Sending completion message...");
-            await say("Repo ingestion complete.");
-            console.log("8. Done.");
+            // console.log("7. Sending completion message...");
+            // await say("Repo ingestion complete.");
+            console.log("7. Done.");
         }
         // redisClient.quit();
     } catch (err) {

@@ -296,24 +296,41 @@ function embeddingToBuffer(embedding: number[]): Buffer {
 // This is used before Redis adds the new file data when user requests to save a new repo within the bot 
 // application's integrated cloud storage.
 async function deleteExistingWorkspaceVectors(teamId: string) {
+    let offset = 0;
+    const pageSize = 500;
     try {
         // Connect to Redis client if it isn't already open; (with validation check)
         // await redisConnect();
+        while (true) {
+            const result = await redisClient.ft.search(
+                "vector_idx",
+                `@slackTeamId:{${teamId}}`,
+                {
+                    LIMIT: {
+                        from: offset,
+                        size: pageSize,
+                    },
+                }
+            ) as {
+                total: number;
+                documents: { id: string }[];
+            };
 
-        const result = await redisClient.ft.search(
-            "vector_idx",
-            `@slackTeamId:{${teamId}}`
-        ) as {
-            total: number;
-            documents: { id: string }[];
-        };
+            if (!result) {
+                throw new Error("No resulting embeddings in the Redis vector index found.");
+            }
+            if (result.documents.length === 0) {
+                break;
+            }
+        
+            const pipeline = redisClient.multi();
+            for (const doc of result.documents) {
+                pipeline.del(doc.id);
+            }
 
-        if (!result) {
-            throw new Error("No resulting embeddings in the Redis vector index found.");
-        }
+            await pipeline.exec();
 
-        for (const doc of result.documents) {
-            await redisClient.del(doc.id);
+            offset += pageSize;
         }
     } catch (err) {
         console.log(err);
@@ -322,6 +339,7 @@ async function deleteExistingWorkspaceVectors(teamId: string) {
 
 // Pipeline: Store vector embeddings, chunk text, and their corresponding metadata in a Redis vector index
 export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: EmbeddedChunkData[], context: IngestContext) {
+    deleteExistingWorkspaceVectors(context.slackTeamId);
     try {
         // await redisConnect();
         console.log("\nCreating vector index...\n")
@@ -369,7 +387,7 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
         });
         // DEBUGGING LOG (7/21/26)
         console.log("After FT.CREATE");
-        
+
         const indexes = await redisClient.ft._list();
         console.log(indexes);
     } catch (err) {
@@ -382,6 +400,7 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
         return;
     }
     
+    const pipeline = redisClient.multi();
     // Loop for storing embeddings inside Redis
     for (const [i, chunk] of embeddedChunkObjects.entries()) {
         // DEBUGGING LOG (7/21/26)
@@ -395,7 +414,7 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
         }
 
         // One hash is set per chunked object. Hence, the for loop.
-        await redisClient.hSet(`doc:${i + 1}`, {
+        await pipeline.hSet(`doc:${i + 1}`, {
             // Added Slack Workspace 'team ID' so that Slack bot ONLY accesses data within given Workspace's repo.
             // (SECURITY & PRIVACY enforcement!! Prevents legal issues, too)
             slackTeamId: context.slackTeamId,
@@ -417,6 +436,7 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
         // const stored = await redisClient.hGetAll(`doc:${i + 1}`);
         // console.log("Successfully stored:\n", stored);
     }
+    await pipeline.exec();
 
     // Close the Redis client manually, otherwise it stays open.
     // await redisClient.quit();
