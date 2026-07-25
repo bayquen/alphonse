@@ -249,9 +249,9 @@ export async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkD
     // This function call deletes all existing vector embeddings in storage (I.E. CLEAR REPO DOC FILE STORAGE)
     // before storing all embeddings for newly instated GitHub repository!
     // DEBUGGING LOG (7/21/26)
-    console.log("1. Starting old vector embeddings deletion...");
+    console.log("2. Starting old vector embeddings deletion...");
     await deleteExistingWorkspaceVectors(slackTeamId);
-    console.log("2. Delete complete.");
+    console.log("3. Delete complete.");
 
     const BATCH_SIZE = 50;
     // EMBEDDINGS CREATION LOOP: VoyageAI client is used here 
@@ -296,41 +296,45 @@ function embeddingToBuffer(embedding: number[]): Buffer {
 // This is used before Redis adds the new file data when user requests to save a new repo within the bot 
 // application's integrated cloud storage.
 async function deleteExistingWorkspaceVectors(teamId: string) {
+    const indexes = await redisClient.ft._list();
     let offset = 0;
     const pageSize = 500;
     try {
-        // Connect to Redis client if it isn't already open; (with validation check)
-        // await redisConnect();
-        while (true) {
-            const result = await redisClient.ft.search(
-                "vector_idx",
-                `@slackTeamId:{${teamId}}`,
-                {
-                    LIMIT: {
-                        from: offset,
-                        size: pageSize,
-                    },
+        if (!indexes.includes("vector_idx")) {
+            // Connect to Redis client if it isn't already open; (with validation check)
+            // await redisConnect();
+            while (true) {
+
+                const result = await redisClient.ft.search(
+                    "vector_idx",
+                    `@slackTeamId:{${teamId}}`,
+                    {
+                        LIMIT: {
+                            from: offset,
+                            size: pageSize,
+                        },
+                    }
+                ) as {
+                    total: number;
+                    documents: { id: string }[];
+                };
+
+                if (!result) {
+                    throw new Error("No resulting embeddings in the Redis vector index found.");
                 }
-            ) as {
-                total: number;
-                documents: { id: string }[];
-            };
+                if (result.documents.length === 0) {
+                    break;
+                }
+            
+                const pipeline = redisClient.multi();
+                for (const doc of result.documents) {
+                    pipeline.del(doc.id);
+                }
 
-            if (!result) {
-                throw new Error("No resulting embeddings in the Redis vector index found.");
-            }
-            if (result.documents.length === 0) {
-                break;
-            }
-        
-            const pipeline = redisClient.multi();
-            for (const doc of result.documents) {
-                pipeline.del(doc.id);
-            }
+                await pipeline.exec();
 
-            await pipeline.exec();
-
-            offset += pageSize;
+                offset += pageSize;
+            }
         }
     } catch (err) {
         console.log(err);
@@ -339,56 +343,56 @@ async function deleteExistingWorkspaceVectors(teamId: string) {
 
 // Pipeline: Store vector embeddings, chunk text, and their corresponding metadata in a Redis vector index
 export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: EmbeddedChunkData[], context: IngestContext) {
-    deleteExistingWorkspaceVectors(context.slackTeamId);
     try {
+        const indexes = await redisClient.ft._list();
         // await redisConnect();
-        console.log("\nCreating vector index...\n")
-        await redisClient.ft.create('vector_idx', {
-            'chunkContent': {
-                type: SCHEMA_FIELD_TYPE.TEXT,
-            },
-            'embedding': {
-                type: SCHEMA_FIELD_TYPE.VECTOR,
-                TYPE: 'FLOAT32',
-                ALGORITHM: SCHEMA_VECTOR_FIELD_ALGORITHM.HNSW,
-                DISTANCE_METRIC: 'L2',
-                DIM: 1024,
-            },
-            'slackTeamId': {
-                type: SCHEMA_FIELD_TYPE.TAG,
-            },
-            'embeddingKey': {
-                type: SCHEMA_FIELD_TYPE.TEXT,
-            },
-            'chunkIndex': {
-                type: SCHEMA_FIELD_TYPE.NUMERIC,
-            },
-            'filename': {
-                type: SCHEMA_FIELD_TYPE.TEXT,
-            },
-            'sourcePath': {
-                type: SCHEMA_FIELD_TYPE.TEXT,
-            },
-            'paragraph': {
-                type: SCHEMA_FIELD_TYPE.TEXT,
-            },
-            'h1': {
-                type: SCHEMA_FIELD_TYPE.TEXT,
-            },
-            'h2': {
-                type: SCHEMA_FIELD_TYPE.TEXT,
-            },
-            'h3': {
-                type: SCHEMA_FIELD_TYPE.TEXT,
-            }
-        }, {
-            ON: 'HASH',
-            PREFIX: 'doc:'
-        });
+        if (!indexes.includes("vector_idx")) {
+            console.log("\nCreating vector index...\n")
+            await redisClient.ft.create('vector_idx', {
+                'chunkContent': {
+                    type: SCHEMA_FIELD_TYPE.TEXT,
+                },
+                'embedding': {
+                    type: SCHEMA_FIELD_TYPE.VECTOR,
+                    TYPE: 'FLOAT32',
+                    ALGORITHM: SCHEMA_VECTOR_FIELD_ALGORITHM.HNSW,
+                    DISTANCE_METRIC: 'L2',
+                    DIM: 1024,
+                },
+                'slackTeamId': {
+                    type: SCHEMA_FIELD_TYPE.TAG,
+                },
+                'embeddingKey': {
+                    type: SCHEMA_FIELD_TYPE.TEXT,
+                },
+                'chunkIndex': {
+                    type: SCHEMA_FIELD_TYPE.NUMERIC,
+                },
+                'filename': {
+                    type: SCHEMA_FIELD_TYPE.TEXT,
+                },
+                'sourcePath': {
+                    type: SCHEMA_FIELD_TYPE.TEXT,
+                },
+                'paragraph': {
+                    type: SCHEMA_FIELD_TYPE.TEXT,
+                },
+                'h1': {
+                    type: SCHEMA_FIELD_TYPE.TEXT,
+                },
+                'h2': {
+                    type: SCHEMA_FIELD_TYPE.TEXT,
+                },
+                'h3': {
+                    type: SCHEMA_FIELD_TYPE.TEXT,
+                }
+            }, {
+                ON: 'HASH',
+                PREFIX: 'doc:'
+            });
+        }
         // DEBUGGING LOG (7/21/26)
         console.log("After FT.CREATE");
-
-        const indexes = await redisClient.ft._list();
         console.log(indexes);
     } catch (err) {
         // if (!err.message.includes('Index already exists')) {

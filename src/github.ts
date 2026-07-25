@@ -313,7 +313,7 @@ export async function getRelevantTechDocObjects(cleanedUrl: string) {
                     filename: path.basename(fullPath),
                     content: content,
                     sourcePath: path.relative(repoRoot, fullPath)
-               }
+                }
                // Push object!
                relevantTechDocObjects.push(fileObject);
             }

@@ -265,7 +265,7 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
 
             const textChunks = await chunkTextContent(techDocObjects);
             // DEBUGGING LOG (7/21/26)
-            console.log("\n3. Starting embeddings...");
+            console.log("\n 1. Starting embeddings...");
             const embeddings = await createEmbeddingVectorsFromChunks(textChunks, context);
             console.log("\n\n4. Embeddings complete.");
             console.log("\n5. Starting Redis store...");
