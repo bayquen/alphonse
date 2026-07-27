@@ -300,7 +300,7 @@ async function deleteExistingWorkspaceVectors(teamId: string) {
     let offset = 0;
     const pageSize = 500;
     try {
-        if (!indexes.includes("vector_idx")) {
+        if (indexes.includes("vector_idx")) {
             // Connect to Redis client if it isn't already open; (with validation check)
             // await redisConnect();
             while (true) {
@@ -417,8 +417,9 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
             continue;
         }
 
-        // One hash is set per chunked object. Hence, the for loop.
-        await pipeline.hSet(`doc:${i + 1}`, {
+        // One hash is set per chunked object. Hence, the for loop. NOTE: doesn't need `await` keyword, since hSet() queues 
+        // the command and doesn't execute it until pipeline.exec()
+        pipeline.hSet(`doc:${i + 1}`, {
             // Added Slack Workspace 'team ID' so that Slack bot ONLY accesses data within given Workspace's repo.
             // (SECURITY & PRIVACY enforcement!! Prevents legal issues, too)
             slackTeamId: context.slackTeamId,

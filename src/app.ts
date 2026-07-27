@@ -253,15 +253,15 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
             // Pipeline for extracting and formatting relevant file objects, then passing those objects to extract embeddings, 
             // then embeddings to stored vectors + text chunks for chatbot tech-docs memory and accurate Q&A responses!!!
             const techDocObjects = await extractFileObjects(githubMetadataObjects);
-            // Debugging logs
-            console.log("\n\n");
-            let index = 0;
-            for (const obj of techDocObjects) {
-                index += 1;
-                console.log(`Object ${index}:\n`);
-                console.log(obj);
-                console.log("\n");
-            }
+            // // Debugging logs
+            // console.log("\n\n");
+            // let index = 0;
+            // for (const obj of techDocObjects) {
+            //     index += 1;
+            //     console.log(`Object ${index}:\n`);
+            //     console.log(obj);
+            //     console.log("\n");
+            // }
 
             const textChunks = await chunkTextContent(techDocObjects);
             // DEBUGGING LOG (7/21/26)
@@ -311,6 +311,14 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
 
     app.logger.info("⚡️ Bolt app is running!");
 
+    const shutdown = async () => {
+        try {
+          await redisClient.quit();
+        } finally {
+          process.exit(0);
+        }
+      };
+
     // DEBUGGING LOGS
     process.on("unhandledRejection", (reason) => {
         console.error("UNHANDLED REJECTION:", reason);
@@ -324,5 +332,6 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
         console.log("PROCESS EXIT:", code);
     });
 
-    await redisClient.quit();
+    process.on("SIGINT", shutdown);
+    process.on("SIGTERM", shutdown);
 })();
