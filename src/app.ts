@@ -208,13 +208,6 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
     // Acknowledge the command request right away, so 3000ms ping timeout doesn't occur.
     await ack();
 
-    redisConnect();
-
-    const indexes = await redisClient.ft._list();
-    console.log("\n\n");
-    console.log(indexes);
-    console.log("\n\n");
-
     const context: IngestContext = {
         slackTeamId: command.team_id
     };
@@ -246,58 +239,101 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
         }
         
         // If it's a public repository...
-        if (!gitHubRepoData.isPrivate) { // false = public repo           
-            const githubMetadataObjects = await getRelevantTechDocObjects(cleanedUrl);
-            if (!githubMetadataObjects) {
-                throw new Error("\nError: failed to extract any relevant GitHub-metadata file objects after running /add_repo\n");
-            }
-            // Pipeline for extracting and formatting relevant file objects, then passing those objects to extract embeddings, 
-            // then embeddings to stored vectors + text chunks for chatbot tech-docs memory and accurate Q&A responses!!!
-            const techDocObjects = await extractFileObjects(githubMetadataObjects);
-            // // Debugging logs
-            // console.log("\n\n");
-            // let index = 0;
-            // for (const obj of techDocObjects) {
-            //     index += 1;
-            //     console.log(`Object ${index}:\n`);
-            //     console.log(obj);
-            //     console.log("\n");
-            // }
-
-            const textChunks = await chunkTextContent(techDocObjects);
-            // DEBUGGING LOG (7/21/26)
-            console.log("\n 1. Starting embeddings...");
-            const embeddings = await createEmbeddingVectorsFromChunks(textChunks, context);
-            console.log("\n\n4. Embeddings complete.");
-            console.log("\n5. Starting Redis store...");
-            await storeVectorsAndChunkedMetadata(embeddings, context);
-            // await new Promise(resolve => setTimeout(resolve, 30000));
-
-            // console.log("30 second wait finished.");
-
-            // await say("Embeddings finished.");  
-            // //
-            // //
-            // //
-            console.log("6. Redis store complete.");
-
-            // console.log("7. Sending completion message...");
-            // await say("Repo ingestion complete.");
-            console.log("7. Done.");
+        if (!gitHubRepoData.isPrivate) { // false = public repo 
+                     
         }
-        // redisClient.quit();
-    } catch (err) {
-        console.log("\nUh oh, error occurred during app.command() execution:\n");
-        // Since app.command() is a Slack Bolt function, we can use Slack Bolt's logger for useful debugging stack-trace logs.
-        // Good alternative to try/catch block's console.log(err);
-        logger.error(err);
-        console.log("\n\n");
-        await say(`An error occurred when attempting to inspect GitHub repo or extract the files.
-                   \nPlease make sure the URL is correctly formatted or that the public/private repository exists!
-                   \nTHEN, please try running /add_repo again.`);
-        // redisClient.quit()
-        return;
-    }
+
+
+
+    // redisConnect();
+    // const indexes = await redisClient.ft._list();
+    // console.log("\n\n");
+    // console.log(indexes);
+    // console.log("\n\n");
+
+    // const context: IngestContext = {
+    //     slackTeamId: command.team_id
+    // };
+    // // If Slack user's /rtfm_add command DOESN'T contain a valid GitHub repo URL, then do nothing but return.
+    // const userTextInput = command.text;
+    // // Clean up GitHub URL given by user by removing any whitespaces and Slack's auto-formatted "<" and ">" symbols.
+    // const cleanedUrl = userTextInput.replace(/[<>]/g, "").trim();
+
+    // // Debugging log (7/14/26)
+    // console.log("cleaned up GitHub repoURL in app.command() execution: " + cleanedUrl);
+
+    // await respond(
+    //     "Request received. Checking repository accessibility..."
+    // );
+
+    // // Check repo access (is it public or private?) by using helper function from github.ts
+    // // Then returns GitHub repo metadata needed
+    // try {
+    //     // IMPORTANT NOTE: `cleanedUrl` is the cleaned-up GitHub repo URL string!
+    //     const gitHubRepoData = await inspectGitHubRepo(cleanedUrl);
+    //     // Make a VALIDATION CHECK to see if the repo metadata actually exists, otherwise log error message and return nothing
+    //     if (!gitHubRepoData) {
+    //         console.log(`Uh oh. Error occurred while running app.command(/add_repo):\n 
+    //                      The GitHub repo metadata failed to extract, or it doesn't exist.`);
+    //         await say(`Sorry, GitHub repo tech docs failed to extract.\n 
+    //                    Perhaps this public/private repo doesn't exist, OR your chosen repo has NO relevant tech docs to extract!\n
+    //                    Please run /add_repo again in a few seconds!\n\n`);
+    //         return;
+    //     }
+        
+    //     // If it's a public repository...
+    //     if (!gitHubRepoData.isPrivate) { // false = public repo           
+    //         const githubMetadataObjects = await getRelevantTechDocObjects(cleanedUrl);
+    //         if (!githubMetadataObjects) {
+    //             throw new Error("\nError: failed to extract any relevant GitHub-metadata file objects after running /add_repo\n");
+    //         }
+    //         // Pipeline for extracting and formatting relevant file objects, then passing those objects to extract embeddings, 
+    //         // then embeddings to stored vectors + text chunks for chatbot tech-docs memory and accurate Q&A responses!!!
+    //         const techDocObjects = await extractFileObjects(githubMetadataObjects);
+    //         // // Debugging logs
+    //         // console.log("\n\n");
+    //         // let index = 0;
+    //         // for (const obj of techDocObjects) {
+    //         //     index += 1;
+    //         //     console.log(`Object ${index}:\n`);
+    //         //     console.log(obj);
+    //         //     console.log("\n");
+    //         // }
+
+    //         const textChunks = await chunkTextContent(techDocObjects);
+    //         // DEBUGGING LOG (7/21/26)
+    //         console.log("\n 1. Starting embeddings...");
+    //         const embeddings = await createEmbeddingVectorsFromChunks(textChunks, context);
+    //         console.log("\n\n4. Embeddings complete.");
+    //         console.log("\n5. Starting Redis store...");
+    //         await storeVectorsAndChunkedMetadata(embeddings, context);
+    //         // await new Promise(resolve => setTimeout(resolve, 30000));
+
+    //         // console.log("30 second wait finished.");
+
+    //         // await say("Embeddings finished.");  
+    //         // //
+    //         // //
+    //         // //
+    //         console.log("6. Redis store complete.");
+
+    //         // console.log("7. Sending completion message...");
+    //         // await say("Repo ingestion complete.");
+    //         console.log("7. Done.");
+    //     }
+    //     // redisClient.quit();
+    // } catch (err) {
+    //     console.log("\nUh oh, error occurred during app.command() execution:\n");
+    //     // Since app.command() is a Slack Bolt function, we can use Slack Bolt's logger for useful debugging stack-trace logs.
+    //     // Good alternative to try/catch block's console.log(err);
+    //     logger.error(err);
+    //     console.log("\n\n");
+    //     await say(`An error occurred when attempting to inspect GitHub repo or extract the files.
+    //                \nPlease make sure the URL is correctly formatted or that the public/private repository exists!
+    //                \nTHEN, please try running /add_repo again.`);
+    //     // redisClient.quit()
+    //     return;
+    // }
 });
 
 (async () => {
