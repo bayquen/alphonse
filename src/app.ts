@@ -16,6 +16,7 @@ import { InputTokens } from "openai/resources/responses.mjs";
 import { stringify } from "@langchain/core/utils/uuid";
 import { inspectGitHubRepo, getRelevantTechDocObjects } from "./github.js";
 import { extractFileObjects, chunkTextContent, createEmbeddingVectorsFromChunks, storeVectorsAndChunkedMetadata } from "./ingest.js";
+import { Queue } from 'bullmq';
 
 export interface IngestContext {
     slackTeamId: string;
