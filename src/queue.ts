@@ -1,12 +1,15 @@
 import { Queue } from 'bullmq';
 import { Redis } from "ioredis";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 // Create a separate IORedis connection to BullMQ (not shared with node-redis)
 export const bullConnection = new Redis({
-    host: process.env.REDIS_HOST,
-    port: 6379,
-    username: process.env.REDIS_USERNAME,
-    password: process.env.REDIS_PASSWORD,
+    host: process.env.REDIS_CLOUD_HOST,
+    port: Number(process.env.REDIS_CLOUD_PORT),
+    username: process.env.REDIS_CLOUD_USERNAME,
+    password: process.env.REDIS_CLOUD_PASSWORD,
     maxRetriesPerRequest: null,
 });
 
