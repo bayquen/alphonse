@@ -8,6 +8,7 @@ import { extractFileObjects,
         chunkTextContent, 
         createEmbeddingVectorsFromChunks, 
         storeVectorsAndChunkedMetadata } from ".././ingest.js";
+import { app } from "./../app.js";
 
 const repoWorker = new Worker(
     "repo-ingest",
@@ -59,6 +60,13 @@ const repoWorker = new Worker(
 
             console.log("7. Repo ingestion complete.");
             console.log("Redis pipeline execution complete.");
+
+            // Notify Slack user that the job succeeded. (If execution makes it right here
+            // then it SHOULD mean that no errors occurred).
+            await app.client.chat.postMessage({
+                channel: slackChannelId,
+                text: `<@${slackUserId}> Successfully finished ingesting repo ${job.data.repoUrl}`,
+            });
         } catch (err) {
             console.log("\nUh oh, error occurred during repoWorker (i.e. Redis background worker) execution:\n");
             console.log(err);
@@ -66,6 +74,10 @@ const repoWorker = new Worker(
             // await say(`An error occurred when attempting to inspect GitHub repo or extract the files.
             //         \nPlease make sure the URL is correctly formatted or that the public/private repository exists!
             //         \nTHEN, please try running /add_repo again.`);
+            await app.client.chat.postMessage({
+                channel: slackChannelId,
+                text: `<@${slackUserId}> Failed to ingest repo ${job.data.repoUrl}. Please try again with a valid GitHub repo URL.`,
+            });
             return;
         }
     },

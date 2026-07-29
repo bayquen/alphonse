@@ -38,7 +38,7 @@ if (!token || !appToken) {
     throw new Error("Missing Slack environment variables.");
 }
 // Initializes Slack Bolt app via Socket Mode with your Slack bot and app tokens
-const app = new App({
+export const app = new App({
     token,
     appToken,
     socketMode: true,
@@ -93,7 +93,7 @@ app.event("app_mention", async({ event, client, say }) => {
             // Edge case: Check to make sure user's display name exists or isn't empty
             if (userDisplayName != null && userDisplayName.trim() !== "") {
                 // Have the Slack bot ping the user and respond with this message 
-                await say(`Howdy @${userDisplayName}, I'm here to help with any questions for your product's technical docs. Make sure to provide a prompt while mentioning me :)`)
+                await say(`Howdy <@${userDisplayName}>, I'm here to help with any questions for your product's technical docs. Make sure to provide a prompt while mentioning me :)`)
                 return;
             // Edge case (continued): If by any rare chance the user's display name is empty or can't be read, send alternate message
             } else {
