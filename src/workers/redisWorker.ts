@@ -73,3 +73,12 @@ const repoWorker = new Worker(
         connection: bullConnection,
     }
 );
+
+// BullMQ Job listeners that check when some queued job succeeds after execution OR fails during/before execution.
+repoWorker.on('completed', job => {
+    console.log(`${job.id} has completed!`);
+});
+
+repoWorker.on('failed', (job, err) => {
+    console.log(`Job ${job?.id ?? "<unknown>"} has failed with ${err.message}`);
+});
