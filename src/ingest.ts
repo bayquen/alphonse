@@ -244,8 +244,9 @@ export async function chunkTextContent(fileObjects: (GitHubFileObject | Markdown
     return allChunks;
 }
 
-export async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkData[], context: IngestContext ) {
-    const slackTeamId = context.slackTeamId;
+export async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkData[], slackTeamId: string) {
+    // const slackTeamId = context.slackTeamId;
+
     // This function call deletes all existing vector embeddings in storage (I.E. CLEAR REPO DOC FILE STORAGE)
     // before storing all embeddings for newly instated GitHub repository!
     // DEBUGGING LOG (7/21/26)
@@ -342,7 +343,7 @@ async function deleteExistingWorkspaceVectors(teamId: string) {
 }
 
 // Pipeline: Store vector embeddings, chunk text, and their corresponding metadata in a Redis vector index
-export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: EmbeddedChunkData[], context: IngestContext) {
+export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: EmbeddedChunkData[], slackTeamId: string) {
     try {
         const indexes = await redisClient.ft._list();
         // await redisConnect();
@@ -422,7 +423,7 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
         pipeline.hSet(`doc:${i + 1}`, {
             // Added Slack Workspace 'team ID' so that Slack bot ONLY accesses data within given Workspace's repo.
             // (SECURITY & PRIVACY enforcement!! Prevents legal issues, too)
-            slackTeamId: context.slackTeamId,
+            slackTeamId: slackTeamId,
             embeddingKey: embeddingKey,
             chunkContent: chunk.chunkContent,
             embedding: embeddingToBuffer(chunk.embedding),

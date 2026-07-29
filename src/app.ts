@@ -208,9 +208,6 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
     // Acknowledge the command request right away, so 3000ms ping timeout doesn't occur.
     await ack();
 
-    const context: IngestContext = {
-        slackTeamId: command.team_id
-    };
     // If Slack user's /rtfm_add command DOESN'T contain a valid GitHub repo URL, then do nothing but return.
     const userTextInput = command.text;
     // Clean up GitHub URL given by user by removing any whitespaces and Slack's auto-formatted "<" and ">" symbols.

@@ -1,4 +1,4 @@
-import { Worker } from "bullmq";
+import { Job, Worker } from "bullmq";
 import { bullConnection } from "./../queue.js";
 import type { RepoIngestJobData } from "./../queue.js";
 import { redisClient, redisConnect } from ".././redisClient.js";
@@ -11,7 +11,7 @@ import { extractFileObjects,
 
 const repoWorker = new Worker(
     "repo-ingest",
-    async (job) => {
+    async (job: Job<RepoIngestJobData>) => {
         // Makes sure to include needed input data that is passed within a BullMQ queue.add() built-in function call!
         const {
             repoUrl,
