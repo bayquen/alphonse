@@ -2,7 +2,7 @@ import { Queue } from 'bullmq';
 import { Redis } from "ioredis";
 
 // Create a separate IORedis connection to BullMQ (not shared with node-redis)
-const bullConnection = new Redis({
+export const bullConnection = new Redis({
     host: process.env.REDIS_HOST,
     port: 6379,
     username: process.env.REDIS_USERNAME,

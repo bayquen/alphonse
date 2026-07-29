@@ -208,7 +208,6 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
     // Acknowledge the command request right away, so 3000ms ping timeout doesn't occur.
     await ack();
 
-
     const context: IngestContext = {
         slackTeamId: command.team_id
     };
@@ -242,12 +241,12 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
         // If it's a public repository...
         if (!gitHubRepoData.isPrivate) { // false = public repo 
             // Add a repo-ingestion job to the BullMQ queue
-             await repoIngestQueue.add("ingest-repo", {
+            await repoIngestQueue.add("repo-ingest", {
                 repoUrl: cleanedUrl,
                 slackTeamId: command.team_id,
                 slackChannelId: command.channel_id,
                 slackUserId: command.user_id,
-             });
+            });
         }
     } catch (error) {
         console.log(error);
