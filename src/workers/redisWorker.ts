@@ -8,7 +8,7 @@ import { extractFileObjects,
         chunkTextContent, 
         createEmbeddingVectorsFromChunks, 
         storeVectorsAndChunkedMetadata } from ".././ingest.js";
-import { app } from "./../app.js";
+// import { app } from "./../app.js";
 
 const repoWorker = new Worker(
     "repo-ingest",
@@ -63,10 +63,10 @@ const repoWorker = new Worker(
 
             // Notify Slack user that the job succeeded. (If execution makes it right here
             // then it SHOULD mean that no errors occurred).
-            await app.client.chat.postMessage({
-                channel: slackChannelId,
-                text: `<@${slackUserId}> Successfully finished ingesting repo ${job.data.repoUrl}`,
-            });
+            // await app.client.chat.postMessage({
+            //     channel: slackChannelId,
+            //     text: `<@${slackUserId}> Successfully finished ingesting repo ${job.data.repoUrl}`,
+            // });
         } catch (err) {
             console.log("\nUh oh, error occurred during repoWorker (i.e. Redis background worker) execution:\n");
             console.log(err);
@@ -74,23 +74,36 @@ const repoWorker = new Worker(
             // await say(`An error occurred when attempting to inspect GitHub repo or extract the files.
             //         \nPlease make sure the URL is correctly formatted or that the public/private repository exists!
             //         \nTHEN, please try running /add_repo again.`);
-            await app.client.chat.postMessage({
-                channel: slackChannelId,
-                text: `<@${slackUserId}> Failed to ingest repo ${job.data.repoUrl}. Please try again with a valid GitHub repo URL.`,
-            });
-            return;
+            // await app.client.chat.postMessage({
+            //     channel: slackChannelId,
+            //     text: `<@${slackUserId}> Failed to ingest repo ${job.data.repoUrl}. Please try again with a valid GitHub repo URL.`,
+            // });
+            throw err;
         }
     },
     {
         connection: bullConnection,
+        lockDuration: 360000,  // 5 minutes in ms,
+        lockRenewTime: 5000,  // 5 seconds in ms
     }
 );
 
 // BullMQ Job listeners that check when some queued job succeeds after execution OR fails during/before execution.
+repoWorker.on('ready', () => {
+    console.log("redisWorker: Worker is ready and listening for jobs!");
+});
+repoWorker.on('error', (err) => {
+    console.log("redisWorker: Worker error:", err);
+});
+
 repoWorker.on('completed', job => {
-    console.log(`${job.id} has completed!`);
+    console.log(`Job ${job.id} has completed!`);
 });
 
 repoWorker.on('failed', (job, err) => {
     console.log(`Job ${job?.id ?? "<unknown>"} has failed with ${err.message}`);
 });
+
+// Ensure that worker is ready BEFORE the module completes loading
+await repoWorker.waitUntilReady();
+console.log("redisWorker: Worker initialization complete");
