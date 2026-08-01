@@ -258,10 +258,16 @@ export async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkD
     // EMBEDDINGS CREATION LOOP: VoyageAI client is used here 
     for (let i = 0; i < allChunks.length; i += BATCH_SIZE) {
         const batch = allChunks.slice(i, i + BATCH_SIZE)
+        // Debugging log
+        console.log(`4a. Processing batch ${i / BATCH_SIZE + 1}/${Math.ceil(allChunks.length / BATCH_SIZE)} (${batch.length} chunks)...`);
+
         const response = await voyageClient.embed({
             model: "voyage-code-3",
             input: batch.map(chunk => chunk.chunkContent),
         });
+        
+        // Debugging log
+        console.log(`4b. Batch ${i / BATCH_SIZE + 1} embedding response received.`);
 
         if (!response.data) {
             continue;

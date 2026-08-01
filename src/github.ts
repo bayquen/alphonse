@@ -259,7 +259,8 @@ function shouldSkipEntry(entry: Dirent): boolean {
     // Else, current entry must be a file object itself
     else {
         // Check if it's an unwanted file and return a boolean
-        return (UNWANTED_FILENAMES.has(entry.name) && UNWANTED_EXTENSIONS.has(entry.name));
+        const ext = path.extname(entry.name).toLowerCase();
+        return (UNWANTED_FILENAMES.has(entry.name) || UNWANTED_EXTENSIONS.has(ext));
     }
 }
 

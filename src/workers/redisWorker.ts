@@ -1,5 +1,5 @@
 import { Job, Worker } from "bullmq";
-import { bullConnection } from "./../queue.js";
+import { bullConnection, repoIngestQueue } from "./../queue.js";
 import type { RepoIngestJobData } from "./../queue.js";
 import { redisClient, redisConnect } from ".././redisClient.js";
 import type { GitHubFileObject } from ".././github.js";
@@ -10,9 +10,12 @@ import { extractFileObjects,
         storeVectorsAndChunkedMetadata } from ".././ingest.js";
 // import { app } from "./../app.js";
 
+
 const repoWorker = new Worker(
     "repo-ingest",
     async (job: Job<RepoIngestJobData>) => {
+        // Reset lock to prevent stall timeouts during long operations
+        job.updateProgress(0);
         // Makes sure to include needed input data that is passed within a BullMQ queue.add() built-in function call!
         const {
             repoUrl,
@@ -107,3 +110,5 @@ repoWorker.on('failed', (job, err) => {
 // Ensure that worker is ready BEFORE the module completes loading
 await repoWorker.waitUntilReady();
 console.log("redisWorker: Worker initialization complete");
+
+await repoIngestQueue.obliterate({ force: true });
