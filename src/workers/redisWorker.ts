@@ -111,4 +111,4 @@ repoWorker.on('failed', (job, err) => {
 await repoWorker.waitUntilReady();
 console.log("redisWorker: Worker initialization complete");
 
-await repoIngestQueue.obliterate({ force: true });
+// await repoIngestQueue.obliterate({ force: true });
