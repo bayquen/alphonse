@@ -99,8 +99,10 @@ repoWorker.on('error', (err) => {
     console.log("redisWorker: Worker error:", err);
 });
 
-repoWorker.on('completed', job => {
+repoWorker.on('completed', async job => {
     console.log(`Job ${job.id} has completed!`);
+    // Removes job upon completion (I think this may override the 'removeOnComplete' param inside repoIngestQueue definition)
+    await job.remove();
 });
 
 repoWorker.on('failed', (job, err) => {

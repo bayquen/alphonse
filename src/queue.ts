@@ -28,7 +28,7 @@ export const repoIngestQueue = new Queue<RepoIngestJobData>(
             // Max attempts before BullMQ cancels a given job. (TODO: REMEMBER to add code that deletes a job from the queue after it is cancelled.)
             attempts: 3,
             // Number of successfully completed jobs to save in history logs (via Redis). Useful for debugging!
-            removeOnComplete: 50,
+            removeOnComplete: 12,
             // Number of failed jobs to save in history logs (via Redis). Useful for debugging!
             removeOnFail: 30,
         },
