@@ -245,6 +245,8 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
                 slackUserId: command.user_id,
             });
             console.log(`A new job has successfully been added to the queue.`);
+        } else {
+            
         }
     } catch (error) {
         console.log(error);
