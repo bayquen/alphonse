@@ -237,7 +237,7 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
         
         // If it's a public repository...
         if (!gitHubRepoData.isPrivate) { // false = public repo 
-            // Add a repo-ingestion job to the BullMQ queue
+            // Use public repo logic; Add a repo-ingestion job to the BullMQ queue
             await repoIngestQueue.add("repo-ingest", {
                 repoUrl: cleanedUrl,
                 slackTeamId: command.team_id,
@@ -246,6 +246,7 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
             });
             console.log(`A new job has successfully been added to the queue.`);
         } else {
+            // Use private repo logic (separation of concerns);
             
         }
     } catch (error) {

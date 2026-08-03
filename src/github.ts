@@ -4,7 +4,9 @@
 //          This checks to see the repo's credentials and its visibility (if private, 
 //          then the repo needs authentication from admin/owner).
 import { Octokit } from "@octokit/rest";
+import { App } from "@octokit/app";
 // import * as fs from 'fs';  // file-system module From NodeJS
+import dotenv from "dotenv";
 import fs from "node:fs/promises";
 import { Dirent } from "node:fs";
 import path from "path";
@@ -13,9 +15,16 @@ import { tmpdir } from "node:os";
 import { execFile } from "child_process";
 import { promisify } from "util";
 
+dotenv.config();
+
 const octokit = new Octokit({
     // auth: "secret123"
     userAgent: 'myApp v1.2.3',
+});
+
+const githubApp = new App({
+    appId: process.env.GITHUB_APP_ID!,
+    privateKey: process.env.GITHUB_APP_PRIVATE_KEY!,
 });
 
 // Sets for filtering out unwanted files (i.e. which have certain filenames OR file extensions), and directories.
@@ -210,6 +219,10 @@ export async function inspectGitHubRepo(repoUrl: string) {
         htmlUrl: data.html_url,
         pushedAt: data.pushed_at,
     };
+}
+
+export async function inspectPrivateGitHubRepo(repoUrl: string) {
+    // TODO (8/3/26): Separate private-repo auth and ingestion.
 }
 
 export async function getGitHubRepoTree(repoUrl: string) {

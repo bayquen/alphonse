@@ -28,6 +28,7 @@
     "dependencies": {
         "@langchain/core": "^1.1.41",
         "@langchain/textsplitters": "^1.0.1",
+        "@octokit/app": "^16.1.4",
         "@octokit/rest": "^22.0.1",
         "@slack/bolt": "^4.7.3",
         "bullmq": "^5.81.2",
