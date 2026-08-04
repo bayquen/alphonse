@@ -191,7 +191,7 @@ export interface GitHubFileObject {
     sourcePath: string;
 }
 
-// Check if GitHub repo exists, and if so then grab relevant metadata needed for authentication
+// Check if public GitHub repo exists, and if so then grab relevant metadata needed for authentication
 export async function inspectGitHubRepo(repoUrl: string) {
     const url = new URL(repoUrl.trim());
     const [, owner, repoName] = url.pathname.split("/");
@@ -222,7 +222,21 @@ export async function inspectGitHubRepo(repoUrl: string) {
 }
 
 export async function inspectPrivateGitHubRepo(repoUrl: string) {
-    // TODO (8/3/26): Separate private-repo auth and ingestion.
+    // TODO (8/3/26): Separate private-repo auth via a remote GitHub app that connects to Slack user/org's GitHub repo.
+
+    const url = new URL(repoUrl.trim());
+    const [, owner, repoName] = url.pathname.split("/");
+
+    if (!owner || !repoName ) {
+        console.log("\nUh oh, an error occurred during inspectGitHubRepo() execution:\nowner and/or repo name not found when parsing GitHub URL.\n");
+        return;
+    };
+
+    // If repo name has '.git' extension, remove it to normalize the repo name
+    const repo = repoName.replace(/\.git$/, "");
+
+    // TODO IMMED: How do I integrate my GitHub app to authenticate user for read access to private repo?
+    
 }
 
 export async function getGitHubRepoTree(repoUrl: string) {
