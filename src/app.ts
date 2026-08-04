@@ -246,7 +246,7 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
             });
             console.log(`A new job has successfully been added to the queue.`);
         } else {
-            // Use private repo logic (separation of concerns);
+            // TODO IMMED: Use private repo logic (separation of concerns);
             
         }
     } catch (error) {
