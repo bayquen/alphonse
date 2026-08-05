@@ -15,6 +15,7 @@ import { tmpdir } from "node:os";
 import { execFile } from "child_process";
 import { promisify } from "util";
 
+
 dotenv.config();
 
 const octokit = new Octokit({
@@ -175,15 +176,6 @@ const UNWANTED_FILENAMES = new Set([
   ".swo",
 ]);
 
-// interface GitHubTreeObject {
-//     path: string;
-//     mode: string;
-//     type: string;
-//     sha: string;
-//     size?: number;
-//     url?: string;
-// }
-
 export interface GitHubFileObject {
     type: string,
     filename: string;
@@ -220,7 +212,7 @@ export async function inspectGitHubRepo(repoUrl: string) {
         pushedAt: data.pushed_at,
     };
 }
-
+// Check if private GitHub repo exists
 export async function inspectPrivateGitHubRepo(repoUrl: string) {
     // TODO (8/3/26): Separate private-repo auth via a remote GitHub app that connects to Slack user/org's GitHub repo.
 
@@ -236,7 +228,7 @@ export async function inspectPrivateGitHubRepo(repoUrl: string) {
     const repo = repoName.replace(/\.git$/, "");
 
     // TODO IMMED: How do I integrate my GitHub app to authenticate user for read access to private repo?
-    
+    // const installationToken = await githubApp.getInstallationOctokit(installationId);
 }
 
 export async function getGitHubRepoTree(repoUrl: string) {
@@ -291,16 +283,15 @@ function shouldSkipEntry(entry: Dirent): boolean {
     }
 }
 
-// REFACTORED (7/17/26) function to get GitHub documents via efficient `git clone` on backend server, which avoids any GitHub API request limit reaching.
-export async function getRelevantTechDocObjects(cleanedUrl: string) {
-    let relevantTechDocObjects: GitHubFileObject[] = [];
+// REFACTORED: function to get GitHub documents via efficient `git clone` on backend server, which avoids any GitHub API request limit reaching.
+export async function getRelevantTechDocObjects(cleanedUrl: string, githubToken?: string) {
+    // If there's a GitHub token, that means a private repo needs to be authenticated by an owner or contributor with access rights.
+    // Otherwise, the regular cleaned URL is used if it's a public repo.
+    const cloneUrl = githubToken
+    ? cleanedUrl.replace('https://', `https://x-access-token:${githubToken}@`)
+    : cleanedUrl;
 
-    // // Parse through GitHub repo's files; PASS IN cleaned-up GitHub URL only!
-    // const fileObjects = await getGitHubRepoTree(cleanedUrl);
-    // if (!fileObjects) {
-    //     console.error("Error: File objects not found.");
-    //     return;
-    // }
+    let relevantTechDocObjects: GitHubFileObject[] = [];
 
     const execFileAsync = promisify(execFile);
     // Create a unique temp directory by appending random chars to the prefix "rtfm-repo"
@@ -313,7 +304,7 @@ export async function getRelevantTechDocObjects(cleanedUrl: string) {
     await execFileAsync("git", [
         "clone",
         "--depth=1",
-        cleanedUrl,  // Repository URL
+        cloneUrl,  // Repository URL
         cloneDirectory,
     ]);
 
@@ -349,6 +340,10 @@ export async function getRelevantTechDocObjects(cleanedUrl: string) {
     }
     await walk(repoRoot);
     return relevantTechDocObjects;
+}
+
+export function parseGitHubInstallationWebhook(body: any, signature: string) {
+    // TODO: Verify signature, validate event, return { installationId, action }
 }
 
 // LOCAL FUNCTION TESTS:
