@@ -342,7 +342,7 @@ export async function getRelevantTechDocObjects(cleanedUrl: string, githubToken?
     await walk(repoRoot);
     return relevantTechDocObjects;
 }
-
+// Helper function for private repos; executed inside githubRoute.ts program
 export function parseGitHubInstallationWebhook(body: any, signature: string | string[]) {
     // TODO: Verify signature, validate event, return { installationId, action }
     const secret = process.env.GITHUB_APP_INSTALLATION_WEBHOOK_SECRET!;
@@ -353,9 +353,9 @@ export function parseGitHubInstallationWebhook(body: any, signature: string | st
     const hash = createHmac('sha256', secret)
         .update(body)
         .digest('hex');
-
+    // Signature must be SHA256 encoded.
     const expectedSignature = `sha256=${hash}`;
-
+    // Secured method for checking if the actual and expected signature values are equal.
     try {
         timingSafeEqual(
             Buffer.from(sig!),
