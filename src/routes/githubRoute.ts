@@ -11,6 +11,12 @@ try {
         if (!req.headers) {
             throw new Error("GitHub-app listener endpoint failed to be created.");
         }
+
+        // Get workspace ID from query params (passed in the install URL)
+        // [side note: State query is used here because the webhook itself doesn't know which Slack workspace initiated the GitHub 
+        // app installation. Normally, a state query is useful for apps that don't support webhooks, but it's needed here.]
+        const slackWorkspaceId = req.query.state as string;
+
         const { installationId, action } = parseGitHubInstallationWebhook(req.body, req.headers['x-hub-signature']!);
         if (action === 'created') {  // Installation created
             // TODO: Save given installation ID to Redis
