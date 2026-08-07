@@ -17,6 +17,7 @@ try {
         // app installation. Normally, a state query is useful for apps that don't support webhooks, but it's needed here.]
         const slackWorkspaceId = req.query.state as string;
 
+        // [side: We need to store installation ID, otherwise we'd have no way to associate the installation with the right Slack workspace.]
         const { installationId, action } = parseGitHubInstallationWebhook(req.body, req.headers['x-hub-signature']!);
         if (action === 'created') {  // Installation created
             // TODO: Save given installation ID to Redis
