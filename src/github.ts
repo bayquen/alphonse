@@ -14,6 +14,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { execFile } from "child_process";
 import { promisify } from "util";
+import { timingSafeEqual, createHmac } from "crypto";
 
 
 dotenv.config();
@@ -342,9 +343,48 @@ export async function getRelevantTechDocObjects(cleanedUrl: string, githubToken?
     return relevantTechDocObjects;
 }
 
-export function parseGitHubInstallationWebhook(body: any, signature: string) {
+export function parseGitHubInstallationWebhook(body: any, signature: string | string[]) {
     // TODO: Verify signature, validate event, return { installationId, action }
+    const secret = process.env.GITHUB_APP_INSTALLATION_WEBHOOK_SECRET!;
+    // Check if signature is an array of multiple header(?) strings, otherwise it's a single string 
+    const sig = Array.isArray(signature) ? signature[0] : signature;
+
+    // Verify HMAC-SHA256:
+    const hash = createHmac('sha256', secret)
+        .update(body)
+        .digest('hex');
+
+    const expectedSignature = `sha256=${hash}`;
+
+    try {
+        timingSafeEqual(
+            Buffer.from(sig!),
+            Buffer.from(expectedSignature), 
+        );
+    } catch (err) {
+        throw new Error('Webhook signature verification failed.');
+    }
+
+    // Parse body as JSON
+    const payload = typeof body === 'string'
+        ? JSON.parse(body)
+        : JSON.parse(body.toString());
+    
+    if (payload.action !== 'created' && payload.action !== 'deleted') {
+        throw new Error('Invalid installation action.');
+    }
+
+    const installationId = payload.installation?.id;
+    const action = payload.action;
+    
+    if (!installationId) {
+        throw new Error('Missing installation ID.');
+    }
+
+    return { installationId, action };
 }
+
+
 
 // LOCAL FUNCTION TESTS:
 // TEST 1:
