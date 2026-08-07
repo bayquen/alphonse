@@ -342,6 +342,21 @@ export async function getRelevantTechDocObjects(cleanedUrl: string, githubToken?
     await walk(repoRoot);
     return relevantTechDocObjects;
 }
+// Check if GitHub App is installed for a given Slack workspace
+export async function checkGitHubAppInstallation(slackTeamId: string): Promise<boolean> {
+    // TODO: Query your database/cache to check if workspace has an active GitHub App installation
+    // For now, placeholder returns false to prompt auth flow
+    return false;
+}
+
+// Generate GitHub App authorization URL for a Slack workspace (for private repos)
+export function generateGitHubAppAuthUrl(slackTeamId: string): string {
+    const clientId = process.env.GITHUB_APP_CLIENT_ID!;
+    const redirectUri = `${process.env.APP_BASE_URL}/github/oauth/callback`;
+    const state = Buffer.from(slackTeamId).toString('base64');
+    return `https://github.com/apps/${process.env.GITHUB_APP_NAME}/installations/new?state=${state}&redirect_uri=${redirectUri}`;
+}
+
 // Helper function for private repos; executed inside githubRoute.ts program
 export function parseGitHubInstallationWebhook(body: any, signature: string | string[]) {
     // TODO: Verify signature, validate event, return { installationId, action }

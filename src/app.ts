@@ -14,7 +14,7 @@ import { retrieveRelevantChunks } from "./retrieval.js";
 import { redisClient, redisConnect } from "./redisClient.js";
 import { InputTokens } from "openai/resources/responses.mjs";
 import { stringify } from "@langchain/core/utils/uuid";
-import { inspectGitHubRepo, getRelevantTechDocObjects } from "./github.js";
+import { inspectGitHubRepo, getRelevantTechDocObjects, checkGitHubAppInstallation, generateGitHubAppAuthUrl } from "./github.js";
 import { extractFileObjects, chunkTextContent, createEmbeddingVectorsFromChunks, storeVectorsAndChunkedMetadata } from "./ingest.js";
 import { repoIngestQueue } from "./queue.js";
 
@@ -246,8 +246,24 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
             });
             console.log(`A new job has successfully been added to the queue.`);
         } else {
-            // TODO IMMED: Use private repo logic (separation of concerns);
-            
+            // TODO: Private repo: trigger GitHub app authentication workflow
+
+            // Check if GitHub app is installed for this Slack workspace
+            const isGitHubAppInstalled = await checkGitHubAppInstallation(command.team_id);
+
+            if (!isGitHubAppInstalled) {
+                const authUrl = generateGitHubAppAuthUrl(command.team_id);
+                await say(`GitHub App not installed. <${authUrl}|Click here to authorize> this workspace for private repo access.`);
+                return;
+            }
+
+            await repoIngestQueue.add("private-repo-ingest", {
+                repoUrl: cleanedUrl,
+                slackTeamId: command.team_id,
+                slackChannelId: command.channel_id,
+                slackUserId: command.user_id,                
+            });
+            console.log(`Private repo job added to queue for workspace: ${command.team_id}`);
         }
     } catch (error) {
         console.log(error);
