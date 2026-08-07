@@ -246,8 +246,6 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
             });
             console.log(`A new job has successfully been added to the queue.`);
         } else {
-            // TODO: Private repo: trigger GitHub app authentication workflow
-
             // Check if GitHub app is installed for this Slack workspace
             const isGitHubAppInstalled = await checkGitHubAppInstallation(command.team_id);
 
@@ -256,7 +254,7 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
                 await say(`GitHub App not installed. <${authUrl}|Click here to authorize> this workspace for private repo access.`);
                 return;
             }
-
+            // Separate job queuing functionality for private repos; Shaped the same as the one for public repos.
             await repoIngestQueue.add("private-repo-ingest", {
                 repoUrl: cleanedUrl,
                 slackTeamId: command.team_id,
