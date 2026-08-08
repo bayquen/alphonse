@@ -346,6 +346,7 @@ export async function getRelevantTechDocObjects(cleanedUrl: string, githubToken?
 export async function checkGitHubAppInstallation(slackTeamId: string): Promise<boolean> {
     // TODO: Query your database/cache to check if workspace has an active GitHub App installation
     // For now, placeholder returns false to prompt auth flow
+    
     return false;
 }
 
