@@ -221,7 +221,7 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
     // Then returns GitHub repo metadata needed
     try {
         // IMPORTANT NOTE: `cleanedUrl` is the cleaned-up GitHub repo URL string!
-        const gitHubRepoData = await inspectGitHubRepo(cleanedUrl);
+        const gitHubRepoData = await inspectGitHubRepo(cleanedUrl, command.team_id);
         // Make a VALIDATION CHECK to see if the repo metadata actually exists, otherwise log error message and return nothing
         if (!gitHubRepoData) {
             console.log(`Uh oh. Error occurred while running app.command(/add_repo):\n 
@@ -243,14 +243,15 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
             });
             console.log(`A new job has successfully been added to the queue.`);
         } else { // Else this is a private repository
-            // Check if GitHub app is installed for this Slack workspace
-            const isGitHubAppInstalled = await checkGitHubAppInstallation(command.team_id);
+            // // Check if GitHub app is installed for this Slack workspace
+            // const isGitHubAppInstalled = await checkGitHubAppInstallation(command.team_id);
 
-            if (!isGitHubAppInstalled) {
-                const authUrl = generateGitHubAppAuthUrl(command.team_id);
-                await say(`GitHub App not installed. <${authUrl}|Click here to authorize> this workspace for private repo access.`);
-                return;
-            }
+            // if (!isGitHubAppInstalled) {
+            //     const authUrl = generateGitHubAppAuthUrl(command.team_id);
+            //     await say(`GitHub App not installed. <${authUrl}|Click here to authorize> this workspace for private repo access.`);
+            //     return;
+            // }
+
             // Separate job queuing functionality for private repos; Shaped the same as the one for public repos.
             await repoIngestQueue.add("private-repo-ingest", {
                 repoUrl: cleanedUrl,
@@ -262,6 +263,12 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
         }
     } catch (error) {
         console.log(error);
+        if (error instanceof Error && error.message.includes("GitHub App not installed")) {
+            const authUrl = generateGitHubAppAuthUrl(command.team_id);
+            await say((`GitHub App not installed! <${authUrl}|Click here to authorize> this workspace for private repo access.`));
+        } else {
+            await say(`Sorry, failed to access this repository. Please make sure the URL is valid and try again.`);
+        }
         return;
     }
     // redisConnect();

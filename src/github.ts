@@ -186,7 +186,7 @@ export interface GitHubFileObject {
 }
 
 // Check if public GitHub repo exists, and if so then grab relevant metadata needed for authentication
-export async function inspectGitHubRepo(repoUrl: string) {
+export async function inspectGitHubRepo(repoUrl: string, slackTeamId?: string) {
     const url = new URL(repoUrl.trim());
     const [, owner, repoName] = url.pathname.split("/");
 
@@ -194,11 +194,22 @@ export async function inspectGitHubRepo(repoUrl: string) {
         console.log("\nUh oh, an error occurred during inspectGitHubRepo() execution:\nowner and/or repo name not found when parsing GitHub URL.\n");
         return;
     };
-
     // If repo name has '.git' extension, remove it to normalize the repo name
     const repo = repoName.replace(/\.git$/, "");
 
-    const { data } = await octokit.repos.get({ owner: owner, repo: repo });
+    let data;
+    if (slackTeamId) {  // For private repos
+        const installIdExists = await checkGitHubAppInstallation(slackTeamId);
+        if (installIdExists) {
+            const installId = await getInstallationId(slackTeamId);
+            const authedOctokit = await githubApp.getInstallationOctokit(Number(installId)) as any;
+            ({ data } = await authedOctokit.repos.get({ owner: owner, repo: repo }));
+        } else {
+            throw new Error("GitHub App not installed for this Slack workspace!");
+        }
+    } else {
+        ({ data } = await octokit.repos.get({ owner: owner, repo: repo }));
+    }
     
     // Debugging log (stringify() includes pretty print params)
     // console.log("\nGitHub Repo data:\n" + JSON.stringify(data.owner.name, null, 2) + "\n" + JSON.stringify(data.owner, null, 2)) + "\n\n";
@@ -233,9 +244,9 @@ export async function inspectPrivateGitHubRepo(repoUrl: string) {
     // const installationToken = await githubApp.getInstallationOctokit(installationId);
 }
 
-export async function getGitHubRepoTree(repoUrl: string) {
+export async function getGitHubRepoTree(repoUrl: string, slackTeamId: string) {
     // Grab repository metadata again, as needed
-    const metadata = await inspectGitHubRepo(repoUrl);
+    const metadata = await inspectGitHubRepo(repoUrl, slackTeamId);
     // the function call for `metadata` right above is not guaranteed to return any data, 
     // so print an error log if so and return nothing gracefully.
     if (!metadata) {
