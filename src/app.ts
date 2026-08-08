@@ -12,10 +12,7 @@ import OpenAI from "openai";
 dotenv.config();
 import { retrieveRelevantChunks } from "./retrieval.js";
 import { redisClient, redisConnect } from "./redisClient.js";
-import { InputTokens } from "openai/resources/responses.mjs";
-import { stringify } from "@langchain/core/utils/uuid";
-import { inspectGitHubRepo, getRelevantTechDocObjects, checkGitHubAppInstallation, generateGitHubAppAuthUrl } from "./github.js";
-import { extractFileObjects, chunkTextContent, createEmbeddingVectorsFromChunks, storeVectorsAndChunkedMetadata } from "./ingest.js";
+import { inspectGitHubRepo, inspectPrivateGitHubRepo, checkGitHubAppInstallation, generateGitHubAppAuthUrl } from "./github.js";
 import { repoIngestQueue } from "./queue.js";
 
 export interface IngestContext {

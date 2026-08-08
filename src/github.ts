@@ -15,6 +15,7 @@ import { tmpdir } from "node:os";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import { timingSafeEqual, createHmac } from "crypto";
+import { getInstallationId, saveInstallationId} from "./githubInstallationStore.js";
 
 
 dotenv.config();
@@ -346,8 +347,12 @@ export async function getRelevantTechDocObjects(cleanedUrl: string, githubToken?
 export async function checkGitHubAppInstallation(slackTeamId: string): Promise<boolean> {
     // TODO: Query your database/cache to check if workspace has an active GitHub App installation
     // For now, placeholder returns false to prompt auth flow
-    
-    return false;
+    const installId = await getInstallationId(slackTeamId);
+    if (!installId || installId.trim() === "") {
+        return false;
+    } else {
+        return true;
+    }
 }
 
 // Generate GitHub App authorization URL for a Slack workspace (for private repos)
