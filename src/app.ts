@@ -245,7 +245,7 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
                 slackUserId: command.user_id,
             });
             console.log(`A new job has successfully been added to the queue.`);
-        } else {
+        } else { // Else this is a private repository
             // Check if GitHub app is installed for this Slack workspace
             const isGitHubAppInstalled = await checkGitHubAppInstallation(command.team_id);
 
