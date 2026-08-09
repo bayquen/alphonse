@@ -220,6 +220,9 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
     // Check repo access (is it public or private?) by using helper function from github.ts
     // Then returns GitHub repo metadata needed
     try {
+        // Debugging logs
+        console.log("SLACK WORKSPACE ID / TEAM ID:");
+        console.log(command.team_id);
         // IMPORTANT NOTE: `cleanedUrl` is the cleaned-up GitHub repo URL string!
         const gitHubRepoData = await inspectGitHubRepo(cleanedUrl, command.team_id);
         // Make a VALIDATION CHECK to see if the repo metadata actually exists, otherwise log error message and return nothing

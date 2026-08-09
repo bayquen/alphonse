@@ -371,7 +371,8 @@ export function generateGitHubAppAuthUrl(slackTeamId: string): string {
     // const clientId = process.env.GITHUB_APP_CLIENT_ID!;
     const redirectUri = `${process.env.APP_BASE_URL}/github/oauth/callback`;
     const state = Buffer.from(slackTeamId).toString('base64');
-    return `https://github.com/apps/${process.env.GITHUB_APP_NAME}/installations/new?state=${state}&redirect_uri=${redirectUri}`;
+    // return `https://github.com/apps/${process.env.GITHUB_APP_NAME}/installations/new?state=${state}&redirect_uri=${redirectUri}`;
+    return `https://github.com/apps/${process.env.GITHUB_APP_NAME}/installations/new?state=${slackTeamId}`;
 }
 
 // Helper function for private repos; executed inside githubRoute.ts program

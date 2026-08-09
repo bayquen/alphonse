@@ -140,11 +140,11 @@ vite.config.ts.timestamp-*
 
 # env files
 .env
-
+docs.env
 
 # any pseudocode text for Brandon
 **pseudocode.*
 **tutorial*
 
 # Example docs folder for testing doc parsing pipeline
-docs
+/docs
