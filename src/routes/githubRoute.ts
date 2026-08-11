@@ -32,7 +32,7 @@ expressApp.get('/github/oauth/callback', async (req, res) => {
         console.log("[OAUTH DEBUG] Got workspace ID from state:", slackWorkspaceId);
         console.log("[OAUTH DEBUG] Authorization code:", code);
 
-        // Store the mapping temporarily so webhook handler can find it
+        // Store the mapping temporarily as Redis keys so webhook handler can find it.
         // The webhook will arrive shortly after user confirms installation
         await redisClient.setEx(
             `github:pending:${slackWorkspaceId}`,
@@ -40,7 +40,7 @@ expressApp.get('/github/oauth/callback', async (req, res) => {
             code as string
         );
 
-        res.send(`✅ GitHub App authorized! You can close this window. Workspace: ${slackWorkspaceId}`);
+        res.send(`GitHub App authorized! You can close this window. Workspace: ${slackWorkspaceId}`);
     } catch (err) {
         console.error("[OAUTH DEBUG] Error in callback:", err);
         res.status(500).send('Authorization failed');
@@ -71,23 +71,24 @@ expressApp.post('/github/webhook', async (req, res) => {
                 // Use the most recent one (in production, you'd want better matching)
                 const workspaceKey = keys[keys.length - 1];
                 if (workspaceKey) {
+                    // Extracts the most recent Slack workspace ID via created Redis keys + cleans up text to get only the ID
                     const slackWorkspaceId = workspaceKey.replace('github:pending:', '');
 
                     console.log("[WEBHOOK DEBUG] Associating installation with workspace:", slackWorkspaceId);
                     await saveInstallationId(slackWorkspaceId, installationId);
-                    await redisClient.del(workspaceKey); // Clean up pending key
+                    await redisClient.del(workspaceKey); // Remove temporary Redis keys that were "pending"
 
-                    res.status(200).send('OK');
+                    res.status(200).send('200 OK');
                     console.log("[WEBHOOK DEBUG] Successfully saved installation ID for workspace");
                     return;
                 }
             }
             console.warn("[WEBHOOK DEBUG] No pending workspace found for installation");
-            res.status(200).send('OK - no workspace mapping');
+            res.status(200).send('200 OK - but, no workspace mapping via any Redis keys!');
             return;
         } else {
             console.log("[WEBHOOK DEBUG] Unhandled action:", action);
-            res.status(200).send('OK');
+            res.status(200).send('200 OK');
         }
     } catch (err) {
         console.error("[WEBHOOK DEBUG] Error in webhook handler:", err);
