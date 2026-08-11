@@ -368,11 +368,8 @@ export async function checkGitHubAppInstallation(slackTeamId: string): Promise<b
 
 // Generate GitHub App authorization URL for a Slack workspace (for private repos)
 export function generateGitHubAppAuthUrl(slackTeamId: string): string {
-    // const clientId = process.env.GITHUB_APP_CLIENT_ID!;
     const redirectUri = `${process.env.GITHUB_APP_BASE_URL}/github/oauth/callback`;
-    const state = Buffer.from(slackTeamId).toString('base64');
-    // return `https://github.com/apps/${process.env.GITHUB_APP_NAME}/installations/new?state=${state}&redirect_uri=${redirectUri}`;
-    return `https://github.com/apps/${process.env.GITHUB_APP_NAME}/installations/new?state=${slackTeamId}`;
+    return `https://github.com/apps/${process.env.GITHUB_APP_NAME}/installations/new?state=${slackTeamId}&redirect_uri=${redirectUri}`;
 }
 
 // Helper function for private repos; executed inside githubRoute.ts program

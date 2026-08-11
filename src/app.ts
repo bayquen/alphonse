@@ -14,6 +14,7 @@ import { retrieveRelevantChunks } from "./retrieval.js";
 import { redisClient, redisConnect } from "./redisClient.js";
 import { inspectGitHubRepo, inspectPrivateGitHubRepo, checkGitHubAppInstallation, generateGitHubAppAuthUrl } from "./github.js";
 import { repoIngestQueue } from "./queue.js";
+import { expressApp } from "./routes/githubRoute.js";
 
 export interface IngestContext {
     slackTeamId: string;
@@ -366,11 +367,17 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
 });
 
 (async () => {
-    // Connect to Redis Client (with connection open/closed validation check) before starting Slack Bolt app 
+    // Connect to Redis Client (with connection open/closed validation check) before starting Slack Bolt app
     await redisConnect();
     // Debugging logs
     // console.log(redisClient.isOpen);   // should equal true
     // console.log(redisClient.isReady);  // should equal true
+
+    // Start Express server for GitHub webhooks on port 3000
+    const WEBHOOK_PORT = process.env.WEBHOOK_PORT || 3000;
+    expressApp.listen(WEBHOOK_PORT, () => {
+        console.log(`🔗 GitHub webhook server listening on port ${WEBHOOK_PORT}`);
+    });
 
     // Start Slack Bolt app
     await app.start();
