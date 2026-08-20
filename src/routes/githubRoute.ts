@@ -24,7 +24,7 @@ expressApp.get('/github/oauth/callback', async (req, res) => {
     try {
         const { state, code, installation_id } = req.query;
         const slackWorkspaceId = state as string;
-        const installationId = installation_id as string;
+        const installationId = String(installation_id);
 
         if (!state || !code) {
             console.error("[OAUTH DEBUG] Missing state or code");
@@ -41,7 +41,7 @@ expressApp.get('/github/oauth/callback', async (req, res) => {
         console.log("[OAUTH DEBUG] Installation ID:", installationId);
 
         // Save the installation ID directly if provided (GitHub App sends this in the redirect)
-        if (installationId) {
+        if (installationId && installationId !== 'undefined') {
             await saveInstallationId(slackWorkspaceId, installationId);
             console.log("[OAUTH DEBUG] Saved installation ID for workspace:", slackWorkspaceId);
         } else {
@@ -92,7 +92,7 @@ expressApp.post('/github/webhook', async (req, res) => {
                     const slackWorkspaceId = workspaceKey.replace('github:pending:', '');
 
                     console.log("[WEBHOOK DEBUG] Associating installation with workspace:", slackWorkspaceId);
-                    await saveInstallationId(slackWorkspaceId, installationId);
+                    await saveInstallationId(slackWorkspaceId, String(installationId));
                     await redisClient.del(workspaceKey); // Remove temporary Redis keys that were "pending"
 
                     res.status(200).send('200 OK');
