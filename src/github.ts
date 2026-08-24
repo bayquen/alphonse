@@ -8,6 +8,7 @@ import { App } from "@octokit/app";
 // import * as fs from 'fs';  // file-system module From NodeJS
 import dotenv from "dotenv";
 import fs from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import { Dirent } from "node:fs";
 import path from "path";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -25,9 +26,12 @@ const octokit = new Octokit({
     userAgent: 'myApp v1.2.3',
 });
 
+const githubAppPrivateKey = readFileSync(process.env.GITHUB_APP_PRIVATE_KEY_PATH!, "utf8");
+
 const githubApp = new App({
     appId: process.env.GITHUB_APP_ID!,
-    privateKey: process.env.GITHUB_APP_PRIVATE_KEY!,
+    privateKey: githubAppPrivateKey,
+    Octokit,
 });
 
 // Sets for filtering out unwanted files (i.e. which have certain filenames OR file extensions), and directories.
@@ -202,7 +206,7 @@ export async function inspectGitHubRepo(repoUrl: string, slackTeamId?: string) {
         const installIdExists = await checkGitHubAppInstallation(slackTeamId);
         if (installIdExists) {
             const installId = await getInstallationId(slackTeamId);
-            const authedOctokit = await githubApp.getInstallationOctokit(Number(installId)) as any;
+            const authedOctokit = await githubApp.getInstallationOctokit(Number(installId));
             ({ data } = await authedOctokit.repos.get({ owner: owner, repo: repo }));
         } else {
             throw new Error("GitHub App not installed for this Slack workspace!");
