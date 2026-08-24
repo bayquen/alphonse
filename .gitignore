@@ -138,9 +138,10 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
-# env files
+# env files and secrets
 .env
 docs.env
+/secrets
 
 # any pseudocode text for Brandon
 **pseudocode.*
