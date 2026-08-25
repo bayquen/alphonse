@@ -1,7 +1,7 @@
 import express from "express";
 import { redisClient } from "./../redisClient.js";
 import { parseGitHubInstallationWebhook } from "./../github.js";
-import { saveInstallationId } from "./../githubInstallationStore.js";
+import { saveInstallationId, deleteInstallationId, getSlackTeamIdByInstallationId } from "./../githubInstallationStore.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -102,6 +102,16 @@ expressApp.post('/github/webhook', async (req, res) => {
             }
             console.warn("[WEBHOOK DEBUG] No pending workspace found for installation");
             res.status(200).send('200 OK - but, no workspace mapping via any Redis keys!');
+            return;
+        } else if (action === 'deleted') {
+            const slackWorkspaceId = await getSlackTeamIdByInstallationId(String(installationId));
+            if (slackWorkspaceId) {
+                console.log("[WEBHOOK DEBUG] Removing stale installation for workspace:", slackWorkspaceId);
+                await deleteInstallationId(slackWorkspaceId, String(installationId));
+            } else {
+                console.warn("[WEBHOOK DEBUG] No workspace mapping found for deleted installation:", installationId);
+            }
+            res.status(200).send('200 OK');
             return;
         } else {
             console.log("[WEBHOOK DEBUG] Unhandled action:", action);

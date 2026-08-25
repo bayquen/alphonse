@@ -16,7 +16,7 @@ import { tmpdir } from "node:os";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import { timingSafeEqual, createHmac } from "crypto";
-import { getInstallationId, saveInstallationId} from "./githubInstallationStore.js";
+import { getInstallationId, saveInstallationId, deleteInstallationId } from "./githubInstallationStore.js";
 
 
 dotenv.config();
@@ -206,8 +206,17 @@ export async function inspectGitHubRepo(repoUrl: string, slackTeamId?: string) {
         const installIdExists = await checkGitHubAppInstallation(slackTeamId);
         if (installIdExists) {
             const installId = await getInstallationId(slackTeamId);
-            const authedOctokit = await githubApp.getInstallationOctokit(Number(installId));
-            ({ data } = await authedOctokit.repos.get({ owner: owner, repo: repo }));
+            try {
+                const authedOctokit = await githubApp.getInstallationOctokit(Number(installId));
+                ({ data } = await authedOctokit.repos.get({ owner: owner, repo: repo }));
+            } catch (err: any) {
+                if (err?.status === 404) {
+                    // Installation was removed on GitHub's side but our cache didn't know - self-heal by clearing it.
+                    await deleteInstallationId(slackTeamId, String(installId));
+                    throw new Error("GitHub App not installed for this Slack workspace!");
+                }
+                throw err;
+            }
         } else {
             throw new Error("GitHub App not installed for this Slack workspace!");
         }
