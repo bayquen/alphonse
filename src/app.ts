@@ -11,7 +11,14 @@ import dotenv from "dotenv";
 import OpenAI from "openai";
 dotenv.config();
 import { retrieveRelevantChunks } from "./retrieval.js";
-import { redisClient } from "./redisClient.js";
+import { redisClient, redisConnect } from "./redisClient.js";
+import { inspectGitHubRepo, inspectPrivateGitHubRepo, checkGitHubAppInstallation, generateGitHubAppAuthUrl } from "./github.js";
+import { repoIngestQueue } from "./queue.js";
+import { expressApp } from "./routes/githubRoute.js";
+
+export interface IngestContext {
+    slackTeamId: string;
+}
 
 // API access for OpenAI (LLM) API
 const openAIAPIKey = process.env.OPENAI_API_KEY;
@@ -29,7 +36,7 @@ if (!token || !appToken) {
     throw new Error("Missing Slack environment variables.");
 }
 // Initializes Slack Bolt app via Socket Mode with your Slack bot and app tokens
-const app = new App({
+export const app = new App({
     token,
     appToken,
     socketMode: true,
@@ -57,6 +64,7 @@ console.log("Bot ID:", botUserId);
 
 app.event("app_mention", async({ event, client, say }) => {
     try {
+        redisConnect();
         // Debugging log
         // console.log(textMessage, "\n");
 
@@ -83,7 +91,7 @@ app.event("app_mention", async({ event, client, say }) => {
             // Edge case: Check to make sure user's display name exists or isn't empty
             if (userDisplayName != null && userDisplayName.trim() !== "") {
                 // Have the Slack bot ping the user and respond with this message 
-                await say(`Howdy @${userDisplayName}, I'm here to help with any questions for your product's technical docs. Make sure to provide a prompt while mentioning me :)`)
+                await say(`Howdy <@${userDisplayName}>, I'm here to help with any questions for your product's technical docs. Make sure to provide a prompt while mentioning me :)`)
                 return;
             // Edge case (continued): If by any rare chance the user's display name is empty or can't be read, send alternate message
             } else {
@@ -120,8 +128,10 @@ app.event("app_mention", async({ event, client, say }) => {
             text,
             thread_ts,  // Makes sure that bot replies to user in a thread
         });
+        // redisClient.quit();
     } catch (error) {
         console.log("Uh oh, an error has occurred during app_mention event:\n", error);
+        // redisClient.quit();
     }
 });
 
@@ -135,20 +145,266 @@ async function askLLM(finalPrompt: string) {
     return response.output_text;
 }
 
-// TODO: Make bot reply in thread rather than an individual message on Slack - keeps Slack Q&A convos organized!
-// [CODE HERE]
-// ...
+// Helper function for isGitHubRepoUrl() function: remove unwanted '<' and '>' symbols when passing user text as a URL object
+function normalizeSlackUrl(input: string): string {
+    const [url = ""] = input
+        .trim()
+        .replace(/^</, "")
+        .replace(/>$/, "")
+        .split("|");
+    
+    return url;
+}
+
+// // Helper function for app.command("/add_repo") - checking if user's input is a valid GitHub URL
+// function isGitHubRepoUrl(input: string): boolean {
+//     try {
+//         // Debugging log
+//         console.log(`Raw input during isGitHubRepoUrl() function call: "${input}"`);
+
+//         const normalizedInput = normalizeSlackUrl(input);
+
+//         // If no protocol is present, assume https://
+//         const normalizedUrl = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(normalizedInput)
+//         ? normalizedInput
+//         : `https://${normalizedInput}`;
+
+//         // Debugging log
+//         console.log(`Normalized: "${normalizedUrl}"`);
+
+//         // Normalize URL with "https://" in it
+//         const url = new URL(normalizedUrl);
+
+//         // Debugging logs
+//         console.log("Hostname:", url.hostname);
+//         console.log("Pathname:", url.pathname);
+
+//         if (url.hostname !== "github.com") {
+//             return false;
+//         }
+
+//         const parts = url.pathname.split("/").filter(Boolean);
+//         // Debugging logs
+//         console.log("Parts:", parts);
+//         console.log("Length:", parts.length);
+
+//         // Check if URL contains at least 2 segments after the domain name; I.e: "github.com/[user]/[repo_name]/..."
+//         // E.g. valid URL: https://github.com/bayquen/rtfm-agent/
+//         // E.g. valid URL: https://github.com/bayquen/rtfm-agent/tree/main
+//         // E.g. valid URL: https://github.com/bayquen/rtfm-agent/tree/feature-branch
+
+//         return (url.hostname === "github.com" && parts.length >= 2);  // boolean should == true
+//     } catch (err) {
+//         console.log("Uh oh, an error has occurred during isGitHubRepoUrl() execution:\n");
+//         console.log(err);
+//         console.log("\n\n");
+//         return false;
+//     }
+// }
+
+app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
+    // Acknowledge the command request right away, so 3000ms ping timeout doesn't occur.
+    await ack();
+
+    // If Slack user's /add_repo command DOESN'T contain a valid GitHub repo URL, then do nothing but return.
+    const userTextInput = command.text;
+    // Clean up GitHub URL given by user by removing any whitespaces and Slack's auto-formatted "<" and ">" symbols.
+    const cleanedUrl = userTextInput.replace(/[<>]/g, "").trim();
+
+    // Debugging log (7/14/26)
+    console.log("cleaned up GitHub repoURL in app.command() execution: " + cleanedUrl);
+
+    await respond(
+        "Request received. Checking repository accessibility..."
+    );
+
+    // Check repo access (is it public or private?) by using helper function from github.ts
+    // Then returns GitHub repo metadata needed
+    try {
+        // Debugging logs
+        console.log("SLACK WORKSPACE ID / TEAM ID:");
+        console.log(command.team_id);
+        // IMPORTANT NOTE: `cleanedUrl` is the cleaned-up GitHub repo URL string!
+        const gitHubRepoData = await inspectGitHubRepo(cleanedUrl, command.team_id);
+        // Make a VALIDATION CHECK to see if the repo metadata actually exists, otherwise log error message and return nothing
+        if (!gitHubRepoData) {
+            console.log(`Uh oh. Error occurred while running app.command(/add_repo):\n 
+                         The GitHub repo metadata failed to extract, or it doesn't exist.`);
+            await say(`Sorry, GitHub repo tech docs failed to extract.\n 
+                       Perhaps this public/private repo doesn't exist, OR your chosen repo has NO relevant tech docs to extract!\n
+                       Please run /add_repo again in a few seconds!\n\n`);
+            return;
+        }
+        
+        // If it's a public repository...
+        if (!gitHubRepoData.isPrivate) { // false = public repo 
+            // Use public repo logic; Add a repo-ingestion job to the BullMQ queue
+            await repoIngestQueue.add("repo-ingest", {
+                repoUrl: cleanedUrl,
+                slackTeamId: command.team_id,
+                slackChannelId: command.channel_id,
+                slackUserId: command.user_id,
+            });
+            console.log(`A new job has successfully been added to the queue.`);
+        } else { // Else this is a private repository
+            // // Check if GitHub app is installed for this Slack workspace
+            // const isGitHubAppInstalled = await checkGitHubAppInstallation(command.team_id);
+
+            // if (!isGitHubAppInstalled) {
+            //     const authUrl = generateGitHubAppAuthUrl(command.team_id);
+            //     await say(`GitHub App not installed. <${authUrl}|Click here to authorize> this workspace for private repo access.`);
+            //     return;
+            // }
+
+            // Separate job queuing functionality for private repos; Shaped the same as the one for public repos.
+            await repoIngestQueue.add("private-repo-ingest", {
+                repoUrl: cleanedUrl,
+                slackTeamId: command.team_id,
+                slackChannelId: command.channel_id,
+                slackUserId: command.user_id,                
+            });
+            console.log(`Private repo job added to queue for workspace: ${command.team_id}`);
+        }
+    } catch (error) {
+        console.log(error);
+        if (error instanceof Error && error.message.includes("GitHub App not installed")) {
+            const authUrl = generateGitHubAppAuthUrl(command.team_id);
+            await say((`GitHub App not installed! <${authUrl}|Click here to authorize> this workspace for private repo access.`));
+        } else {
+            await say(`Sorry, failed to access this repository. Please make sure the URL is valid and try again.`);
+        }
+        return;
+    }
+    // redisConnect();
+    // const indexes = await redisClient.ft._list();
+    // console.log("\n\n");
+    // console.log(indexes);
+    // console.log("\n\n");
+
+    // const context: IngestContext = {
+    //     slackTeamId: command.team_id
+    // };
+    // // If Slack user's /add_repo command DOESN'T contain a valid GitHub repo URL, then do nothing but return.
+    // const userTextInput = command.text;
+    // // Clean up GitHub URL given by user by removing any whitespaces and Slack's auto-formatted "<" and ">" symbols.
+    // const cleanedUrl = userTextInput.replace(/[<>]/g, "").trim();
+
+    // // Debugging log (7/14/26)
+    // console.log("cleaned up GitHub repoURL in app.command() execution: " + cleanedUrl);
+
+    // await respond(
+    //     "Request received. Checking repository accessibility..."
+    // );
+
+    // // Check repo access (is it public or private?) by using helper function from github.ts
+    // // Then returns GitHub repo metadata needed
+    // try {
+    //     // IMPORTANT NOTE: `cleanedUrl` is the cleaned-up GitHub repo URL string!
+    //     const gitHubRepoData = await inspectGitHubRepo(cleanedUrl);
+    //     // Make a VALIDATION CHECK to see if the repo metadata actually exists, otherwise log error message and return nothing
+    //     if (!gitHubRepoData) {
+    //         console.log(`Uh oh. Error occurred while running app.command(/add_repo):\n 
+    //                      The GitHub repo metadata failed to extract, or it doesn't exist.`);
+    //         await say(`Sorry, GitHub repo tech docs failed to extract.\n 
+    //                    Perhaps this public/private repo doesn't exist, OR your chosen repo has NO relevant tech docs to extract!\n
+    //                    Please run /add_repo again in a few seconds!\n\n`);
+    //         return;
+    //     }
+        
+    //     // If it's a public repository...
+    //     if (!gitHubRepoData.isPrivate) { // false = public repo           
+    //         const githubMetadataObjects = await getRelevantTechDocObjects(cleanedUrl);
+    //         if (!githubMetadataObjects) {
+    //             throw new Error("\nError: failed to extract any relevant GitHub-metadata file objects after running /add_repo\n");
+    //         }
+    //         // Pipeline for extracting and formatting relevant file objects, then passing those objects to extract embeddings, 
+    //         // then embeddings to stored vectors + text chunks for chatbot tech-docs memory and accurate Q&A responses!!!
+    //         const techDocObjects = await extractFileObjects(githubMetadataObjects);
+    //         // // Debugging logs
+    //         // console.log("\n\n");
+    //         // let index = 0;
+    //         // for (const obj of techDocObjects) {
+    //         //     index += 1;
+    //         //     console.log(`Object ${index}:\n`);
+    //         //     console.log(obj);
+    //         //     console.log("\n");
+    //         // }
+
+    //         const textChunks = await chunkTextContent(techDocObjects);
+    //         // DEBUGGING LOG (7/21/26)
+    //         console.log("\n 1. Starting embeddings...");
+    //         const embeddings = await createEmbeddingVectorsFromChunks(textChunks, context);
+    //         console.log("\n\n4. Embeddings complete.");
+    //         console.log("\n5. Starting Redis store...");
+    //         await storeVectorsAndChunkedMetadata(embeddings, context);
+    //         // await new Promise(resolve => setTimeout(resolve, 30000));
+
+    //         // console.log("30 second wait finished.");
+
+    //         // await say("Embeddings finished.");  
+    //         // //
+    //         // //
+    //         // //
+    //         console.log("6. Redis store complete.");
+
+    //         // console.log("7. Sending completion message...");
+    //         // await say("Repo ingestion complete.");
+    //         console.log("7. Done.");
+    //     }
+    //     // redisClient.quit();
+    // } catch (err) {
+    //     console.log("\nUh oh, error occurred during app.command() execution:\n");
+    //     // Since app.command() is a Slack Bolt function, we can use Slack Bolt's logger for useful debugging stack-trace logs.
+    //     // Good alternative to try/catch block's console.log(err);
+    //     logger.error(err);
+    //     console.log("\n\n");
+    //     await say(`An error occurred when attempting to inspect GitHub repo or extract the files.
+    //                \nPlease make sure the URL is correctly formatted or that the public/private repository exists!
+    //                \nTHEN, please try running /add_repo again.`);
+    //     // redisClient.quit()
+    //     return;
+    // }
+});
 
 (async () => {
-    // Return and handle any error gracefully BEFORE Redis Client attempts to connect(); 
-    // Otherwise, Slack bot could miss an event or end up with an unhandled error.
-    redisClient.on('error', err => console.log('Uh oh, a Redis Client Error has occurred:\n', err));
-    // Now connect to Redis Client before starting Slack Bolt app
-    await redisClient.connect();
+    // Connect to Redis Client (with connection open/closed validation check) before starting Slack Bolt app
+    await redisConnect();
     // Debugging logs
     // console.log(redisClient.isOpen);   // should equal true
     // console.log(redisClient.isReady);  // should equal true
+
+    // Start Express server for GitHub webhooks on port 3000
+    const WEBHOOK_PORT = process.env.WEBHOOK_PORT || 3000;
+    expressApp.listen(WEBHOOK_PORT, () => {
+        console.log(`🔗 GitHub webhook server listening on port ${WEBHOOK_PORT}`);
+    });
+
     // Start Slack Bolt app
     await app.start();
+
     app.logger.info("⚡️ Bolt app is running!");
+
+    const shutdown = async () => {
+        try {
+          await redisClient.quit();
+        } finally {
+          process.exit(0);
+        }
+      };
+
+    // DEBUGGING LOGS
+    process.on("unhandledRejection", (reason) => {
+        console.error("UNHANDLED REJECTION:", reason);
+    });
+
+    process.on("uncaughtException", (err) => {
+        console.error("UNCAUGHT EXCEPTION:", err);
+    });
+
+    process.on("exit", (code) => {
+        console.log("PROCESS EXIT:", code);
+    });
+
+    process.on("SIGINT", shutdown);
+    process.on("SIGTERM", shutdown);
 })();

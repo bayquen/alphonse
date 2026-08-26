@@ -21,3 +21,11 @@ export const redisClient = createClient({
         // tls: true,       // TODO: Getting errors when tls mode is on. Might need Socket Mode so that bot works 24/7.
     }
 });
+
+// Universal Redis connect function with validation check
+export async function redisConnect() {
+    // VALIDATION: Make sure redis Client isn't already open!
+    if (!redisClient.isOpen) {
+        await redisClient.connect();
+    }
+}
