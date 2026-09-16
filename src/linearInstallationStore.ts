@@ -33,6 +33,7 @@ export async function getLinearAccessToken(slackTeamId: string) {
             console.error("Failed to refresh Linear access token for Slack workspace " + slackTeamId + ":", err);
             // Delete current Linear token bundle from storage since an error must mean the access token is stale
             await deleteLinearTokens(slackTeamId);
+            return null;
         }
     } else {
         // Return current access token string (not the whole JSON-object bundle)
