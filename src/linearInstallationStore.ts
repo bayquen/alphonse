@@ -41,7 +41,12 @@ export async function getLinearAccessToken(slackTeamId: string) {
     }
 }
 
-export async function saveLinearTokens(slackTeamId: string, linearTokenBundle: { accessToken: string, refreshToken: string, expiresAt: number }) {
+export async function saveLinearTokens(slackTeamId: string, linearTokenBundle: 
+    { 
+        accessToken: string, 
+        refreshToken: string, 
+        expiresAt: number
+    }) {
     const serializedTokenBundle = JSON.stringify(linearTokenBundle);
     await redisClient.set(`linear:installation:${slackTeamId}`, serializedTokenBundle);
 }
