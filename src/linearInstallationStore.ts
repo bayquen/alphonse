@@ -2,14 +2,14 @@
 // Purpose: Contains helper functions for reading and storing Linear installations via access tokens
 
 import { redisClient } from "./redisClient.js";
-import { refreshLinearAccessToken } from "./linear.js";
+import type { LinearTokenResponse } from "./linear.js";
 
-export async function getLinearAccessToken(slackTeamId: string) {
+export async function getLinearAccessToken(slackTeamId: string, token: (refreshToken: string) => Promise<LinearTokenResponse>) {
     const linearTokenBundle = await redisClient.get(`linear:installation:${slackTeamId}`);
-    
+    // If Linear tokens NOT FOUND then log it and return null so callers know the Slack workspace needs to reauthorize
     if (!linearTokenBundle) {
-        console.log("No Linear access token was found in storage!");
-        return;
+        console.log("No Linear access token was found in storage! Reauthorization needed");
+        return null;
     }
     const parsed = JSON.parse(linearTokenBundle);
 
@@ -18,7 +18,7 @@ export async function getLinearAccessToken(slackTeamId: string) {
     if (Date.now() >= parsed.expiresAt - BUFFER_MS) {
         try {
             // If so, then replace current token with a new refresh token
-            const response = await refreshLinearAccessToken(parsed.refreshToken);
+            const response = await token(parsed.refreshToken);
             const newTokenBundle = { 
                 accessToken: response.access_token, 
                 refreshToken: response.refresh_token, 

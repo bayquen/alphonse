@@ -96,14 +96,14 @@ export async function refreshLinearAccessToken(refreshToken: string): Promise<Li
 
 // Checks whether a Slack workspace has an active Linear installation.
 export async function checkLinearInstallation(slackTeamId: string): Promise<boolean> {
-    const accessToken = await getLinearAccessToken(slackTeamId);
-    return !!accessToken && accessToken.trim() !== "";
+    const token = await getLinearAccessToken(slackTeamId, refreshLinearAccessToken);
+    return !!token && token.trim() !== "";
 }
 
 // Minimal GraphQL request helper against Linear's API for a given Slack workspace's token.
 // TODO: swap for the official `@linear/sdk` client if raw fetch + query strings get unwieldy.
 async function linearGraphQLRequest<T>(slackTeamId: string, query: string, variables?: Record<string, unknown>): Promise<T> {
-    const accessToken = await getLinearAccessToken(slackTeamId);
+    const accessToken = await getLinearAccessToken(slackTeamId, refreshLinearAccessToken);
     if (!accessToken) {
         throw new Error("Linear App not installed for this Slack workspace!");
     }
@@ -119,7 +119,6 @@ async function linearGraphQLRequest<T>(slackTeamId: string, query: string, varia
 
     if (!response.ok) {
         if (response.status === 401) {
-            // TODO: attempt refreshLinearAccessToken() + saveLinearTokens() here, then retry once.
             throw new Error("Linear access token expired or invalid.");
         }
         throw new Error(`Linear GraphQL request failed: ${response.status} ${await response.text()}`);
