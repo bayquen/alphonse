@@ -50,7 +50,8 @@ export async function queryLinearVectors(queryEmbedding: number[], slackTeamId: 
     // then immediately return that client back to the pool with needing the client.release() call
     // (i.e. it's slightly more efficient).
     const { rows } = await pgPool.query(
-        // side note: "<=>" is pgvector's cosine distance operator between two vectors; Smaller = more similar.
+        // side note: "<=>" is pgvector's cosine distance operator between two vectors; 
+        // Smaller = more similar.
         // The actual nearest-neighbor search occurs in the 'ORDER BY' line, where all rows are
         // sorted by distance to the query vector, closest ones first. That's what makes this
         // semantic search in the first place!
