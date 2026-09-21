@@ -43,8 +43,10 @@ export async function storeLinearVectors(
 
 // Read stored vectors in the DB
 export async function queryLinearVectors(queryEmbedding: number[], slackTeamId: string, topK = 5) {
-    // Here, query() is used instead of client() because it's a single read-only statement,
-    // so there's no transaction to keep on a single pg connection (slightly more efficient).
+    // Here, query() is used instead of connect() because it's a single read-only statement,
+    // so we can automatically check out an idle client from the pool, run a single query, 
+    // then immediately return that client back to the pool with needing the client.release() call
+    // (i.e. it's slightly more efficient).
     const { rows } = await pgPool.query(
         // side note: "<=>" is pgvector's cosine distance operator between two vectors; Smaller = more similar.
         // The actual nearest-neighbor search occurs in the 'ORDER BY' line, where all rows are
