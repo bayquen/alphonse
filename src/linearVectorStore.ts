@@ -27,6 +27,8 @@ export async function storeLinearVectors(
             await client.query(
                 `INSERT INTO linear_chunks (slack_team_id, issue_id, identifier, chunk_text, embedding)
                 VALUES ($1, $2, $3, $4, $5)`,
+                // Note: pgvector's .toSql() function serializes the chunk array literal into a string input 
+                // that Postgres can understand (i.e. its expected format).
                 [slackTeamId, issueId, chunk.identifier, chunk.chunkText, pgvector.toSql(chunk.embedding)],
             );
         }
