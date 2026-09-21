@@ -1,4 +1,5 @@
 import { Pool } from "pg";
+import pgvector from "pgvector/pg";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -12,4 +13,8 @@ if (!connectionString) {
 export const pgPool = new Pool({
     connectionString,
     ssl: { rejectUnauthorized: false },
+});
+
+pgPool.on("connect", async (client) => {
+    await pgvector.registerTypes(client);
 });
