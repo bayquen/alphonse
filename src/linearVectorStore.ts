@@ -6,7 +6,7 @@ interface LinearChunkEmbedding {
     chunkText: string;
     embedding: number[];
 }
-
+// Store new or updated Linear app data vectors via Postgres database (using Supabase as of 9/2026)
 export async function storeLinearVectors(
     chunks: LinearChunkEmbedding[],
     slackTeamId: string,
@@ -39,4 +39,26 @@ export async function storeLinearVectors(
     } finally {
         client.release();
     }
+}
+
+// Read stored vectors in the DB
+export async function queryLinearVectors(queryEmbedding: number[], slackTeamId: string, topK = 5) {
+    // Here, query() is used instead of client() because it's a single read-only statement,
+    // so there's no transaction to keep on a single pg connection (slightly more efficient).
+    const { rows } = await pgPool.query(
+        // side note: "<=>" is pgvector's cosine distance operator between two vectors; Smaller = more similar.
+        // The actual nearest-neighbor search occurs in the 'ORDER BY' line, where all rows are
+        // sorted by distance to the query vector, closest ones first. That's what makes this
+        // semantic search in the first place!
+        `SELECT identifier, chunk_text, 1 - (embedding <=> $1) AS similarity
+        FROM linear_chunks
+        WHERE slack_team_id = $2
+        ORDER BY embedding <=> $1
+        LIMIT $3`,
+        [pgvector.toSql(queryEmbedding), slackTeamId, topK],
+        // side note: the 'WHERE' line scopes the search to a single Slack workspace's data,
+        // so one team's Linear data never leaks into another team's Q&A answers!
+    );
+
+    return rows;
 }
