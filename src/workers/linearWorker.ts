@@ -35,16 +35,16 @@ const linearAppWorker = new Worker(
 
         try {
             const linearIssueData = await getLinearIssueById(slackTeamId, issueId);
-            // TODO: Create a chunking function for Linear Issue data! Maybe in ingest.ts, too.
+            // TODO (9/22/26): Create a chunking function for Linear Issue data! Maybe inside ingest.ts
             const chunkData = [{   
                 identifier: "foo",
                 chunkText: "foo foo fooooooo",
                 embedding: [0.0, 0.0, 0.0]
             }];
-            // TODO: Create separate embedding extraction function for Linear chunks,
+            // TODO (9/22/26): Create separate embedding extraction function for Linear chunks,
             //       since it needs to use Postgres (via Supabase DB) instead of Redis Cloud DB.
             const embeddings = "foo";
-            // TODO: Store resulting Linear data vectors inside my Supabase DB.
+            // TODO (9/22/26): Store resulting Linear data vectors inside my Supabase DB.
             // [Storage FUNCTION CALL HERE]
             await storeLinearVectors(chunkData, slackTeamId, issueId);
         } catch (err) {
