@@ -30,10 +30,9 @@ export interface LinearIssueObject {
     type: "linear-issue";
     id: string;
     identifier: string;
-    title: string;
-    description: string;
-    content: string;
-    sourcePath: string;
+    issueTitle: string;
+    issueDescription: string;
+    issueComments: string;
 }
 
 // Generates the Linear OAuth authorization URL for a given Slack workspace.
@@ -135,11 +134,9 @@ async function linearGraphQLRequest<T>(slackTeamId: string, query: string, varia
 // Feeds directly into the same chunk/embed pipeline as GitHub docs (see ingest.ts),
 // tagged with `type: "linear-issue"` and `sourcePath: <identifier>` for retrieval metadata.
 export async function getWorkspaceLinearIssues(slackTeamId: string): Promise<LinearIssueObject[]> {
-    // TODO: paginate via `issues(first: 50, after: $cursor)` + `pageInfo.hasNextPage` -
-    // this only grabs the first page for now.
     const query = `
-        query WorkspaceIssues {
-            issues(first: 50, orderBy: updatedAt, filter: { archivedAt: { null: true } }) {
+        query WorkspaceIssues($cursor: String) {
+            issues(first: 50, after: $cursor, orderBy: updatedAt, filter: { archivedAt: { null: true } }) {
                 nodes {
                     id
                     identifier
@@ -148,6 +145,10 @@ export async function getWorkspaceLinearIssues(slackTeamId: string): Promise<Lin
                     comments {
                         nodes { body }
                     }
+                }
+                pageInfo {
+                    hasNextPage
+                    endCursor
                 }
             }
         }
@@ -162,23 +163,44 @@ export async function getWorkspaceLinearIssues(slackTeamId: string): Promise<Lin
                 description: string | null;
                 comments: { nodes: { body: string }[] };
             }[];
+            pageInfo: {
+                hasNextPage: boolean;
+                endCursor: string | null;
+            }
         };
     }
 
-    const data = await linearGraphQLRequest<Response>(slackTeamId, query);
+    let cursor: string | null | undefined = undefined;
+    let hasNextPage = true;
+    let maxPages = 3;
+    let pageCount = 1;
+    // let linearIssueObjects: Response["issues"]["nodes"][number][] = [];
+    let linearIssueObjects: LinearIssueObject[] = [];
 
-    return data.issues.nodes.map((issue) => {
-        const commentsText = issue.comments.nodes.map((c) => c.body).join("\n\n");
-        return {
-            type: "linear-issue" as const,
-            id: issue.id,
-            identifier: issue.identifier,
-            title: issue.title,
-            description: issue.description ?? "",
-            content: [issue.title, issue.description ?? "", commentsText].filter(Boolean).join("\n\n"),
-            sourcePath: issue.identifier,
-        };
-    });
+    while (hasNextPage) {
+        const data: Response = await linearGraphQLRequest<Response>(slackTeamId, query, { cursor });
+        const pageInfo = data.issues.pageInfo;
+        for (const node of data.issues.nodes) {
+            const commentsText = node.comments.nodes.map((c) => c.body).join("\n\n");
+            linearIssueObjects.push({
+                type: "linear-issue" as const,
+                id: node.id,
+                identifier: node.identifier,
+                issueTitle: node.title,
+                issueDescription: node.description ?? "",
+                issueComments: [commentsText].filter(Boolean).join("\n\n"),
+            });
+        }
+        cursor = pageInfo.endCursor;
+        hasNextPage = pageInfo.hasNextPage;
+        if (pageCount >= maxPages) {
+            break;
+        }
+        pageCount += 1;
+    }
+
+    return linearIssueObjects;
+
 }
 
 // Fetches a single issue by ID - used when a webhook fires for a targeted re-ingest
@@ -216,10 +238,9 @@ export async function getLinearIssueById(slackTeamId: string, issueId: string): 
         type: "linear-issue" as const,
         id: data.issue.id,
         identifier: data.issue.identifier,
-        title: data.issue.title,
-        description: data.issue.description ?? "",
-        content: [data.issue.title, data.issue.description ?? "", commentsText].filter(Boolean).join("\n\n"),
-        sourcePath: data.issue.identifier,
+        issueTitle: data.issue.title,
+        issueDescription: data.issue.description ?? "",
+        issueComments: [commentsText].filter(Boolean).join("\n\n"),
     };
 }
 
