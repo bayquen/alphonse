@@ -1,3 +1,10 @@
+// Program: linearWorker.ts
+// Author: Brandon Bayquen
+// Purpose: A BullMQ + Redis background worker program for creating ingestion jobs
+//          for Linear app data from a given organization/team. 
+//          Each job filters and reads through Linear Issues -> extract data objects 
+//          -> chunking -> embedding -> store in a Postgres database via Supabase
+
 import { Job, Worker } from "bullmq";
 import { bullConnection } from "./../queue.js";
 import type { LinearIngestJobData } from "./../queue.js";

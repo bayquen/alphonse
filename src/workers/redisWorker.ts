@@ -1,3 +1,10 @@
+// Program: redisWorker.ts
+// Author: Brandon Bayquen
+// Purpose: A BullMQ + Redis background worker program for creating ingestion jobs
+//          for GitHub repositories. 
+//          Each job filters and reads relevant repo files -> extract data objects 
+//          -> chunking -> embedding -> store in a Redis Cloud DB
+
 import { Job, Worker } from "bullmq";
 import { bullConnection } from "./../queue.js";
 import type { RepoIngestJobData } from "./../queue.js";
