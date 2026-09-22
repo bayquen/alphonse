@@ -1,13 +1,13 @@
 import { Job, Worker } from "bullmq";
-import { bullConnection, repoIngestQueue } from "./../queue.js";
+import { bullConnection } from "./../queue.js";
 import type { RepoIngestJobData } from "./../queue.js";
-import { redisClient, redisConnect } from ".././redisClient.js";
-import type { GitHubFileObject } from ".././github.js";
-import { inspectGitHubRepo, getGitHubRepoTree, getRelevantTechDocObjects } from ".././github.js";
-import { extractFileObjects, 
-        chunkTextContent, 
-        createEmbeddingVectorsFromChunks, 
-        storeVectorsAndChunkedMetadata } from ".././ingest.js";
+import { redisClient, redisConnect } from "./../redisClient.js";
+// import type { GitHubFileObject } from "./../github.js";
+import { getRelevantTechDocObjects } from "./../github.js";
+import { extractFileObjects,
+        chunkTextContent,
+        createEmbeddingVectorsFromChunks,
+        storeVectorsAndChunkedMetadata } from "./../ingest.js";
 
 const repoWorker = new Worker(
     "repo-ingest",
