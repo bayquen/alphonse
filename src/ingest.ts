@@ -55,42 +55,6 @@ interface EmbeddedChunkData {
     h3: string | null;
 }
 
-// // Function for reading directory containing uploaded doc files (for now; TODO: read doc files from git repos or files shared by user)
-// function readDocsDir(docsPath: string): Promise<string[]> {
-//     return new Promise((resolve, reject) => {
-//         fs.readdir(docsPath, (err, files) => {
-//             if (err)
-//                 reject(err);
-//             else {
-//                 // Prepend full path to each file (i.e. [directory path] + '/' + [file name])
-//                 const filePaths = files.map(file => path.join(docsPath, file));
-//                 resolve(filePaths);
-//             }
-//         });
-//     });
-// }
-
-// // Function for reading a single file and create file object from it
-// function createFileObject(filePath: string): Promise<FileObject> {
-//     return new Promise((resolve, reject) => { 
-//         // Asynchronously read files for server load efficiency (esp. for large-sized docs)
-//         fs.readFile(filePath, 'utf8', (err, data) => {
-//             if (err) {
-//                 reject(err);
-//             } else {
-//                 // Create file object
-//                 const metadata: FileObject = {
-//                     type: "file",
-//                     filename: path.basename(filePath),
-//                     content: data,
-//                     sourcePath: filePath
-//                 };
-//                 resolve(metadata);
-//             }
-//         });
-//     });
-// }
-
 // Pipeline: Parse any markdown doc files to extract headings (h1, h2, h3) and other metadata, then convert into
 // file metadata objects. Enriches metadata to improve context for agent (vector) search.
 async function extractMDHeadingsAndContent(
