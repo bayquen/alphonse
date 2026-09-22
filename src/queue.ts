@@ -56,7 +56,7 @@ export const privateRepoIngestQueue = new Queue<RepoIngestJobData>(
 )
 // TODO (9/16/26): Create queue for Linear data ingestion, but use Postgres' pgvector extension instead of Redis Cloud
 export const linearIngestQueue = new Queue<LinearIngestJobData>(
-    "linear-ingest",
+    "linear-app-ingest",
     {
         connection: bullConnection,
         defaultJobOptions: {
