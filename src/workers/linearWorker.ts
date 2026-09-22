@@ -12,7 +12,7 @@ import { redisClient, redisConnect } from "./../redisClient.js";
 import { extractFileObjects,
     chunkTextContent,
     createEmbeddingVectorsFromChunks } from "./../ingest.js";
-import { getLinearIssueById } from "./../linear.js";
+import { getWorkspaceLinearIssues, getLinearIssueById } from "./../linear.js";
 import { storeLinearVectors } from "./../linearVectorStore.js";
 
 const linearAppWorker = new Worker(

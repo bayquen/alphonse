@@ -5,12 +5,10 @@ import { createRequire } from "node:module";
 import dotenv from "dotenv";
 import { TokenTextSplitter } from "@langchain/textsplitters";
 import { redisClient, redisConnect } from "./redisClient.js";
-import type { SearchReply } from "@redis/search";
 import { SCHEMA_FIELD_TYPE, SCHEMA_VECTOR_FIELD_ALGORITHM } from 'redis';  // Redis imports for Redis v5.x.x
 // Use CommonJS's (CJS) Node require() over ESM since VoyageAI (v0.2.1) module import for ESM is fkin broken.
 const require = createRequire(import.meta.url);
 const { VoyageAIClient, VoyageAIError } = require("voyageai") as typeof import("voyageai");
-// import { getRelevantTechDocObjects, } from "./github.js";
 import type { GitHubFileObject } from "./github.js";
 // Interface type included here so that every data embedding (i.e. text chunks and other repo data) 
 // retrieved by the Slack bot is only from the Workspace's installed repo 
@@ -53,6 +51,22 @@ interface EmbeddedChunkData {
     h1: string | null;
     h2: string | null;
     h3: string | null;
+}
+
+interface LinearIssueObject {
+    slackTeamId: string;
+    issueId: string;
+    content: string;
+}
+
+interface EmbeddedLinearIssueData {
+    slackTeamId: string;
+    embeddingKey: string;
+    chunkContent: string;
+    embedding: number[];
+    chunkIndex: number;
+    issueId: string;
+    content: string;
 }
 
 // Pipeline: Parse any markdown doc files to extract headings (h1, h2, h3) and other metadata, then convert into
@@ -148,7 +162,7 @@ function isMarkdownObject(object: GitHubFileObject | MarkdownObject): object is 
     return object.type === "markdown";
 }
 
-// Pipeline: (7/15/26) Refactored function that takes in GitHub repo file metadata objects, then
+// Pipeline: Refactored function that takes in GitHub repo file metadata objects, then
 // splits + returns all file-text chunks in prep for vector embeddings extraction.
 export async function chunkTextContent(fileObjects: (GitHubFileObject | MarkdownObject)[]) {
     // Token-aware text splitter, with added ~1.2x chunkSize multiplier since Voyage AI models use that ~1.2x more tokens 
@@ -202,7 +216,39 @@ export async function chunkTextContent(fileObjects: (GitHubFileObject | Markdown
             // Increment chunkIndex after each chunk iteration of current file object
             chunkIndex += 1;        
         }
-        // chunkLists.push(chunkedText);
+    }
+    // Return chunked-rows object array
+    return allChunks;
+}
+
+
+// Pipeline: Function specifically for Linear app content extraction as objects, then
+// splits + returns all Linear text chunks in prep for vector embeddings extraction.
+// (Separated from repo content extraction because Linear data is shaped differently 
+// AND Postgres / Supabase DB is used for Linear data instead of Redis.)
+// 
+// Note (9/22/26): For now, only Linear Issue content will be extracted for minimum viable product.
+export async function chunkLinearContent(linearIssueObjects: LinearIssueObject[], slackTeamId: string) {
+    const splitter = new TokenTextSplitter({ encodingName: "cl100k_base", chunkSize: 480, chunkOverlap: 100 });
+    let allChunks: EmbeddedLinearIssueData[] = [];
+    let chunkIndex: number = 1;
+    for (const object of linearIssueObjects) {
+        const chunkedText = await splitter.splitText(object.content);
+        for (const chunk of chunkedText) {
+            let row: EmbeddedLinearIssueData = {
+                // 'Slack Team ID', 'Key', and the embedding array may be set later, right before Supabase stores each chunk
+                slackTeamId: "",
+                embeddingKey: "",
+                chunkContent: chunk,
+                embedding: [],
+                chunkIndex: chunkIndex,
+                issueId: object.issueId,
+                content: object.content,
+            }
+            allChunks.push(row);
+        }
+        // Increment chunkIndex after each chunk iteration of current Linear Issue object
+        chunkIndex += 1;
     }
     // Return chunked-rows object array
     return allChunks;
@@ -213,7 +259,7 @@ export async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkD
 
     // This function call deletes all existing vector embeddings in storage (I.E. CLEAR REPO DOC FILE STORAGE)
     // before storing all embeddings for newly instated GitHub repository!
-    // DEBUGGING LOG (7/21/26)
+    // DEBUGGING LOG
     console.log("2. Starting old vector embeddings deletion...");
     await deleteExistingWorkspaceVectors(slackTeamId);
     console.log("3. Delete complete.");
@@ -362,7 +408,7 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
                 PREFIX: 'doc:'
             });
         }
-        // DEBUGGING LOG (7/21/26)
+        // DEBUGGING LOG
         console.log("After FT.CREATE");
         console.log(indexes);
     } catch (err) {
@@ -378,7 +424,7 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
     const pipeline = redisClient.multi();
     // Loop for storing embeddings inside Redis
     for (const [i, chunk] of embeddedChunkObjects.entries()) {
-        // DEBUGGING LOG (7/21/26)
+        // DEBUGGING LOG
         console.log(`Writing ${i}`);
         // A string key is created for EACH embedding so that it can be properly accessed outside of 
         // this function's scope whenever an embedding needs to be deleted from storage.
