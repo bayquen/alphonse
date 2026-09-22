@@ -33,6 +33,28 @@ const linearAppWorker = new Worker(
         // console.log(indexes);
         // console.log("\n\n");
 
+
+        /* TODO (INSTRUCTIONS:  
+        
+        8. Wire into the pipeline:
+        - queue.ts: fix linearIngestQueue (connection + defaultJobOptions, as
+            discussed) — this part is still Redis/BullMQ, just for job queuing,
+            unrelated to where vectors land.
+        - src/workers/linearWorker.ts (new, mirroring redisWorker.ts): on job, call
+            getLinearIssueById → chunkTextContent → createEmbeddingVectorsFromChunks →
+            storeLinearVectors instead of the Redis storeVectorsAndChunkedMetadata.
+        - Retrieval/answer path: wherever the bot currently does Redis FT.SEARCH for
+            repo docs, add a call to queryLinearVectors and merge results before
+            composing the answer.
+
+        9. Sanity checks before wiring the worker:
+        - Confirm embedding dimension matches the vector(1536) column (adjust the SQL
+            if your model differs, e.g. 3072 for some models).
+        - Test the SQL by hand in Supabase's SQL Editor with a fake embedding array
+            first, so the worker isn't your first integration test.
+        - Add SUPABASE_DB_URL to whatever .env.example/deployment secrets you keep in
+            sync with REDIS_CLOUD_*.)
+        */
         try {
             const linearIssueData = await getLinearIssueById(slackTeamId, issueId);
             // TODO (9/22/26): Create a chunking function for Linear Issue data! Maybe inside ingest.ts
