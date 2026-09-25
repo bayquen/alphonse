@@ -11,6 +11,7 @@ import {
     saveLinearTokens,
     deleteLinearTokens,
 } from "./linearInstallationStore.js";
+import type { LinearIssueObject } from "./ingest.js";
 
 dotenv.config();
 
@@ -26,14 +27,14 @@ export interface LinearTokenResponse {
     scope: string;
 }
 
-export interface LinearIssueObject {
-    type: "linear-issue";
-    id: string;
-    identifier: string;
-    issueTitle: string;
-    issueDescription: string;
-    content: string;
-}
+// export interface LinearIssueObject {
+//     type: "linear-issue";
+//     id: string;
+//     identifier: string;
+//     issueTitle: string;
+//     issueDescription: string;
+//     content: string;
+// }
 
 // Generates the Linear OAuth authorization URL for a given Slack workspace.
 // `actor=app` requests a workspace-level (app) token instead of a per-user token,
@@ -184,7 +185,7 @@ export async function getWorkspaceLinearIssues(slackTeamId: string): Promise<Lin
             const commentsText = node.comments.nodes.map((c) => c.body).join("\n\n");
             linearIssueObjects.push({
                 type: "linear-issue" as const,
-                id: node.id,
+                issueId: node.id,
                 identifier: node.identifier,
                 issueTitle: node.title,
                 issueDescription: node.description ?? "",
@@ -236,7 +237,7 @@ export async function getLinearIssueById(slackTeamId: string, issueId: string): 
     const commentsText = data.issue.comments.nodes.map((c) => c.body).join("\n\n");
     return {
         type: "linear-issue" as const,
-        id: data.issue.id,
+        issueId: data.issue.id,
         identifier: data.issue.identifier,
         issueTitle: data.issue.title,
         issueDescription: data.issue.description ?? "",

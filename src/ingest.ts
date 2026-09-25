@@ -53,13 +53,16 @@ interface EmbeddedChunkData {
     h3: string | null;
 }
 
-interface LinearIssueObject {
-    slackTeamId: string;
+export interface LinearIssueObject {
+    type: "linear-issue";
     issueId: string;
+    identifier: string;
+    issueTitle: string;
+    issueDescription: string;
     content: string;
 }
 
-interface EmbeddedLinearIssueData {
+export interface EmbeddedLinearIssueData {
     slackTeamId: string;
     embeddingKey: string;
     chunkContent: string;
