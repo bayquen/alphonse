@@ -32,7 +32,7 @@ export interface LinearIssueObject {
     identifier: string;
     issueTitle: string;
     issueDescription: string;
-    issueComments: string;
+    content: string;
 }
 
 // Generates the Linear OAuth authorization URL for a given Slack workspace.
@@ -188,7 +188,7 @@ export async function getWorkspaceLinearIssues(slackTeamId: string): Promise<Lin
                 identifier: node.identifier,
                 issueTitle: node.title,
                 issueDescription: node.description ?? "",
-                issueComments: [commentsText].filter(Boolean).join("\n\n"),
+                content: [node.title, node.description ?? "", commentsText].filter(Boolean).join("\n\n"),
             });
         }
         cursor = pageInfo.endCursor;
@@ -240,7 +240,7 @@ export async function getLinearIssueById(slackTeamId: string, issueId: string): 
         identifier: data.issue.identifier,
         issueTitle: data.issue.title,
         issueDescription: data.issue.description ?? "",
-        issueComments: [commentsText].filter(Boolean).join("\n\n"),
+        content: [data.issue.title, data.issue.description ?? "", commentsText].filter(Boolean).join("\n\n"),
     };
 }
 
