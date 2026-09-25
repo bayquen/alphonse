@@ -31,6 +31,7 @@
         "@octokit/app": "^16.1.4",
         "@octokit/rest": "^22.0.1",
         "@slack/bolt": "^4.7.3",
+        "@supabase/supabase-js": "^2.117.2",
         "bullmq": "^5.81.2",
         "dotenv": "^17.4.2",
         "express": "^5.2.1",

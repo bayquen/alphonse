@@ -511,6 +511,15 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
     // await redisClient.quit();
 }
 
+export async function storeLinearVectors(embeddedLinearObjects: EmbeddedLinearIssueData[], slackTeamId: string) {
+    try {
+        const indexes = "";
+    } catch (err) {
+        console.error(err);
+        return;
+    }
+}
+
 // async function main() {
 //     const chunkedResults = await chunkTextContent();
 //     const embeddedChunkObjects = await createEmbeddingVectorsFromChunks(chunkedResults);
