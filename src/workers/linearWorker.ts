@@ -11,9 +11,8 @@ import type { LinearIngestJobData } from "./../queue.js";
 import { redisClient, redisConnect } from "./../redisClient.js";
 import {
     chunkLinearContent,
-    createEmbeddingVectorsFromChunks } from "./../ingest.js";
-import type { LinearIssueObject } from "./../ingest.js";
-import { getWorkspaceLinearIssues, getLinearIssueById } from "./../linear.js";
+    createEmbeddingVectorsFromLinearChunks } from "./../ingest.js";
+import { getWorkspaceLinearIssues } from "./../linear.js";
 import { storeLinearVectors } from "./../linearVectorStore.js";
 
 const linearAppWorker = new Worker(
@@ -60,10 +59,10 @@ const linearAppWorker = new Worker(
             // const linearIssueData = await getLinearIssueById(slackTeamId, issueId);
             const linearIssueData = await getWorkspaceLinearIssues(slackTeamId);
             // TODO (9/22/26): Create a chunking function for Linear Issue data! Maybe inside ingest.ts
-            const chunkData = chunkLinearContent(linearIssueData, slackTeamId);
+            const chunkData = await chunkLinearContent(linearIssueData, slackTeamId);
             // TODO (9/22/26): Create separate embedding extraction function for Linear chunks,
             //       since it needs to use Postgres (via Supabase DB) instead of Redis Cloud DB.
-            const embeddings = "foo";
+            const embeddings = await createEmbeddingVectorsFromLinearChunks(chunkData, slackTeamId);
             // TODO (9/22/26): Store resulting Linear data vectors inside my Supabase DB.
             // [Storage FUNCTION CALL HERE]
             

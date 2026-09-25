@@ -268,7 +268,7 @@ export async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkD
     console.log("3. Delete complete.");
 
     const BATCH_SIZE = 50;
-    // EMBEDDINGS CREATION LOOP: VoyageAI client is used here 
+    // EMBEDDINGS CREATION LOOP: VoyageAI API is used here 
     for (let i = 0; i < allChunks.length; i += BATCH_SIZE) {
         const batch = allChunks.slice(i, i + BATCH_SIZE)
         // Debugging log
@@ -303,6 +303,50 @@ export async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkD
     console.log("\n\n\n");
     console.log("Printed current chunk data objects! \n")
     return allChunks;
+}
+
+// As of 9/2026: Only creating and storing vectors for Linear Issue data; Linear Project data, etc. to be included after MVP.
+export async function createEmbeddingVectorsFromLinearChunks(allLinearChunks: EmbeddedLinearIssueData[], slackTeamId: string) {
+    // TODO: Delete existing workspace vectors for Linear data each time we initialize 
+    // Linear team data into a workspace's storage
+    // ... .
+
+    const BATCH_SIZE = 50;
+    // EMBEDDINGS CREATION LOOP: VoyageAI API is used here 
+    for (let i = 0; i < allLinearChunks.length; i += BATCH_SIZE) {
+        const batch = allLinearChunks.slice(i, i + BATCH_SIZE)
+        // Debugging log
+        console.log(`4a. Processing batch ${i / BATCH_SIZE + 1}/${Math.ceil(allLinearChunks.length / BATCH_SIZE)} (${batch.length} chunks)...`);
+
+        const response = await voyageClient.embed({
+            model: "voyage-code-3",
+            input: batch.map(chunk => chunk.chunkContent),
+        });
+        
+        // Debugging log
+        console.log(`4b. Batch ${i / BATCH_SIZE + 1} embedding response received.`);
+
+        if (!response.data) {
+            continue;
+        }
+
+        response.data.forEach((result, index) => {
+            if (!result.embedding) {
+                throw new Error(`No embedding returned for batch item ${index}`)
+            }
+            // Since we just type guarded result.embedding above, we know both that and batch[index].embedding is of the same type.
+            // So we use the non-null assertion operator, '!', to assume the left side of the assignment is never null or undefined.
+            batch[index]!.embedding = result.embedding;
+        });
+
+        // Debugging VoyageAI output:
+        // console.log("Response embedding from VoyageAi", response);
+    }
+    // Debugging the new results of all chunked data objects:
+    console.log(allLinearChunks);
+    console.log("\n\n\n");
+    console.log("Printed current Linear chunk data objects! \n")
+    return allLinearChunks;
 }
 
 // Private helper function for storing vector embeddings, Redis requires reading RAW BYTEs rather than a JSON array.
