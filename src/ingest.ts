@@ -15,11 +15,16 @@ import type { GitHubFileObject } from "./github.js";
 // (security + privacy enforcement, AND user confusion reduction!!)
 import type { IngestContext } from "./app.js";
 import { randomUUID } from "crypto";  // UUID key-generator package; built directly into Node.js!
+import { Pool } from "pg";
 
 dotenv.config();
 
 const voyageAPIKey: string | undefined = process.env.VOYAGE_API_KEY;
 const voyageClient = new VoyageAIClient({ apiKey: voyageAPIKey});
+
+const pool = new Pool({
+    connectionString: process.env.SUPABASE_URL,
+});
 
 interface FileObject {
     type: "file",
@@ -69,6 +74,7 @@ export interface EmbeddedLinearIssueData {
     embedding: number[];
     chunkIndex: number;
     issueId: string;
+    identifier: string;
     content: string;
 }
 
@@ -246,6 +252,7 @@ export async function chunkLinearContent(linearIssueObjects: LinearIssueObject[]
                 embedding: [],
                 chunkIndex: chunkIndex,
                 issueId: object.issueId,
+                identifier: object.identifier,
                 content: object.content,
             }
             allChunks.push(row);
@@ -316,7 +323,7 @@ export async function createEmbeddingVectorsFromLinearChunks(allLinearChunks: Em
     for (let i = 0; i < allLinearChunks.length; i += BATCH_SIZE) {
         const batch = allLinearChunks.slice(i, i + BATCH_SIZE)
         // Debugging log
-        console.log(`4a. Processing batch ${i / BATCH_SIZE + 1}/${Math.ceil(allLinearChunks.length / BATCH_SIZE)} (${batch.length} chunks)...`);
+        console.log(`Processing batch ${i / BATCH_SIZE + 1}/${Math.ceil(allLinearChunks.length / BATCH_SIZE)} (${batch.length} chunks)...`);
 
         const response = await voyageClient.embed({
             model: "voyage-code-3",
@@ -324,7 +331,7 @@ export async function createEmbeddingVectorsFromLinearChunks(allLinearChunks: Em
         });
         
         // Debugging log
-        console.log(`4b. Batch ${i / BATCH_SIZE + 1} embedding response received.`);
+        console.log(`Batch ${i / BATCH_SIZE + 1} embedding response received.`);
 
         if (!response.data) {
             continue;
@@ -511,12 +518,20 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
     // await redisClient.quit();
 }
 
-export async function storeLinearVectors(embeddedLinearObjects: EmbeddedLinearIssueData[], slackTeamId: string) {
-    try {
-        const indexes = "";
-    } catch (err) {
-        console.error(err);
-        return;
+export async function storeLinearChunks(embeddedLinearObjects: EmbeddedLinearIssueData[], slackTeamId: string) {
+    for (const object of embeddedLinearObjects) {
+        try {
+            const vectorLiteral = `[${object.embedding.join(",")}]`;
+            await pool.query(
+                `insert into linear_data_chunks (slack_team_id, issue_id, identifier, chunk_text, embedding)
+                values ($1, $2, $3, $4, $5)
+                on conflict (slack_team_id, issue_id, chunk_text)
+                do update set embedding = excluded.embedding, updated_at = now()`,
+                [slackTeamId, object.issueId, object.identifier, object.chunkContent, vectorLiteral],
+            )
+        } catch (err) {
+            console.error(err);
+        }
     }
 }
 
