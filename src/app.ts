@@ -231,6 +231,13 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
     }
 });
 
+app.command("/add_linear_workspace", async ({command, ack, respond, say, logger }) => {
+    // Acknowledge the command request right away, so 3000ms ping timeout doesn't occur.
+    await ack();
+
+    // TODO ...
+});
+
 (async () => {
     // Connect to Redis Client (with connection open/closed validation check) before starting Slack Bolt app
     await redisConnect();

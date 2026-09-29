@@ -3,7 +3,7 @@
 // Purpose: A dedicated module for authenticating against a Slack workspace's Linear account
 //          (via OAuth2, workspace-level `actor=app` token) and pulling issue/comment/project
 //          content that gets fed into the same chunk + embed pipeline as GitHub tech docs
-//          (see ingest.ts), so the bot can answer "why did we decide X" questions.
+//          (see ingest.ts), so the bot can answer "why did we decide X?" types of questions.
 import dotenv from "dotenv";
 import { createHmac, timingSafeEqual } from "crypto";
 import {
@@ -12,6 +12,7 @@ import {
     deleteLinearTokens,
 } from "./linearInstallationStore.js";
 import type { LinearIssueObject } from "./ingest.js";
+import { linearIngestQueue } from "./queue.js";
 
 dotenv.config();
 
@@ -132,7 +133,8 @@ async function linearGraphQLRequest<T>(slackTeamId: string, query: string, varia
 }
 
 // Pulls all issues (with descriptions + comments) across the workspace's public teams.
-// Feeds directly into the same chunk/embed pipeline as GitHub docs (see ingest.ts),
+// Feeds directly into the backfill function (`backfillWorkspaceLinearIssues()`) when
+// an org/team's Linear workspace is first installed into our Slack bot application;
 // tagged with `type: "linear-issue"` and `sourcePath: <identifier>` for retrieval metadata.
 export async function getWorkspaceLinearIssues(slackTeamId: string): Promise<LinearIssueObject[]> {
     const query = `
@@ -202,6 +204,23 @@ export async function getWorkspaceLinearIssues(slackTeamId: string): Promise<Lin
 
     return linearIssueObjects;
 
+}
+
+// Creates jobs in bulk for Linear Issue data (one BullMQ job per Issue), so that
+// the latest [X] amount of Linear Issues (i.e. a max number of Issues) are ingested
+export async function backfillWorkspaceLinearIssues(slackTeamId: string): Promise<number> {
+    const issues = await getWorkspaceLinearIssues(slackTeamId);
+    
+    const jobs = issues.map((issue) => ({
+        name: "linear-issue-ingest",
+        data: { slackTeamId, issueId: issue.issueId},
+        opts: { jobId: `${slackTeamId}:${issue.issueId}` },
+    }));
+
+    await linearIngestQueue.addBulk(jobs);
+    // Optional: Added literal number of jobs returned to log how many issues actually returned, so that 
+    // sanity checks can be made to make sure the Linear Issues ingestion capacity is behaving as expected.
+    return jobs.length;
 }
 
 // Fetches a single issue by ID - used when a webhook fires for a targeted re-ingest

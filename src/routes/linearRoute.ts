@@ -5,6 +5,7 @@ import {
     verifyLinearWebhookSignature,
     parseLinearWebhookPayload,
     getLinearIssueById,
+    backfillWorkspaceLinearIssues,
 } from "./../linear.js";
 import { saveLinearTokens, deleteLinearTokens } from "./../linearInstallationStore.js";
 import { linearIngestQueue } from "./../queue.js";
@@ -46,6 +47,11 @@ linearExpressApp.get("/linear/oauth/callback", async (req, res) => {
             refreshToken: tokens.refresh_token,
             expiresAt: Date.now() + tokens.expires_in * 1000,
         });
+        // Backfill a (limited) number of Linear Issues in a given Linear workspace and return the number of queued jobs
+        // (remember: one BullMQ job is queued per Linear Issue in bulk, wbich is efficient because
+        // BullMQ rounds up jobs once and does a single trip to Redis endpoint vs. one trip per job!)
+        const queuedCount = await backfillWorkspaceLinearIssues(slackWorkspaceId);
+        console.log(`[LINEAR OAUTH DEBUG] Queued ${queuedCount} Linear Issues for backfill!`);
 
         console.log("[LINEAR OAUTH DEBUG] Saved tokens for workspace:", slackWorkspaceId);
         res.send(`Linear connected! You can close this window. Workspace: ${slackWorkspaceId}`);
