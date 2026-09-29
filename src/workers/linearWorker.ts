@@ -1,6 +1,6 @@
 // Program: linearWorker.ts
 // Author: Brandon Bayquen
-// Purpose: A BullMQ + Redis background worker program for creating ingestion jobs
+// Purpose: A BullMQ (Redis) background worker program for creating ingestion jobs
 //          for Linear app data from a given organization/team. 
 //          Each job filters and reads through Linear Issues -> extract data objects 
 //          -> chunking -> embedding -> store in a Postgres database via Supabase
@@ -38,11 +38,10 @@ const linearAppWorker = new Worker(
             if your model differs, e.g. 3072 for some models).
         - Test the SQL by hand in Supabase's SQL Editor with a fake embedding array
             first, so the worker isn't your first integration test.
-        - Add SUPABASE_DB_URL to whatever .env.example/deployment secrets you keep in
+        - Add SUPABASE_URL to whatever .env.example/deployment secrets you keep in
             sync with REDIS_CLOUD_*.)
         */
         try {
-            // const linearIssueData = await getLinearIssueById(slackTeamId, issueId);
             const linearIssue = await getLinearIssueById(slackTeamId, issueId);
             if (!linearIssue) {
                 console.log(`Issue ${issueId} not found for team ${slackTeamId}. Skipping now.`);
@@ -77,10 +76,10 @@ const linearAppWorker = new Worker(
 
 // BullMQ Job listeners that check when some queued job succeeds after execution OR fails during/before execution.
 linearAppWorker.on('ready', () => {
-    console.log("redisWorker: Worker is ready and listening for jobs!");
+    console.log("linearWorker: Worker is ready and listening for jobs!");
 });
 linearAppWorker.on('error', (err) => {
-    console.log("redisWorker: Worker error:", err);
+    console.log("linearWorker: Worker error:", err);
 });
 
 linearAppWorker.on('completed', async job => {
@@ -95,4 +94,4 @@ linearAppWorker.on('failed', (job, err) => {
 
 // Ensure that worker is ready BEFORE the module completes loading
 await linearAppWorker.waitUntilReady();
-console.log("redisWorker: Worker initialization complete");
+console.log("linearWorker: Worker initialization complete");

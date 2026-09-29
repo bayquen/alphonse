@@ -15,16 +15,16 @@ import type { GitHubFileObject } from "./github.js";
 // (security + privacy enforcement, AND user confusion reduction!!)
 import type { IngestContext } from "./app.js";
 import { randomUUID } from "crypto";  // UUID key-generator package; built directly into Node.js!
-import { Pool } from "pg";
+// import { pgPool } from "./pgClient.js";
 
 dotenv.config();
 
 const voyageAPIKey: string | undefined = process.env.VOYAGE_API_KEY;
 const voyageClient = new VoyageAIClient({ apiKey: voyageAPIKey});
 
-const pool = new Pool({
-    connectionString: process.env.SUPABASE_URL,
-});
+// const pool = new Pool({
+//     connectionString: process.env.SUPABASE_URL,
+// });
 
 interface FileObject {
     type: "file",
@@ -255,10 +255,12 @@ export async function chunkLinearContent(linearIssueObjects: LinearIssueObject[]
                 identifier: object.identifier,
                 content: object.content,
             }
+            // Increment chunkIndex after each chunk iteration of current Linear Issue object
+            chunkIndex += 1;
+            // Add chunk row into the array of all chunks
             allChunks.push(row);
         }
-        // Increment chunkIndex after each chunk iteration of current Linear Issue object
-        chunkIndex += 1;
+
     }
     // Return chunked-rows object array
     return allChunks;
@@ -518,22 +520,22 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
     // await redisClient.quit();
 }
 
-export async function storeLinearChunks(embeddedLinearObjects: EmbeddedLinearIssueData[], slackTeamId: string) {
-    for (const object of embeddedLinearObjects) {
-        try {
-            const vectorLiteral = `[${object.embedding.join(",")}]`;
-            await pool.query(
-                `insert into linear_data_chunks (slack_team_id, issue_id, identifier, chunk_text, embedding)
-                values ($1, $2, $3, $4, $5)
-                on conflict (slack_team_id, issue_id, chunk_text)
-                do update set embedding = excluded.embedding, updated_at = now()`,
-                [slackTeamId, object.issueId, object.identifier, object.chunkContent, vectorLiteral],
-            )
-        } catch (err) {
-            console.error(err);
-        }
-    }
-}
+// export async function storeLinearChunks(embeddedLinearObjects: EmbeddedLinearIssueData[], slackTeamId: string) {
+//     for (const object of embeddedLinearObjects) {
+//         try {
+//             const vectorLiteral = `[${object.embedding.join(",")}]`;
+//             await pgPool.query(
+//                 `insert into linear_data_chunks (slack_team_id, issue_id, identifier, chunk_text, embedding)
+//                 values ($1, $2, $3, $4, $5)
+//                 on conflict (slack_team_id, issue_id, chunk_text)
+//                 do update set embedding = excluded.embedding, updated_at = now()`,
+//                 [slackTeamId, object.issueId, object.identifier, object.chunkContent, vectorLiteral],
+//             )
+//         } catch (err) {
+//             console.error(err);
+//         }
+//     }
+// }
 
 // async function main() {
 //     const chunkedResults = await chunkTextContent();
