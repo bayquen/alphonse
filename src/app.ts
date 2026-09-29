@@ -75,9 +75,13 @@ app.event("app_mention", async({ event, client, say }) => {
         if (!event.user) return;
         // const { user } = await client.users.info({ user: event.user });
         const res = await client.users.info({ user: event.user });
-        if (!res.user) return;
 
+        if (!res.user) return;
         const slackUser = res.user;
+
+        if (!res.user.team_id) return;
+        const slackTeamId = res.user.team_id;
+        
         const userDisplayName = 
         slackUser.profile?.display_name ||
         slackUser.real_name ||
@@ -103,7 +107,7 @@ app.event("app_mention", async({ event, client, say }) => {
                     (i.e. the technical docs provided). Do NOT research an answer directly online. If context does not contain 
                     enough info to answer the user's question/prompt, then kindly let the user know honestly without making anything up.
                     Then quickly give the user a short call-to-action to ask questions only about technical docs that were shared (literally).`;
-        const llmAnswerChunk = await retrieveRelevantChunks(slackUserPrompt);
+        const llmAnswerChunk = await retrieveRelevantChunks(slackUserPrompt, slackTeamId);
         const retrievedContextForLLM = "Here is the relevant doc info you need to answer the user, denoted in triple ticks:"
                                         + "\n```"
                                         + llmAnswerChunk

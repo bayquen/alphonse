@@ -46,6 +46,7 @@ export async function storeLinearVectors(
 }
 
 // Read stored vectors in the DB
+// Note: queryEmbedding is the user's embedded text prompt (input) that is passed to the chosen LLM.
 export async function queryLinearVectors(queryEmbedding: number[], slackTeamId: string, topK = 5) {
     // Here, query() is used instead of connect() because it's a single read-only statement,
     // so we can automatically check out an idle client from the pool, run a single query, 
