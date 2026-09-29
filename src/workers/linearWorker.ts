@@ -96,5 +96,3 @@ linearAppWorker.on('failed', (job, err) => {
 // Ensure that worker is ready BEFORE the module completes loading
 await linearAppWorker.waitUntilReady();
 console.log("redisWorker: Worker initialization complete");
-
-// await repoIngestQueue.obliterate({ force: true });
