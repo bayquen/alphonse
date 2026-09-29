@@ -78,7 +78,7 @@ const repoWorker = new Worker(
     },
     {
         connection: bullConnection,
-        lockDuration: 360000,  // 5 minutes in ms,
+        lockDuration: 360000,  // 360,000 / 1000 / 60 = 6 minutes in ms,
         lockRenewTime: 5000,  // 5 seconds in ms
     }
 );

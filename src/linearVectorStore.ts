@@ -1,14 +1,16 @@
 import pgvector from "pgvector/pg";
 import { pgPool } from "./pgClient.js"
+import type { EmbeddedLinearIssueData } from "./ingest.js";
 
-interface LinearChunkEmbedding {
-    identifier: string;
-    chunkText: string;
-    embedding: number[];
-}
+// interface LinearChunkEmbedding {
+//     identifier: string;
+//     chunkText: string;
+//     embedding: number[];
+// }
+
 // Store new or updated Linear app data vectors via Postgres database (using Supabase as of 9/2026)
 export async function storeLinearVectors(
-    chunks: LinearChunkEmbedding[],
+    chunks: EmbeddedLinearIssueData[],
     slackTeamId: string,
     issueId: string,
 ) {
@@ -29,7 +31,7 @@ export async function storeLinearVectors(
                 VALUES ($1, $2, $3, $4, $5)`,
                 // Note: pgvector's .toSql() function serializes the chunk array literal into a string input 
                 // that Postgres can understand (i.e. its expected format).
-                [slackTeamId, issueId, chunk.identifier, chunk.chunkText, pgvector.toSql(chunk.embedding)],
+                [slackTeamId, issueId, chunk.identifier, chunk.content, pgvector.toSql(chunk.embedding)],
             );
         }
 

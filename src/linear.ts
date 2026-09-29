@@ -132,10 +132,12 @@ async function linearGraphQLRequest<T>(slackTeamId: string, query: string, varia
     return body.data;
 }
 
-// Pulls all issues (with descriptions + comments) across the workspace's public teams.
-// Feeds directly into the backfill function (`backfillWorkspaceLinearIssues()`) when
-// an org/team's Linear workspace is first installed into our Slack bot application;
-// tagged with `type: "linear-issue"` and `sourcePath: <identifier>` for retrieval metadata.
+// Pulls a maximum listed # of latest Linear Issues simply just as Issue IDs across 
+// the workspace's public teams, so that we discover WHICH issues exist that we need
+// to enqueue later.
+// - It feeds directly into the backfill function (`backfillWorkspaceLinearIssues()`) when
+// an org/team's Linear workspace is first installed into our Slack bot application.
+// - Tagged with `type: "linear-issue"` and `sourcePath: <identifier>` for retrieval metadata.
 export async function getWorkspaceLinearIssues(slackTeamId: string): Promise<LinearIssueObject[]> {
     const query = `
         query WorkspaceIssues($cursor: String) {

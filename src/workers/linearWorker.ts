@@ -8,31 +8,17 @@
 import { Job, Worker } from "bullmq";
 import { bullConnection } from "./../queue.js";
 import type { LinearIngestJobData } from "./../queue.js";
-import { redisClient, redisConnect } from "./../redisClient.js";
 import {
     chunkLinearContent,
     createEmbeddingVectorsFromLinearChunks } from "./../ingest.js";
-import { getWorkspaceLinearIssues } from "./../linear.js";
+import { getLinearIssueById } from "./../linear.js";
 import { storeLinearVectors } from "./../linearVectorStore.js";
 
 const linearAppWorker = new Worker(
     "linear-app-ingest",
     async (job: Job<LinearIngestJobData>) => {
-        // Reset lock to prevent stall timeouts during long operations
-        job.updateProgress(0);
         // Makes sure to include needed input data that is passed within a BullMQ queue.add() built-in function call!
-        const {
-            slackTeamId,
-            issueId,
-        } = job.data;
-
-        await redisConnect();
-
-        const indexes = await redisClient.ft._list();
-        // console.log("\n\n");
-        // console.log(indexes);
-        // console.log("\n\n");
-
+        const { slackTeamId, issueId } = job.data;
 
         /* TODO (INSTRUCTIONS:  
         
@@ -57,21 +43,35 @@ const linearAppWorker = new Worker(
         */
         try {
             // const linearIssueData = await getLinearIssueById(slackTeamId, issueId);
-            const linearIssueData = await getWorkspaceLinearIssues(slackTeamId);
-            // TODO (9/22/26): Create a chunking function for Linear Issue data! Maybe inside ingest.ts
-            const chunkData = await chunkLinearContent(linearIssueData, slackTeamId);
-            // TODO (9/22/26): Create separate embedding extraction function for Linear chunks,
-            //       since it needs to use Postgres (via Supabase DB) instead of Redis Cloud DB.
-            const embeddings = await createEmbeddingVectorsFromLinearChunks(chunkData, slackTeamId);
-            // TODO (9/22/26): Store resulting Linear data vectors inside my Supabase DB.
-            // [Storage FUNCTION CALL HERE]
+            const linearIssue = await getLinearIssueById(slackTeamId, issueId);
+            if (!linearIssue) {
+                console.log(`Issue ${issueId} not found for team ${slackTeamId}. Skipping now.`);
+                return;
+            }
+            // Not required, but each .updateProgress() call publishes a progress event you 
+            // can subscribe to or inspect in a monitoring UI later; Useful for seeing where
+            // a job is stuck if embedding calls are slow.
+            job.updateProgress(25);
             
+            const chunkData = await chunkLinearContent([linearIssue], slackTeamId);
+            job.updateProgress(50);
+
+            const embeddedChunks = await createEmbeddingVectorsFromLinearChunks(chunkData, slackTeamId);
+            job.updateProgress(75);
+
+            await storeLinearVectors(embeddedChunks, slackTeamId, issueId);
+            job.updateProgress(100);
         } catch (err) {
             console.log("\nUh oh, error occurred during linearWorker (i.e. a Redis background worker) execution:\n");
             console.log(err);
             console.log("\n\n");
             throw err;
         }
+    },
+    {
+        connection: bullConnection,
+        lockDuration: 600000,  // 600,000 / 1000 / 60 = 10 minutes in ms,
+        lockRenewTime: 5000,  // 5 seconds in ms
     }
 );
 
