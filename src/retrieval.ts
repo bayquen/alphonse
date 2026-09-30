@@ -46,12 +46,49 @@ export async function retrieveRelevantChunks(userPrompt: string, slackTeamId: st
         queryLinearVectors(userQueryEmbedding, slackTeamId, 5),
     ]);
 
-    // Debug log for vector search results
-    // console.log("Results: \n\n");
-    // console.log(JSON.stringify(results, null, 2));
+    // if (!githubResults || typeof githubResults !== 'object' || !('documents' in githubResults) 
+    //     || !Array.isArray(githubResults.documents)) {
+    //     throw new Error("Invalid Github results structure");
+    // }
 
-    // Return resulting string of chunks
-    return JSON.stringify(results, null, 2);
+    // Initialize result arrays for chunked GitHub and Linear data as empty first
+    // (EDGE CASE: Handle search results if NO relevant data for GitHub and/or Linear 
+    //  is found at all based on the Slack user's question/prompt)
+    let normalizedGitHubResults: any[] = [];
+    let normalizedLinearResults: any[] = [];
+
+    // NOTE: Normalize the results' formatting (from both GitHub and Linear)
+    // into a common format so that the LLM knows where context came from.
+
+    if (githubResults 
+        && typeof githubResults == 'object'
+        && 'documents' in githubResults 
+        && Array.isArray(githubResults.documents)) {
+        normalizedGitHubResults = (githubResults.documents as Array<{ id: string; value: any }>).map(r => ({
+            source: "github",
+            content: r.value.chunkContent,
+            metadata: { filename: r.value.filename, sourcePath: r.value.sourcePath },
+            score: r.value.score
+        }));
+    }
+
+    if (linearResults && Array.isArray(linearResults) && linearResults.length > 0) {
+        normalizedLinearResults = linearResults.map(r => ({
+            source: "linear",
+            content: r.chunk_text,
+            metadata: { identifier: r.identifier },
+            score: r.similarity
+        }));
+    }
+    // Return merged, normalized results
+    const mergedResults = [...normalizedGitHubResults, ...normalizedLinearResults];
+
+    // Edge case: If no relevant results are found at all, return a message so the LLM knows what to do
+    if (mergedResults.length === 0) {
+        return JSON.stringify({ message: "No relevant docs or issues found for user's Q&A prompt" }, null, 2);
+    }
+    // Else, return relevant results for LLM to answer Q&A prompt
+    return JSON.stringify(mergedResults, null, 2);
 }
 // TESTING: EXAMPLE STRING PROMPT TO TEST FUNCTIONALITY LOCALLY ON TERMINAL
 // retrieveRelevantChunks(testPrompt);

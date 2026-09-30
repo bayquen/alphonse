@@ -105,10 +105,10 @@ app.event("app_mention", async({ event, client, say }) => {
 
         const systemPrompt = `You're a straightforward Q&A assistant. Answer user's question/prompt using only the provided context 
                     (i.e. the technical docs provided). Do NOT research an answer directly online. If context does not contain 
-                    enough info to answer the user's question/prompt, then kindly let the user know honestly without making anything up.
-                    Then quickly give the user a short call-to-action to ask questions only about technical docs that were shared (literally).`;
+                    enough info to answer the user's question/prompt, then kindly: (1) Let the user know honestly without making anything up 
+                    AND (2) Quickly give the user a short call-to-action to ask questions only about technical docs that were shared (literally).`;
         const llmAnswerChunk = await retrieveRelevantChunks(slackUserPrompt, slackTeamId);
-        const retrievedContextForLLM = "Here is the relevant doc info you need to answer the user, denoted in triple ticks:"
+        const retrievedContextForLLM = "Here is the relevant doc information from GitHub (repository) data AND/OR Linear app workspace data you need to answer the user, denoted in triple ticks:"
                                         + "\n```"
                                         + llmAnswerChunk
                                         + "\n```";
