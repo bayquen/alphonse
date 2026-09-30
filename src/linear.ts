@@ -266,6 +266,52 @@ export async function getLinearIssueById(slackTeamId: string, issueId: string): 
     };
 }
 
+// Helper function for grabbing Linear workspace ID (a.k.a. organizationId) so that reverse
+// can be done to ultimately retrieve the corresp. Slack workspace ID for Linear webhook updates 
+// to occur (i.e. for the webhook that handles any new changes to individual Linear data).
+
+// TODO (10/01/26): Hook this up to the correct program that contains the Linear update webhook!
+export async function linearWorkspaceIdFetcher(accessToken: string): Promise<string> {
+    const query = `
+        query LinearWorkspaceId() {
+            viewer {
+                organization {
+                    id
+                }
+            }
+        }
+    `
+    const response = await fetch(LINEAR_GRAPHQL_ENDPOINT, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ query }),
+    });
+
+    const body = await response.json() as { 
+        data: { viewer: { organization: { id: string } } };
+        errors?: any[];
+    };
+    // Catch any network/auth failures
+    if (!response.ok) {
+        throw new Error(`Linear API failed: ${response.status}`);
+    }
+    // Catch GraphQL query failures (i.e. permission denied, bad query, etc.)
+    if (body.errors) {
+        throw new Error(`Linear GraphQL error: ${JSON.stringify(body.errors)}`);
+    }
+
+    const linearWorkspaceId = body.data?.viewer?.organization?.id;
+    // Catch missing/null ID data.
+    if (!linearWorkspaceId) {
+        throw new Error("No organization found in Linear workspace");
+    }
+
+    return linearWorkspaceId;
+}
+
 // Verifies the `Linear-Signature` header (HMAC-SHA256 over the raw request body) so we
 // only trust webhooks that actually came from Linear. Mirrors parseGitHubInstallationWebhook()
 // in github.ts.

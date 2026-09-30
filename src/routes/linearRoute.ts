@@ -79,7 +79,7 @@ linearExpressApp.post("/linear/webhook", async (req, res) => {
         const { action, type, data } = parseLinearWebhookPayload(req.body);
         console.log("[LINEAR WEBHOOK DEBUG] action:", action, "type:", type);
 
-        // TODO: `data` doesn't directly carry the Slack team ID - resolve slackTeamId from your
+        // TODO (10/01/26): `data` doesn't directly carry the Slack team ID - resolve slackTeamId from your
         // installation store (e.g. by organizationId on the payload) before enqueuing.
         const slackTeamId = data?.organizationId ?? data?.teamId;
 

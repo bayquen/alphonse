@@ -19,7 +19,7 @@ export async function getLinearAccessToken(slackTeamId: string, token: (refreshT
         try {
             // If so, then replace current token with a new refresh token
             const response = await token(parsed.refreshToken);
-            const newTokenBundle = { 
+            const newTokenBundle = {
                 accessToken: response.access_token, 
                 refreshToken: response.refresh_token, 
                 expiresAt: Date.now() + response.expires_in * 1000
@@ -47,6 +47,7 @@ export async function saveLinearTokens(slackTeamId: string, linearTokenBundle:
         refreshToken: string, 
         expiresAt: number
     }) {
+        
     const serializedTokenBundle = JSON.stringify(linearTokenBundle);
     await redisClient.set(`linear:installation:${slackTeamId}`, serializedTokenBundle);
 }
