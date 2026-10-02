@@ -266,8 +266,8 @@ export async function getLinearIssueById(slackTeamId: string, issueId: string): 
     };
 }
 
-// Helper function for grabbing Linear workspace ID (a.k.a. organizationId) so that reverse
-// can be done to ultimately retrieve the corresp. Slack workspace ID for Linear webhook updates 
+// Helper function for grabbing and storing Linear workspace ID (a.k.a. organizationId) during OAuth call
+//  so that the reverse can be done to ultimately retrieve the corresp. Slack workspace ID for Linear webhook updates 
 // to occur (i.e. for the webhook that handles any new changes to individual Linear data).
 
 // TODO (10/01/26): Hook this up to the correct program that contains the Linear update webhook!

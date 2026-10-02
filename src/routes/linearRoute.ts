@@ -5,6 +5,7 @@ import {
     verifyLinearWebhookSignature,
     parseLinearWebhookPayload,
     getLinearIssueById,
+    linearWorkspaceIdFetcher,
     backfillWorkspaceLinearIssues,
 } from "./../linear.js";
 import { saveLinearTokens, deleteLinearTokens } from "./../linearInstallationStore.js";
@@ -42,11 +43,14 @@ linearExpressApp.get("/linear/oauth/callback", async (req, res) => {
         }
 
         const tokens = await exchangeLinearOAuthCode(code as string);
+        const linearWorkspaceId = await linearWorkspaceIdFetcher(tokens.access_token);
         await saveLinearTokens(slackWorkspaceId, {
             accessToken: tokens.access_token,
             refreshToken: tokens.refresh_token,
             expiresAt: Date.now() + tokens.expires_in * 1000,
-        });
+        },
+        linearWorkspaceId
+        );
         // Backfill a (limited) number of Linear Issues in a given Linear workspace and return the number of queued jobs
         // (remember: one BullMQ job is queued per Linear Issue in bulk, wbich is efficient because
         // BullMQ rounds up jobs once and does a single trip to Redis endpoint vs. one trip per job!)
