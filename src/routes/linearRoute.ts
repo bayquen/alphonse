@@ -10,6 +10,7 @@ import {
 } from "./../linear.js";
 import { saveLinearTokens, deleteLinearTokens } from "./../linearInstallationStore.js";
 import { linearIngestQueue } from "./../queue.js";
+import { redisClient } from "./../redisClient.js";
 
 dotenv.config();
 
@@ -85,7 +86,7 @@ linearExpressApp.post("/linear/webhook", async (req, res) => {
 
         // TODO (10/01/26): `data` doesn't directly carry the Slack team ID - resolve slackTeamId from your
         // installation store (e.g. by organizationId on the payload) before enqueuing.
-        const slackTeamId = data?.organizationId ?? data?.teamId;
+        const slackTeamId = await redisClient.get(`linear:org-to-slack:${data.organizationId}`);
 
         if (!slackTeamId) {
             console.warn("[LINEAR WEBHOOK DEBUG] Could not resolve Slack workspace for this event");
