@@ -81,12 +81,12 @@ linearExpressApp.post("/linear/webhook", async (req, res) => {
         }
 
         // TODO: reject if webhookTimestamp is more than ~1 minute old, to guard against replay attacks.
-        const { action, type, data } = parseLinearWebhookPayload(req.body);
+        const { action, type, data, organizationId } = parseLinearWebhookPayload(req.body);
         console.log("[LINEAR WEBHOOK DEBUG] action:", action, "type:", type);
 
-        // TODO (10/01/26): `data` doesn't directly carry the Slack team ID - resolve slackTeamId from your
-        // installation store (e.g. by organizationId on the payload) before enqueuing.
-        const slackTeamId = await redisClient.get(`linear:org-to-slack:${data.organizationId}`);
+        // The payload carries Linear's organizationId (not the Slack team ID), so reverse-lookup the
+        // Slack workspace from the org-to-slack mapping saved during OAuth.
+        const slackTeamId = await redisClient.get(`linear:org-to-slack:${organizationId}`);
 
         if (!slackTeamId) {
             console.warn("[LINEAR WEBHOOK DEBUG] Could not resolve Slack workspace for this event");

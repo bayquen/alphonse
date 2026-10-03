@@ -273,7 +273,7 @@ export async function getLinearIssueById(slackTeamId: string, issueId: string): 
 // TODO (10/01/26): Hook this up to the correct program that contains the Linear update webhook!
 export async function linearWorkspaceIdFetcher(accessToken: string): Promise<string> {
     const query = `
-        query LinearWorkspaceId() {
+        query LinearWorkspaceId {
             viewer {
                 organization {
                     id
@@ -338,6 +338,7 @@ export function parseLinearWebhookPayload(body: any) {
         action: payload.action as "create" | "update" | "remove",
         type: payload.type as string, // e.g. "Issue", "Comment", "Project", "ProjectUpdate", "Document"
         data: payload.data,
+        organizationId: payload.organizationId as string,  // located top-level on Linear webhook payloads
         webhookTimestamp: payload.webhookTimestamp as number,
     };
 }
