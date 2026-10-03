@@ -1,6 +1,6 @@
 // Author: Brandon Bayquen
 // Program: `linear.ts`
-// Purpose: A dedicated module for authenticating against a Slack workspace's Linear account
+// Purpose: A dedicated module for authenticating against a Slack team's Linear workspace
 //          (via OAuth2, workspace-level `actor=app` token) and pulling issue/comment/project
 //          content that gets fed into the same chunk + embed pipeline as GitHub tech docs
 //          (see ingest.ts), so the bot can answer "why did we decide X?" types of questions.
