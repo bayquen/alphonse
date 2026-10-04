@@ -263,10 +263,10 @@ app.command("/add_linear_workspace", async ({command, ack, respond, say, logger 
         console.log(`GitHub webhook server listening on port ${GITHUB_PORT}`);
     });
 
-    // const LINEAR_PORT = process.env.LINEAR_WEBHOOK_PORT || 3001;
-    // linearExpressApp.listen(LINEAR_PORT, () => {
-    //     console.log(`Linear OAuth/webhook server listening on port ${LINEAR_PORT}`);
-    // });
+    const LINEAR_PORT = process.env.LINEAR_WEBHOOK_PORT || 3001;
+    linearExpressApp.listen(LINEAR_PORT, () => {
+        console.log(`Linear OAuth/webhook server listening on port ${LINEAR_PORT}`);
+    });
 
     // Start Slack Bolt app
     await app.start();
