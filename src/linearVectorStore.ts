@@ -21,13 +21,13 @@ export async function storeLinearVectors(
         // Clear old chunks for this issue first; This handles edits that shrink
         // or reorder chunk boundaries, so we never leave stale rows behind.
         await client.query(
-            "DELETE FROM linear_chunks WHERE slack_team_id = $1 AND issue_id = $2",
+            "DELETE FROM linear_data_chunks WHERE slack_team_id = $1 AND issue_id = $2",
             [slackTeamId, issueId],
         );
         // Loops over every chunk produced for a given Linear issue and inserts one row per chunk.
         for (const chunk of chunks) {
             await client.query(
-                `INSERT INTO linear_chunks (slack_team_id, issue_id, identifier, chunk_text, embedding)
+                `INSERT INTO linear_data_chunks (slack_team_id, issue_id, identifier, chunk_text, embedding)
                 VALUES ($1, $2, $3, $4, $5)`,
                 // Note: pgvector's .toSql() function serializes the chunk array literal into a string input 
                 // that Postgres can understand (i.e. its expected format).
@@ -59,7 +59,7 @@ export async function queryLinearVectors(queryEmbedding: number[], slackTeamId: 
         // sorted by distance to the query vector, closest ones first. That's what makes this
         // semantic search in the first place!
         `SELECT identifier, chunk_text, 1 - (embedding <=> $1) AS similarity
-        FROM linear_chunks
+        FROM linear_data_chunks
         WHERE slack_team_id = $2
         ORDER BY embedding <=> $1
         LIMIT $3`,

@@ -49,9 +49,10 @@ export async function getLinearAccessToken(slackTeamId: string, token: (refreshT
 }
 
 // Helper function to retrieve the relevant Linear workspace ID that exists in Redis storage
-export async function getLinearWorkspaceIdFromStorage(slackTeamId: string): Promise<string> {
+export async function getLinearWorkspaceIdFromStorage(slackTeamId: string): Promise<string | null> {
     const workspaceId = await redisClient.get(`linear:workspace:${slackTeamId}`);
-    return workspaceId ? JSON.parse(workspaceId) : null;
+    // return workspaceId ? JSON.parse(workspaceId) : null;
+    return workspaceId ? workspaceId : null;
 }
 
 export async function saveLinearTokens(slackTeamId: string, linearTokenBundle: 
@@ -73,7 +74,7 @@ export async function saveLinearTokens(slackTeamId: string, linearTokenBundle:
     await redisClient.set(`linear:workspace:${slackTeamId}`, linearWorkspaceId);
 }
 
-export async function deleteLinearTokens(slackTeamId: string, linearWorkspaceId?: string) {
+export async function deleteLinearTokens(slackTeamId: string, linearWorkspaceId?: string | null) {
     await redisClient.del(`linear:installation:${slackTeamId}`);
     // Edge case: if Linear tokens exist, but the Linear workspace ID doesn't (e.g. due to 
     // data corruption, a partial save, etc.), then linearWorkspace deletion should obviously

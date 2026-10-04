@@ -1,4 +1,4 @@
-/** 
+/**
 * Author: Brandon Bayquen
 * Program: app.ts
 * Purpose: To activate the RTFM Agent Slack bot as a Slack Bolt JS application.
@@ -15,6 +15,8 @@ import { redisClient, redisConnect } from "./redisClient.js";
 import { inspectGitHubRepo, inspectPrivateGitHubRepo, checkGitHubAppInstallation, generateGitHubAppAuthUrl } from "./github.js";
 import { repoIngestQueue } from "./queue.js";
 import { expressApp } from "./routes/githubRoute.js";
+import { generateLinearAppAuthUrl } from "./linear.js";
+import { linearExpressApp } from "./routes/linearRoute.js";
 
 export interface IngestContext {
     slackTeamId: string;
@@ -236,10 +238,16 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
 });
 
 app.command("/add_linear_workspace", async ({command, ack, respond, say, logger }) => {
-    // Acknowledge the command request right away, so 3000ms ping timeout doesn't occur.
+    // Acknowledge command request right away so the 3000ms Slack timeout doesn't hit
     await ack();
 
-    // TODO ...
+    try {
+        const authUrl = generateLinearAppAuthUrl(command.team_id);
+        await respond(`<${authUrl}|Click here to connect your Linear workspace>`);
+    } catch (err) {
+        logger.error(err);
+        await respond(`An error occurred starting the Linear connection. Try again, please.`);
+    }
 });
 
 (async () => {
@@ -250,10 +258,15 @@ app.command("/add_linear_workspace", async ({command, ack, respond, say, logger 
     // console.log(redisClient.isReady);  // should equal true
 
     // Start Express server for GitHub webhooks on port 3000
-    const WEBHOOK_PORT = process.env.WEBHOOK_PORT || 3000;
-    expressApp.listen(WEBHOOK_PORT, () => {
-        console.log(`🔗 GitHub webhook server listening on port ${WEBHOOK_PORT}`);
+    const GITHUB_PORT = process.env.GITHUB_WEBHOOK_PORT || 3000;
+    expressApp.listen(GITHUB_PORT, () => {
+        console.log(`GitHub webhook server listening on port ${GITHUB_PORT}`);
     });
+
+    // const LINEAR_PORT = process.env.LINEAR_WEBHOOK_PORT || 3001;
+    // linearExpressApp.listen(LINEAR_PORT, () => {
+    //     console.log(`Linear OAuth/webhook server listening on port ${LINEAR_PORT}`);
+    // });
 
     // Start Slack Bolt app
     await app.start();
