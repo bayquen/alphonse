@@ -15,6 +15,12 @@ export const pgPool = new Pool({
     ssl: { rejectUnauthorized: false },
 });
 
-pgPool.on("connect", async (client) => {
-    await pgvector.registerTypes(client);
-});
+// Register pgvector types once at startup, not per-connection
+const client = await pgPool.connect();  // Gets single client from the pool at startup
+pgvector.registerTypes(client);  // Registers pgvector types on it
+client.release();  // Releases the client back to the pool
+
+
+// pgPool.on("connect", async (client) => {
+//     await pgvector.registerTypes(client);
+// });
