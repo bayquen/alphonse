@@ -6,18 +6,20 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-export const expressApp = express();
-expressApp.use(express.json());
-expressApp.use(express.urlencoded({ extended: true }));
+// export const expressApp = express();
+export const githubRouter = express.Router();
 
-// Debug: log all incoming requests
-expressApp.use((req, res, next) => {
-    console.log(`[REQUEST DEBUG] ${req.method} ${req.path}`);
-    next();
-});
+// expressApp.use(express.json());
+// expressApp.use(express.urlencoded({ extended: true }));
+
+// // Debug: log all incoming requests
+// expressApp.use((req, res, next) => {
+//     console.log(`[REQUEST DEBUG] ${req.method} ${req.path}`);
+//     next();
+// });
 
 // GitHub OAuth callback - receives state (Slack workspace ID), code, and installation_id
-expressApp.get('/github/oauth/callback', async (req, res) => {
+githubRouter.get('/github/oauth/callback', async (req, res) => {
     console.log("[OAUTH DEBUG] Received OAuth callback");
     console.log("[OAUTH DEBUG] Query params:", req.query);
 
@@ -61,7 +63,7 @@ expressApp.get('/github/oauth/callback', async (req, res) => {
 });
 
 // GitHub webhook - receives installation events
-expressApp.post('/github/webhook', async (req, res) => {
+githubRouter.post('/github/webhook', async (req, res) => {
     console.log("[WEBHOOK DEBUG] Received webhook request");
     console.log("[WEBHOOK DEBUG] Headers:", Object.keys(req.headers));
     console.log("[WEBHOOK DEBUG] Body keys:", Object.keys(req.body));

@@ -14,9 +14,10 @@ import { retrieveRelevantChunks } from "./retrieval.js";
 import { redisClient, redisConnect } from "./redisClient.js";
 import { inspectGitHubRepo, inspectPrivateGitHubRepo, checkGitHubAppInstallation, generateGitHubAppAuthUrl } from "./github.js";
 import { repoIngestQueue } from "./queue.js";
-import { expressApp } from "./routes/githubRoute.js";
+import express from "express";
+import { githubRouter } from "./routes/githubRoute.js";
 import { generateLinearAppAuthUrl } from "./linear.js";
-import { linearExpressApp } from "./routes/linearRoute.js";
+import { linearRouter } from "./routes/linearRoute.js";
 
 export interface IngestContext {
     slackTeamId: string;
@@ -50,6 +51,15 @@ const grabBotUserId = await app.client.auth.test({
     token,
 });
 
+const webServer = express();
+// One body parser for everything. Linear's webhook needs the raw bytes for signature checking.
+webServer.use(express.json({ verify: (req: any, _res, buf) => { req.rawBody = buf; } }));
+webServer.use(express.urlencoded({ extended: true }));
+webServer.use((req, _res, next) => { console.log(`[REQUEST DEBUG] ${req.method} ${req.path}`); next(); });
+webServer.use(githubRouter);
+webServer.use(linearRouter);
+
+const WEB_PORT = process.env.WEB_SERVER_PORT || 3000;
 
 // Listens to incoming messages that contain "hi bot"
 // app.message("hi bot", async ({ message, say }) => {
@@ -257,16 +267,18 @@ app.command("/add_linear_workspace", async ({command, ack, respond, say, logger 
     // console.log(redisClient.isOpen);   // should equal true
     // console.log(redisClient.isReady);  // should equal true
 
-    // Start Express server for GitHub webhooks on port 3000
-    const GITHUB_PORT = process.env.GITHUB_WEBHOOK_PORT || 3000;
-    expressApp.listen(GITHUB_PORT, () => {
-        console.log(`GitHub webhook server listening on port ${GITHUB_PORT}`);
-    });
+    // // Start Express server for GitHub webhooks on port 3000
+    // const GITHUB_PORT = process.env.GITHUB_WEBHOOK_PORT || 3000;
+    // expressApp.listen(GITHUB_PORT, () => {
+    //     console.log(`GitHub webhook server listening on port ${GITHUB_PORT}`);
+    // });
 
-    const LINEAR_PORT = process.env.LINEAR_WEBHOOK_PORT || 3001;
-    linearExpressApp.listen(LINEAR_PORT, () => {
-        console.log(`Linear OAuth/webhook server listening on port ${LINEAR_PORT}`);
-    });
+    // const LINEAR_PORT = process.env.LINEAR_WEBHOOK_PORT || 3001;
+    // linearExpressApp.listen(LINEAR_PORT, () => {
+    //     console.log(`Linear OAuth/webhook server listening on port ${LINEAR_PORT}`);
+    // });
+
+    webServer.listen(WEB_PORT, () => console.log(`Web server listening on port ${WEB_PORT}`));
 
     // Start Slack Bolt app
     await app.start();

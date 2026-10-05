@@ -7,6 +7,7 @@
 
 import { Job, Worker } from "bullmq";
 import { bullConnection } from "./../queue.js";
+import { redisConnect } from "./../redisClient.js";
 import type { LinearIngestJobData } from "./../queue.js";
 import {
     chunkLinearContent,
@@ -20,27 +21,8 @@ const linearAppWorker = new Worker(
         // Makes sure to include needed input data that is passed within a BullMQ queue.add() built-in function call!
         const { slackTeamId, issueId } = job.data;
 
-        /* TODO (INSTRUCTIONS:  
-        
-        8. Wire into the pipeline:
-        - queue.ts: fix linearIngestQueue (connection + defaultJobOptions, as
-            discussed) — this part is still Redis/BullMQ, just for job queuing,
-            unrelated to where vectors land.
-        - src/workers/linearWorker.ts (new, mirroring redisWorker.ts): on job, call
-            getLinearIssueById → chunkTextContent → createEmbeddingVectorsFromChunks →
-            storeLinearVectors instead of the Redis storeVectorsAndChunkedMetadata.
-        - Retrieval/answer path: wherever the bot currently does Redis FT.SEARCH for
-            repo docs, add a call to queryLinearVectors and merge results before
-            composing the answer.
+        await redisConnect();
 
-        9. Sanity checks before wiring the worker:
-        - Confirm embedding dimension matches the vector(1536) column (adjust the SQL
-            if your model differs, e.g. 3072 for some models).
-        - Test the SQL by hand in Supabase's SQL Editor with a fake embedding array
-            first, so the worker isn't your first integration test.
-        - Add SUPABASE_URL to whatever .env.example/deployment secrets you keep in
-            sync with REDIS_CLOUD_*.)
-        */
         try {
             const linearIssue = await getLinearIssueById(slackTeamId, issueId);
             if (!linearIssue) {

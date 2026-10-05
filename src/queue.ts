@@ -65,7 +65,7 @@ export const linearIngestQueue = new Queue<LinearIngestJobData>(
             // Number of successfully completed jobs to save in history logs (via Redis). Useful for debugging!
             removeOnComplete: 12,
             // Number of failed jobs to save in history logs (via Redis). Useful for debugging!
-            removeOnFail: 30,
+            removeOnFail: true,
         },
     }
 )

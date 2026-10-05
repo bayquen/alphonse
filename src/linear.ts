@@ -216,7 +216,7 @@ export async function backfillWorkspaceLinearIssues(slackTeamId: string): Promis
     const jobs = issues.map((issue) => ({
         name: "linear-issue-ingest",
         data: { slackTeamId, issueId: issue.issueId},
-        opts: { jobId: `${slackTeamId}:${issue.issueId}` },
+        opts: { jobId: `${slackTeamId}_${issue.issueId}` },
     }));
 
     await linearIngestQueue.addBulk(jobs);

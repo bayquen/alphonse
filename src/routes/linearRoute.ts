@@ -14,19 +14,19 @@ import { redisClient } from "./../redisClient.js";
 
 dotenv.config();
 
-export const linearExpressApp = express();
-// Webhook signature verification needs the raw body, so capture it before express.json() parses it.
-linearExpressApp.use(express.json({ verify: (req: any, _res, buf) => { req.rawBody = buf; } }));
+export const linearRouter = express.Router();
+// // Webhook signature verification needs the raw body, so capture it before express.json() parses it.
+// linearExpressApp.use(express.json({ verify: (req: any, _res, buf) => { req.rawBody = buf; } }));
 
-// Debug: log all incoming requests
-linearExpressApp.use((req, res, next) => {
-    console.log(`[LINEAR REQUEST DEBUG] ${req.method} ${req.path}`);
-    next();
-});
+// // Debug: log all incoming requests
+// linearExpressApp.use((req, res, next) => {
+//     console.log(`[LINEAR REQUEST DEBUG] ${req.method} ${req.path}`);
+//     next();
+// });
 
 // Linear OAuth callback - receives `state` (Slack workspace ID) and `code`,
 // then exchanges the code for a workspace-level (actor=app) access + refresh token pair.
-linearExpressApp.get("/linear/oauth/callback", async (req, res) => {
+linearRouter.get("/linear/oauth/callback", async (req, res) => {
     console.log("[LINEAR OAUTH DEBUG] Received OAuth callback");
     console.log("[LINEAR OAUTH DEBUG] Query params:", req.query);
 
@@ -68,7 +68,7 @@ linearExpressApp.get("/linear/oauth/callback", async (req, res) => {
 
 // Linear webhook - receives data-change events (Issue, Comment, Project, ProjectUpdate, Document, ...)
 // and enqueues a targeted re-ingest job instead of re-pulling the whole workspace.
-linearExpressApp.post("/linear/webhook", async (req, res) => {
+linearRouter.post("/linear/webhook", async (req, res) => {
     console.log("[LINEAR WEBHOOK DEBUG] Received webhook request");
 
     try {
