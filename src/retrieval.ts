@@ -12,6 +12,14 @@ redisConnect();
 const voyageAPIKey: string | undefined = process.env.VOYAGE_API_KEY;
 const voyageClient = new VoyageAIClient({ apiKey: voyageAPIKey });
 
+// Escapes characters that have special meaning inside a Redis TAG query (e.g. "-", ".", ":", spaces),
+// so a value is always matched literally and can't change the query's structure.
+// This basically prevents wrong matches, an error,
+// or query data injection from occurring (i.e. someone who deliberately widens the query filter).
+export function escapeRedisTagValue(value: string): string {
+    return value.replace(/[^a-zA-Z0-9_]/g, "\\$&");
+}
+
 export async function retrieveRelevantChunks(userPrompt: string, slackTeamId: string) {
     console.log("Redis Client open during retrieveRelevantChunks()?:", redisClient.isOpen);
     console.log("Redis Client ready during retrieveRelevantChunks()?:", redisClient.isReady);
@@ -32,7 +40,7 @@ export async function retrieveRelevantChunks(userPrompt: string, slackTeamId: st
             'vector_idx',
             // My Redis vector index uses HNSW algorithm, which is for K-Nearest (KNN) search.
             // `queryVector` is the parameter name (indicated by prefix '$'), where the float-32 embedding is passed.
-            '(*)=>[KNN 5 @embedding $queryVector AS score]',
+            `(@slackTeamId:{${escapeRedisTagValue(slackTeamId)}})=>[KNN 5 @embedding $queryVector AS score]`,
             {
                 PARAMS: {
                     queryVector: Buffer.from(new Float32Array(userQueryEmbedding).buffer),
