@@ -365,25 +365,39 @@ function embeddingToBuffer(embedding: number[]): Buffer {
     return Buffer.from(new Float32Array(embedding).buffer);
 }
 
+// Escapes characters that have special meaning inside a Redis TAG query (e.g. "-", ".", ":", spaces),
+// so a value is always matched literally and can't change the query's structure.
+// This basically prevents wrong matches, an error,
+// or query data injection from occurring (i.e. someone who deliberately widens the query filter).
+function escapeRedisTagValue(value: string): string {
+    return value.replace(/[^a-zA-Z0-9_]/g, "\\$&");
+}
+
 // Private helper function for deleting all pre-existing Workspace tech-doc embeddings in the application's storage.
 // This is used before Redis adds the new file data when user requests to save a new repo within the bot 
 // application's integrated cloud storage.
 async function deleteExistingWorkspaceVectors(teamId: string) {
     const indexes = await redisClient.ft._list();
-    let offset = 0;
+    // let offset = 0;
     const pageSize = 500;
+    const MAX_PASSES = 1000;  // 1000 passes x 500 docs = up to 500,000 chunks per workspace
+    let passes = 0;
     try {
         if (indexes.includes("vector_idx")) {
             // Connect to Redis client if it isn't already open; (with validation check)
             // await redisConnect();
             while (true) {
+                if (passes >= MAX_PASSES) {
+                    throw new Error(`Aborting delete for team ${teamId}: exceeded ${MAX_PASSES} passes.`);
+                }
+                passes += 1;
 
                 const result = await redisClient.ft.search(
                     "vector_idx",
-                    `@slackTeamId:{${teamId}}`,
+                    `@slackTeamId:{${escapeRedisTagValue(teamId)}}`,
                     {
                         LIMIT: {
-                            from: offset,
+                            from: 0,
                             size: pageSize,
                         },
                     }
@@ -393,7 +407,7 @@ async function deleteExistingWorkspaceVectors(teamId: string) {
                 };
 
                 if (!result) {
-                    throw new Error("No resulting embeddings in the Redis vector index found.");
+                    throw new Error("Something went wrong with the function call for vectors deletion.");
                 }
                 if (result.documents.length === 0) {
                     break;
@@ -406,11 +420,14 @@ async function deleteExistingWorkspaceVectors(teamId: string) {
 
                 await pipeline.exec();
 
-                offset += pageSize;
+                // offset += pageSize;
             }
         }
     } catch (err) {
         console.log(err);
+        // Rethrow the error so that data ingestion actually stops (i.e. so any new vectors 
+        // won't be stored next to stale ones) and the failure is visible.
+        throw err;
     }
 }
 
@@ -492,7 +509,7 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
 
         // One hash is set per chunked object. Hence, the for loop. NOTE: doesn't need `await` keyword, since hSet() queues 
         // the command and doesn't execute it until pipeline.exec()
-        pipeline.hSet(`doc:${i + 1}`, {
+        pipeline.hSet(`doc:${slackTeamId}:${i + 1}`, {
             // Added Slack Workspace 'team ID' so that Slack bot ONLY accesses data within given Workspace's repo.
             // (SECURITY & PRIVACY enforcement!! Prevents legal issues, too)
             slackTeamId: slackTeamId,
