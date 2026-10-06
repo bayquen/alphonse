@@ -369,7 +369,7 @@ function embeddingToBuffer(embedding: number[]): Buffer {
 // so a value is always matched literally and can't change the query's structure.
 // This basically prevents wrong matches, an error,
 // or query data injection from occurring (i.e. someone who deliberately widens the query filter).
-function escapeRedisTagValue(value: string): string {
+export function escapeRedisTagValue(value: string): string {
     return value.replace(/[^a-zA-Z0-9_]/g, "\\$&");
 }
 

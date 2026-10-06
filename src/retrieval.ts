@@ -5,6 +5,7 @@ const { VoyageAIClient, VoyageAIError } = require("voyageai") as typeof import("
 // Side note: convert `./redisClient.ts` to `./redisClient.js` since I'm using ES modules (ESM) with TypeScript, not CJS.
 import { redisClient, redisConnect } from './redisClient.js';
 import { queryLinearVectors } from './linearVectorStore.js';
+import { escapeRedisTagValue } from './ingest.js';
 
 // Connect to Redis client if it isn't already open; (with validation check)
 redisConnect();
@@ -12,13 +13,6 @@ redisConnect();
 const voyageAPIKey: string | undefined = process.env.VOYAGE_API_KEY;
 const voyageClient = new VoyageAIClient({ apiKey: voyageAPIKey });
 
-// Escapes characters that have special meaning inside a Redis TAG query (e.g. "-", ".", ":", spaces),
-// so a value is always matched literally and can't change the query's structure.
-// This basically prevents wrong matches, an error,
-// or query data injection from occurring (i.e. someone who deliberately widens the query filter).
-function escapeRedisTagValue(value: string): string {
-    return value.replace(/[^a-zA-Z0-9_]/g, "\\$&");
-}
 
 export async function retrieveRelevantChunks(userPrompt: string, slackTeamId: string) {
     console.log("Redis Client open during retrieveRelevantChunks()?:", redisClient.isOpen);
