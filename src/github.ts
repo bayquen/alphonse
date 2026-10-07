@@ -16,7 +16,10 @@ import { tmpdir } from "node:os";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import { timingSafeEqual, createHmac } from "crypto";
-import { getInstallationId, saveInstallationId, deleteInstallationId } from "./githubInstallationStore.js";
+import { getInstallationId, 
+    deleteInstallationId,
+    createInstallState
+} from "./githubInstallationStore.js";
 
 
 dotenv.config();
@@ -380,9 +383,10 @@ export async function checkGitHubAppInstallation(slackTeamId: string): Promise<b
 }
 
 // Generate GitHub App authorization URL for a Slack workspace (for private repos)
-export function generateGitHubAppAuthUrl(slackTeamId: string): string {
+export async function generateGitHubAppAuthUrl(slackTeamId: string): Promise<string> {
+    const state = await createInstallState(slackTeamId);
     const redirectUri = `${process.env.GITHUB_APP_BASE_URL}/github/oauth/callback`;
-    return `https://github.com/apps/${process.env.GITHUB_APP_NAME}/installations/new?state=${slackTeamId}&redirect_uri=${redirectUri}`;
+    return `https://github.com/apps/${process.env.GITHUB_APP_NAME}/installations/new?state=${state}&redirect_uri=${encodeURIComponent(redirectUri)}`;
 }
 
 // Helper function to verify an GitHub installation webhook's signature for security; 
