@@ -385,49 +385,31 @@ export function generateGitHubAppAuthUrl(slackTeamId: string): string {
     return `https://github.com/apps/${process.env.GITHUB_APP_NAME}/installations/new?state=${slackTeamId}&redirect_uri=${redirectUri}`;
 }
 
-// Helper function for private repos; executed inside githubRoute.ts program
-export function parseGitHubInstallationWebhook(body: any, signature: string | string[]) {
-    // TODO: Verify signature, validate event, return { installationId, action }
-    const secret = process.env.GITHUB_APP_INSTALLATION_WEBHOOK_SECRET!;
-    // Check if signature is an array of multiple header(?) strings, otherwise it's a single string 
-    const sig = Array.isArray(signature) ? signature[0] : signature;
-
-    // Verify HMAC-SHA256:
-    const hash = createHmac('sha256', secret)
-        .update(body)
-        .digest('hex');
-    // Signature must be SHA256 encoded.
-    const expectedSignature = `sha256=${hash}`;
-    // Secured method for checking if the actual and expected signature values are equal.
-    try {
-        timingSafeEqual(
-            Buffer.from(sig!),
-            Buffer.from(expectedSignature), 
-        );
-    } catch (err) {
-        throw new Error('Webhook signature verification failed.');
+// Helper function to verify an GitHub installation webhook's signature for security; 
+// E.g., prevent malicious entities from prompting malicious execution.
+export function verifyGitHubWebhookSignature(
+    rawBody: Buffer | undefined,
+    signatureHeader: string | string[] | undefined,
+): boolean {
+    const secret = process.env.GITHUB_APP_INSTALLATION_WEBHOOK_SECRET;
+    if (!secret) {
+        console.error("Github installation webhook secret is not set; rejecting Github webhook.");
+        return false;
     }
 
-    // Parse body as JSON
-    const payload = typeof body === 'string'
-        ? JSON.parse(body)
-        : JSON.parse(body.toString());
-    
-    if (payload.action !== 'created' && payload.action !== 'deleted') {
-        throw new Error('Invalid installation action.');
-    }
+    const sig = Array.isArray(signatureHeader) ? signatureHeader[0] : signatureHeader;
+    if (!rawBody || !sig) return false;
 
-    const installationId = payload.installation?.id;
-    const action = payload.action;
-    
-    if (!installationId) {
-        throw new Error('Missing installation ID.');
-    }
+    const expectedSig = "sha256=" + createHmac("sha256", secret).update(rawBody).digest("hex");
 
-    return { installationId, action };
+    const sigBuf = Buffer.from(sig, "utf8");
+    const expectedBuf = Buffer.from(expectedSig, "utf8");
+
+    // timingSafeEqual THROWS if lengths differ, so check first.
+    if (sigBuf.length !== expectedBuf.length) return false;
+
+    return timingSafeEqual(sigBuf, expectedBuf);
 }
-
-
 
 // LOCAL FUNCTION TESTS:
 // TEST 1:
@@ -444,6 +426,6 @@ export function parseGitHubInstallationWebhook(body: any, signature: string | st
 // }
 
 // TEST 3:
-const exampleCleanedUrl = 'https://github.com/firecrawl/firecrawl';
-const getObjects = await getRelevantTechDocObjects(exampleCleanedUrl);
+// const exampleCleanedUrl = 'https://github.com/firecrawl/firecrawl';
+// const getObjects = await getRelevantTechDocObjects(exampleCleanedUrl);
 // console.log(getObjects);
