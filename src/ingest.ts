@@ -75,6 +75,7 @@ export interface EmbeddedLinearIssueData {
     chunkIndex: number;
     issueId: string;
     identifier: string;
+    issueTitle: string;
     content: string;
 }
 
@@ -253,6 +254,7 @@ export async function chunkLinearContent(linearIssueObjects: LinearIssueObject[]
                 chunkIndex: chunkIndex,
                 issueId: object.issueId,
                 identifier: object.identifier,
+                issueTitle: object.issueTitle,
                 content: object.content,
             }
             // Increment chunkIndex after each chunk iteration of current Linear Issue object

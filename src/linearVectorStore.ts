@@ -27,11 +27,11 @@ export async function storeLinearVectors(
         // Loops over every chunk produced for a given Linear issue and inserts one row per chunk.
         for (const chunk of chunks) {
             await client.query(
-                `INSERT INTO linear_data_chunks (slack_team_id, issue_id, identifier, chunk_text, embedding)
+                `INSERT INTO linear_data_chunks (slack_team_id, issue_id, identifier, issue_title, chunk_text, embedding)
                 VALUES ($1, $2, $3, $4, $5)`,
                 // Note: pgvector's .toSql() function serializes the chunk array literal into a string input 
                 // that Postgres can understand (i.e. its expected format).
-                [slackTeamId, issueId, chunk.identifier, chunk.content, pgvector.toSql(chunk.embedding)],
+                [slackTeamId, issueId, chunk.identifier, chunk.issueTitle, chunk.chunkContent, pgvector.toSql(chunk.embedding)],
             );
         }
 
@@ -58,7 +58,7 @@ export async function queryLinearVectors(queryEmbedding: number[], slackTeamId: 
         // The actual nearest-neighbor search occurs in the 'ORDER BY' line, where all rows are
         // sorted by distance to the query vector, closest ones first. That's what makes this
         // semantic search in the first place!
-        `SELECT identifier, chunk_text, 1 - (embedding <=> $1) AS similarity
+        `SELECT identifier, issue_title, chunk_text, 1 - (embedding <=> $1) AS similarity
         FROM linear_data_chunks
         WHERE slack_team_id = $2
         ORDER BY embedding <=> $1

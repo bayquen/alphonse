@@ -74,6 +74,17 @@ const WEB_PORT = process.env.WEB_SERVER_PORT || 3000;
 const botUserId = grabBotUserId.user_id;
 console.log("Bot ID:", botUserId);
 
+// Pass entire prompt (LLM system prompt, user's question, && relevant technical doc chunks) to LLM API so it can respond to Slack user
+async function askLLM(systemPrompt: string, fullUserPrompt: string, llmAnswerContextPrompt: string) {
+    const response = await openAIClient.responses.create({
+        model: "o4-mini",
+        instructions: systemPrompt,
+        input: `User says: ${fullUserPrompt}\nContext:${llmAnswerContextPrompt}`,
+    });
+    // Messages the Slack user a Q&A answer!
+    return response.output_text;
+}
+
 app.event("app_mention", async({ event, client, say }) => {
     try {
         redisConnect();
@@ -115,21 +126,17 @@ app.event("app_mention", async({ event, client, say }) => {
             }
         }
 
-        const systemPrompt = `You're a straightforward Q&A assistant. Answer user's question/prompt using only the provided context 
-                    (i.e. the technical docs provided). Do NOT research an answer directly online. If context does not contain 
-                    enough info to answer the user's question/prompt, then kindly: (1) Let the user know honestly without making anything up 
-                    AND (2) Quickly give the user a short call-to-action to ask questions only about technical docs that were shared (literally).`;
-        const llmAnswerChunk = await retrieveRelevantChunks(slackUserPrompt, slackTeamId);
-        const retrievedContextForLLM = "Here is the relevant doc information from GitHub (repository) data AND/OR Linear app workspace data you need to answer the user, denoted in triple ticks:"
+        const systemPrompt = `You're a straightforward Q&A assistant for software product teams. Answer user's prompt based only on the provided context 
+                    and nothing else. Do NOT research an answer directly online. If context does not contain enough info to answer the user's question/prompt, 
+                    then let the user know honestly without making anything up.`;
+        const llmAnswerContext = await retrieveRelevantChunks(slackUserPrompt, slackTeamId);
+        const retrievedContextPrompt = "Here's the relevant context from the GitHub repo data and/or Linear app workspace that was retrieved, denoted in triple ticks:"
                                         + "\n```"
-                                        + llmAnswerChunk
+                                        + llmAnswerContext
                                         + "\n```";
-        // Combine system, user, and retrieve chunk prompts together to pass to the LLM for bot text response
-        const finalPrompt: string = systemPrompt
-                            + `\n The user's prompt for you is: '${slackUserPrompt}`
-                            + `\n ${retrievedContextForLLM}`
+
         // Call LLM response function (OpenAI API)
-        const llmAnswer = await askLLM(finalPrompt);
+        const llmAnswer = await askLLM(systemPrompt, slackUserPrompt, retrievedContextPrompt);
         // Then have Slack bot answer back with the LLM response to the user!
         // await say(llmAnswer);
         const channel = event.channel;
@@ -150,16 +157,6 @@ app.event("app_mention", async({ event, client, say }) => {
         // redisClient.quit();
     }
 });
-
-// Pass entire prompt (LLM system prompt, user's question, && relevant technical doc chunks) to LLM API so it can respond to Slack user
-async function askLLM(finalPrompt: string) {
-    const response = await openAIClient.responses.create({
-        model: "o4-mini",
-        input: finalPrompt,
-    });
-    // Messages the Slack user a Q&A answer!
-    return response.output_text;
-}
 
 // Helper function for isGitHubRepoUrl() function: remove unwanted '<' and '>' symbols when passing user text as a URL object
 function normalizeSlackUrl(input: string): string {
