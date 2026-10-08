@@ -14,6 +14,19 @@ const voyageAPIKey: string | undefined = process.env.VOYAGE_API_KEY;
 const voyageClient = new VoyageAIClient({ apiKey: voyageAPIKey });
 
 
+function formatGitHubChunk(r: any, n: number): string {
+    const section = [r.h1, r.h2, r.h3].filter(Boolean).join(" > ");
+    const header = `[${n}] Source: GitHub | File: ${r.sourcePath || r.filename}`
+        + (section ? ` | Section: ${section}` : "");
+    return `${header}\n${r.chunkContent.trim()}`;
+}
+
+function formatLinearChunk(r: any, n: number): string {
+    const header = `[${n}] Source: Linear | Issue: ${r.identifier}`
+        + (r.issue_title ? ` | Title: ${r.issue_title}` : "");
+    return `${header}\n${r.chunk_text.trim()}`;
+}
+
 export async function retrieveRelevantChunks(userPrompt: string, slackTeamId: string) {
     console.log("Redis Client open during retrieveRelevantChunks()?:", redisClient.isOpen);
     console.log("Redis Client ready during retrieveRelevantChunks()?:", redisClient.isReady);
@@ -53,55 +66,12 @@ export async function retrieveRelevantChunks(userPrompt: string, slackTeamId: st
         throw new Error("Invalid Github results structure");
     }
 
-    function formatGitHubChunk(r: any, n: number): string {
-        const section = [r.h1, r.h2, r.h3].filter(Boolean).join(" > ");
-        const header = `[${n}] Source: GitHub | File: ${r.sourcePath || r.filename}`
-            + (section ? ` | Section: ${section}` : "");
-        return `${header}\n${r.chunkContent.trim()}`;
-    }
-
-    function formatLinearChunk(r: any, n: number): string {
-        const header = `[${n}] Source: Linear | Issue: ${r.identifier}`
-            + (r.issueTitle ? ` | Title: ${r.issue_title}` : "");
-        return `${header}\n${r.chunkContent.trim()}`;
-    }
-
-    // // Initialize result arrays for chunked GitHub and Linear data as empty first
-    // // (EDGE CASE: Handle search results if NO relevant data for GitHub and/or Linear 
-    // //  is found at all based on the Slack user's question/prompt)
-    // let normalizedGitHubResults: any[] = [];
-    // let normalizedLinearResults: any[] = [];
-
-    // NOTE: Normalize the results' formatting (from both GitHub and Linear)
-    // into a common format so that the LLM knows where context came from.
-
-    // if (githubResults 
-    //     && typeof githubResults == 'object'
-    //     && 'documents' in githubResults 
-    //     && Array.isArray(githubResults.documents)) {
-    //     normalizedGitHubResults = (githubResults.documents as Array<{ id: string; value: any }>).map(r => ({
-    //         source: "github",
-    //         content: r.value.chunkContent,
-    //         metadata: { filename: r.value.filename, sourcePath: r.value.sourcePath },
-    //         score: r.value.score
-    //     }));
-    // }
-
-    // if (linearResults && Array.isArray(linearResults) && linearResults.length > 0) {
-    //     normalizedLinearResults = linearResults.map(r => ({
-    //         source: "linear",
-    //         content: r.chunk_text,
-    //         metadata: { identifier: r.identifier },
-    //         score: r.similarity
-    //     }));
-    // }
-
     const githubDocs = (githubResults.documents as Array<{ id: string; value: any }>);
     const snippets = [
         ...githubDocs.map((d, i) => formatGitHubChunk(d.value, i + 1)),
         ...linearResults.map((r, i) => formatLinearChunk(r, githubDocs.length + i + 1)),
     ];
-    if (snippets.length === 0) return JSON.stringify("No relevant docs or issues found.");
+    if (snippets.length === 0) return "No relevant docs or issues found.";
     return snippets.join("\n\n---\n\n");
 
     // // Return merged, normalized results

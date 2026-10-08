@@ -127,8 +127,9 @@ app.event("app_mention", async({ event, client, say }) => {
         }
 
         const systemPrompt = `You're a straightforward Q&A assistant for software product teams. Answer user's prompt based only on the provided context 
-                    and nothing else. Do NOT research an answer directly online. If context does not contain enough info to answer the user's question/prompt, 
-                    then let the user know honestly without making anything up.`;
+                    and nothing else. Do NOT research an answer directly online. If technical context does not contain enough info to answer the user's question/prompt, 
+                    then let the user know honestly without making anything up. If no answer context is available, point to the user that no relevant info was found
+                    from any source.`;
         const llmAnswerContext = await retrieveRelevantChunks(slackUserPrompt, slackTeamId);
         const retrievedContextPrompt = "Here's the relevant context from the GitHub repo data and/or Linear app workspace that was retrieved, denoted in triple ticks:"
                                         + "\n```"
@@ -137,6 +138,10 @@ app.event("app_mention", async({ event, client, say }) => {
 
         // Call LLM response function (OpenAI API)
         const llmAnswer = await askLLM(systemPrompt, slackUserPrompt, retrievedContextPrompt);
+
+        // Debugging: check LLM answer context that was retrieved
+        console.log(llmAnswerContext);
+
         // Then have Slack bot answer back with the LLM response to the user!
         // await say(llmAnswer);
         const channel = event.channel;
