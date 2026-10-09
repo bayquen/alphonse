@@ -240,8 +240,8 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
     } catch (error) {
         console.log(error);
         if (error instanceof Error && error.message.includes("GitHub App not installed")) {
-            const authUrl = generateGitHubAppAuthUrl(command.team_id);
-            await say((`GitHub App not installed! <${authUrl}|Click here to authorize> this workspace for private repo access.`));
+            const authUrl = await generateGitHubAppAuthUrl(command.team_id);
+            await say((`GitHub App not installed! <${authUrl} | Click here to authorize> this workspace for private repo access.`));
         } else {
             await say(`Sorry, failed to access this repository. Please make sure the URL is valid and try again.`);
         }
@@ -255,7 +255,7 @@ app.command("/add_linear_workspace", async ({command, ack, respond, say, logger 
 
     try {
         const authUrl = generateLinearAppAuthUrl(command.team_id);
-        await respond(`<${authUrl}|Click here to connect your Linear workspace>`);
+        await respond(`<${authUrl} | Click here to connect your Linear workspace>`);
     } catch (err) {
         logger.error(err);
         await respond(`An error occurred starting the Linear connection. Try again, please.`);
