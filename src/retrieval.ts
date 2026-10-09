@@ -71,7 +71,6 @@ export async function retrieveRelevantChunks(userPrompt: string, slackTeamId: st
         ...githubDocs.map((d, i) => formatGitHubChunk(d.value, i + 1)),
         ...linearResults.map((r, i) => formatLinearChunk(r, githubDocs.length + i + 1)),
     ];
-    
     return snippets.join("\n\n---\n\n");
 
 }
