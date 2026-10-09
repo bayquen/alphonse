@@ -71,18 +71,9 @@ export async function retrieveRelevantChunks(userPrompt: string, slackTeamId: st
         ...githubDocs.map((d, i) => formatGitHubChunk(d.value, i + 1)),
         ...linearResults.map((r, i) => formatLinearChunk(r, githubDocs.length + i + 1)),
     ];
-    if (snippets.length === 0) return "No relevant docs or issues found.";
+    
     return snippets.join("\n\n---\n\n");
 
-    // // Return merged, normalized results
-    // const mergedResults = [...normalizedGitHubResults, ...normalizedLinearResults];
-
-    // // Edge case: If no relevant results are found at all, return a message so the LLM knows what to do
-    // if (mergedResults.length === 0) {
-    //     return JSON.stringify({ message: "No relevant docs or issues found for user's Q&A prompt" }, null, 2);
-    // }
-    // // Else, return relevant results for LLM to answer Q&A prompt
-    // return JSON.stringify(mergedResults, null, 2);
 }
 // TESTING: EXAMPLE STRING PROMPT TO TEST FUNCTIONALITY LOCALLY ON TERMINAL
 // retrieveRelevantChunks(testPrompt);

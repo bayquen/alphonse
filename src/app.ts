@@ -79,7 +79,7 @@ async function askLLM(systemPrompt: string, fullUserPrompt: string, llmAnswerCon
     const response = await openAIClient.responses.create({
         model: "o4-mini",
         instructions: systemPrompt,
-        input: `User says: ${fullUserPrompt}\nContext:${llmAnswerContextPrompt}`,
+        input: `\nUser says: ${fullUserPrompt}\n\nContext:\n${llmAnswerContextPrompt}`,
     });
     // Messages the Slack user a Q&A answer!
     return response.output_text;
@@ -140,6 +140,7 @@ app.event("app_mention", async({ event, client, say }) => {
         const llmAnswer = await askLLM(systemPrompt, slackUserPrompt, retrievedContextPrompt);
 
         // Debugging: check LLM answer context that was retrieved
+        // (TODO: Remove this log after testing is done.)
         console.log(llmAnswerContext);
 
         // Then have Slack bot answer back with the LLM response to the user!
