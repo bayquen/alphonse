@@ -1,4 +1,4 @@
-// Program: redisWorker.ts
+// Program: repoWorker.ts
 // Author: Brandon Bayquen
 // Purpose: A BullMQ + Redis background worker program for creating ingestion jobs
 //          for GitHub repositories. 
@@ -6,15 +6,15 @@
 //          -> chunking -> embedding -> store in a Redis Cloud DB
 
 import { Job, Worker } from "bullmq";
-import { bullConnection } from "./../queue.js";
-import type { RepoIngestJobData } from "./../queue.js";
-import { redisClient, redisConnect } from "./../redisClient.js";
+import { bullConnection } from "../queue.js";
+import type { RepoIngestJobData } from "../queue.js";
+import { redisClient, redisConnect } from "../redisClient.js";
 // import type { GitHubFileObject } from "./../github.js";
-import { getRelevantTechDocObjects } from "./../github.js";
+import { getRelevantTechDocObjects } from "../github.js";
 import { extractFileObjects,
         chunkTextContent,
         createEmbeddingVectorsFromChunks,
-        storeVectorsAndChunkedMetadata } from "./../ingest.js";
+        storeVectorsAndChunkedMetadata } from "../ingest.js";
 
 const repoWorker = new Worker(
     "repo-ingest",
@@ -85,10 +85,10 @@ const repoWorker = new Worker(
 
 // BullMQ Job listeners that check when some queued job succeeds after execution OR fails during/before execution.
 repoWorker.on('ready', () => {
-    console.log("redisWorker: Worker is ready and listening for jobs!");
+    console.log("repoWorker: Worker is ready and listening for jobs!");
 });
 repoWorker.on('error', (err) => {
-    console.log("redisWorker: Worker error:", err);
+    console.log("repoWorker: Worker error:", err);
 });
 
 repoWorker.on('completed', async job => {
@@ -103,6 +103,6 @@ repoWorker.on('failed', (job, err) => {
 
 // Ensure that worker is ready BEFORE the module completes loading
 await repoWorker.waitUntilReady();
-console.log("redisWorker: Worker initialization complete");
+console.log("repoWorker: Worker initialization complete");
 
 // await repoIngestQueue.obliterate({ force: true });

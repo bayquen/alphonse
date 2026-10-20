@@ -1,17 +1,17 @@
 import { Queue } from 'bullmq';
-import { Redis } from "ioredis";
-import dotenv from "dotenv";
+// import { Redis } from "ioredis";
+import { createBullConnection } from "./bullConnection.js";
 
-dotenv.config();
+const producerConnection = createBullConnection("producer");
 
-// Create a separate IORedis connection to BullMQ (not shared with node-redis)
-export const bullConnection = new Redis({
-    host: process.env.REDIS_CLOUD_HOST,
-    port: Number(process.env.REDIS_CLOUD_PORT),
-    username: process.env.REDIS_CLOUD_USERNAME,
-    password: process.env.REDIS_CLOUD_PASSWORD,
-    maxRetriesPerRequest: null,
-});
+// // Create a separate IORedis connection to BullMQ (not shared with node-redis)
+// export const bullConnection = new Redis({
+//     host: process.env.REDIS_CLOUD_HOST,
+//     port: Number(process.env.REDIS_CLOUD_PORT),
+//     username: process.env.REDIS_CLOUD_USERNAME,
+//     password: process.env.REDIS_CLOUD_PASSWORD,
+//     maxRetriesPerRequest: null,
+// });
 
 export interface RepoIngestJobData {
     repoUrl: string,
@@ -28,7 +28,7 @@ export interface LinearIngestJobData {
 export const repoIngestQueue = new Queue<RepoIngestJobData>(
     "repo-ingest",
     {
-        connection: bullConnection,
+        connection: producerConnection,
         defaultJobOptions: {
             // Max attempts before BullMQ cancels a given job. (TODO: REMEMBER to add code that deletes a job from the queue after it is cancelled.)
             attempts: 3,
@@ -43,7 +43,7 @@ export const repoIngestQueue = new Queue<RepoIngestJobData>(
 export const privateRepoIngestQueue = new Queue<RepoIngestJobData>(
     "private-repo-ingest",
     {
-        connection: bullConnection,
+        connection: producerConnection,
         defaultJobOptions: {
             // Max attempts before BullMQ cancels a given job. (TODO: REMEMBER to add code that deletes a job from the queue after it is cancelled.)
             attempts: 3,
@@ -58,7 +58,7 @@ export const privateRepoIngestQueue = new Queue<RepoIngestJobData>(
 export const linearIngestQueue = new Queue<LinearIngestJobData>(
     "linear-app-ingest",
     {
-        connection: bullConnection,
+        connection: producerConnection,
         defaultJobOptions: {
             // Max attempts before BullMQ cancels a given job. (TODO: REMEMBER to add code that deletes a job from the queue after it is cancelled.)
             attempts: 3,

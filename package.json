@@ -21,8 +21,9 @@
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
         "build": "tsc",
-        "start": "npm run build && node dist/app.js",
-        "worker": "npm run build && node dist/redisWorker.js",
+        "start": "node dist/app.js",
+        "worker:repo": "node dist/workers/repoWorker.js",
+        "worker:linear": "node dist/workers/linearWorker.js",
         "dev": "tsc --watch"
     },
     "dependencies": {
