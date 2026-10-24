@@ -6,14 +6,20 @@
 //          -> chunking -> embedding -> store in a Postgres database via Supabase
 
 import { Job, Worker } from "bullmq";
-import { bullConnection } from "./../queue.js";
-import { redisConnect } from "./../redisClient.js";
+import { createBullConnection } from "../bullConnection.js";
+import { runWorkerLifecycle } from "./lifecycle.js";
+import { redisClient, redisConnect } from "../redisClient.js";
+import { pgPool } from "../pgClient.js";
 import type { LinearIngestJobData } from "./../queue.js";
 import {
     chunkLinearContent,
     createEmbeddingVectorsFromLinearChunks } from "./../ingest.js";
 import { getLinearIssueById } from "./../linear.js";
 import { storeLinearVectors } from "./../linearVectorStore.js";
+
+const connection = createBullConnection("worker");
+// Fail fast at startup if Redis is unreachable; the host will restart the process
+await redisConnect();
 
 const linearAppWorker = new Worker(
     "linear-app-ingest",
@@ -50,9 +56,9 @@ const linearAppWorker = new Worker(
         }
     },
     {
-        connection: bullConnection,
-        lockDuration: 600000,  // 600,000 / 1000 / 60 = 10 minutes in ms,
-        lockRenewTime: 5000,  // 5 seconds in ms
+        connection,
+        lockDuration: 120_000,  // 120,000 / 1000 / 60 = 2 minutes in ms,
+        maxStalledCount: 3,
     }
 );
 
@@ -77,3 +83,9 @@ linearAppWorker.on('failed', (job, err) => {
 // Ensure that worker is ready BEFORE the module completes loading
 await linearAppWorker.waitUntilReady();
 console.log("linearWorker: Worker initialization complete");
+
+runWorkerLifecycle("linearWorker", linearAppWorker, [
+    () => redisClient.quit(),
+    () => pgPool.end(),
+    () => connection.quit(),
+]);

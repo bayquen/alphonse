@@ -6,7 +6,8 @@
 //          -> chunking -> embedding -> store in a Redis Cloud DB
 
 import { Job, Worker } from "bullmq";
-import { bullConnection } from "../queue.js";
+import { createBullConnection } from "../bullConnection.js";
+import { runWorkerLifecycle } from "./lifecycle.js";
 import type { RepoIngestJobData } from "../queue.js";
 import { redisClient, redisConnect } from "../redisClient.js";
 // import type { GitHubFileObject } from "./../github.js";
@@ -15,6 +16,10 @@ import { extractFileObjects,
         chunkTextContent,
         createEmbeddingVectorsFromChunks,
         storeVectorsAndChunkedMetadata } from "../ingest.js";
+
+const connection = createBullConnection("worker");
+// Fail fast at startup if Redis is unreachable; the host will restart the process
+await redisConnect();
 
 const repoWorker = new Worker(
     "repo-ingest",
@@ -77,9 +82,10 @@ const repoWorker = new Worker(
         }
     },
     {
-        connection: bullConnection,
-        lockDuration: 360000,  // 360,000 / 1000 / 60 = 6 minutes in ms,
-        lockRenewTime: 5000,  // 5 seconds in ms
+        connection,
+        concurrency: Number(process.env.REPO_WORKER_CONCURRENCY ?? 1),
+        lockDuration: 360_000,  // 360,000 / 1000 / 60 = 6 minutes in ms,
+        maxStalledCount: 3,
     }
 );
 
@@ -105,4 +111,7 @@ repoWorker.on('failed', (job, err) => {
 await repoWorker.waitUntilReady();
 console.log("repoWorker: Worker initialization complete");
 
-// await repoIngestQueue.obliterate({ force: true });
+runWorkerLifecycle("repoWorker", repoWorker, [
+    () => redisClient.quit(),
+    () => connection.quit(),
+]);

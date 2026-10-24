@@ -2,7 +2,7 @@ import type { Worker } from "bullmq";
 
 type Closer = () => Promise<unknown>;
 
-export function runWorkerLifeCycle(name: string, worker: Worker, closers: Closer[] = []) {
+export function runWorkerLifecycle(name: string, worker: Worker, closers: Closer[] = []) {
     let shuttingDown = false;
 
     const shutdown = async (reason: string, exitCode: number) => {
