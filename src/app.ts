@@ -62,7 +62,8 @@ webServer.get("/health", (_req, res) => {
 webServer.use(githubRouter);
 webServer.use(linearRouter);
 
-const WEB_PORT = process.env.WEB_SERVER_PORT || 3000;
+// const WEB_PORT = process.env.RENDER_PORT || process.env.WEB_SERVER_PORT || 3000;
+const WEB_PORT = 3000;
 
 // Listens to incoming messages that contain "hi bot"
 // app.message("hi bot", async ({ message, say }) => {
