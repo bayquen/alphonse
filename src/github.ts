@@ -199,6 +199,10 @@ export interface GitHubFileObject {
 // Check if public GitHub repo exists, and if so then grab relevant metadata needed for authentication
 export async function inspectGitHubRepo(repoUrl: string, slackTeamId?: string) {
     const url = new URL(repoUrl.trim());
+    if (url.protocol !== "https:" || url.hostname !== "github.com") {
+        console.log("inspectGitHubRepo(): rejected a non-github.com URL.");
+        return;
+    }
     const [, owner, repoName] = url.pathname.split("/");
 
     if (!owner || !repoName ) {
@@ -316,30 +320,42 @@ function shouldSkipEntry(entry: Dirent): boolean {
     }
 }
 
+// Builds a safe clone URL from a user-supplied URL, or returns null if it isn't a plain github.com repo URL.
+function buildGitHubCloneUrl(userUrl: string, githubToken?: string): string | null {
+    let parsed: URL;
+    try {
+        parsed = new URL(userUrl.trim());
+    } catch {
+        return null;
+    }
+    if (parsed.protocol !== "https:" || parsed.hostname !== "github.com") return null;
+
+    const [owner, rawRepo] = parsed.pathname.split("/").filter(Boolean);
+    if (!owner || !rawRepo) return null;
+    const repo = rawRepo.replace(/\.git$/, "");
+
+    // GitHub names only contain letters, digits, "_", "." and "-"
+    const SAFE_NAME = /^[A-Za-z0-9_.-]+$/;
+    if (!SAFE_NAME.test(owner) || !SAFE_NAME.test(repo)) return null;
+
+    const auth = githubToken ? `x-access-token:${githubToken}@` : "";
+    return `https://${auth}github.com/${owner}/${repo}.git`;
+}
+
+const CLONE_TIMEOUT_MS = 5 * 60 * 1000; // give up on a clone after 5 minutes
 // REFACTORED: function to get GitHub documents via efficient `git clone` on backend server, which avoids any GitHub API request limit reaching.
 export async function getRelevantTechDocObjects(cleanedUrl: string, githubToken?: string) {
     // If there's a GitHub token, that means a private repo needs to be authenticated by an owner or contributor with access rights.
     // Otherwise, the regular cleaned URL is used if it's a public repo.
-    const cloneUrl = githubToken
-    ? cleanedUrl.replace('https://', `https://x-access-token:${githubToken}@`)
-    : cleanedUrl;
+    const cloneUrl =  buildGitHubCloneUrl(cleanedUrl, githubToken);
+    if (!cloneUrl) {
+        throw new Error("Not a valid github.com repository URL.");
+    }
 
-    let relevantTechDocObjects: GitHubFileObject[] = [];
-
+    const relevantTechDocObjects: GitHubFileObject[] = [];
     const execFileAsync = promisify(execFile);
-    // Create a unique temp directory by appending random chars to the prefix "rtfm-repo"
-    // This prevents directory collisions when multiple directories are made
-    const cloneDirectory = await mkdtemp(
-        path.join(tmpdir(), "rtfm-repo-")
-    );
-    // A repository root directory variable for later - named differently for better context
+    const cloneDirectory = await mkdtemp(path.join(tmpdir(), "rtfm-repo-"));
     const repoRoot = cloneDirectory;
-    await execFileAsync("git", [
-        "clone",
-        "--depth=1",
-        cloneUrl,  // Repository URL
-        cloneDirectory,
-    ]);
 
     // Walk (i.e. parse thru) the repository and process each repo file
     async function walk(repoRoot: string) {
@@ -371,8 +387,17 @@ export async function getRelevantTechDocObjects(cleanedUrl: string, githubToken?
             }
         }
     }
-    await walk(repoRoot);
-    return relevantTechDocObjects;
+    try {
+        // "--" tells git that everything after it is data, never an option
+        await execFileAsync("git", ["clone", "--depth=1", "--", cloneUrl, cloneDirectory], {
+            timeout: CLONE_TIMEOUT_MS,
+        });
+        await walk(repoRoot);
+        return relevantTechDocObjects;
+    } finally {
+        // Always delete the temp folder, whether it's a success or failure
+        await rm(cloneDirectory, { recursive: true, force: true }); 
+    }
 }
 // Check if GitHub App is installed for a given Slack workspace
 export async function checkGitHubAppInstallation(slackTeamId: string): Promise<boolean> {
