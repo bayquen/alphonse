@@ -8,7 +8,7 @@ import { App } from "@octokit/app";
 // import * as fs from 'fs';  // file-system module From NodeJS
 import dotenv from "dotenv";
 import fs from "node:fs/promises";
-import { readFileSync } from "node:fs";
+
 import { Dirent } from "node:fs";
 import path from "path";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -29,7 +29,11 @@ const octokit = new Octokit({
     userAgent: 'myApp v1.2.3',
 });
 
-const githubAppPrivateKey = readFileSync(process.env.GITHUB_APP_PRIVATE_KEY_PATH!, "utf8");
+const githubAppPrivateKeyBase64 = process.env.GITHUB_APP_PRIVATE_KEY_BASE64;
+if (!githubAppPrivateKeyBase64) {
+    throw new Error("Missing GitHub App (base64) private key.");
+}
+const githubAppPrivateKey = Buffer.from(githubAppPrivateKeyBase64, "base64").toString("utf8");
 
 const githubApp = new App({
     appId: process.env.GITHUB_APP_ID!,
