@@ -55,7 +55,10 @@ const webServer = express();
 // One body parser for everything. Linear's webhook needs the raw bytes for signature checking.
 webServer.use(express.json({ verify: (req: any, _res, buf) => { req.rawBody = buf; } }));
 webServer.use(express.urlencoded({ extended: true }));
-webServer.use((req, _res, next) => { console.log(`[REQUEST DEBUG] ${req.method} ${req.path}`); next(); });
+
+webServer.get("/health", (_req, res) => {
+    res.status(200).send("OK");
+});
 webServer.use(githubRouter);
 webServer.use(linearRouter);
 
