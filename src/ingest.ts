@@ -268,16 +268,7 @@ export async function chunkLinearContent(linearIssueObjects: LinearIssueObject[]
     return allChunks;
 }
 
-export async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkData[], slackTeamId: string) {
-    // const slackTeamId = context.slackTeamId;
-
-    // This function call deletes all existing vector embeddings in storage (I.E. CLEAR REPO DOC FILE STORAGE)
-    // before storing all embeddings for newly instated GitHub repository!
-    // DEBUGGING LOG
-    console.log("2. Starting old vector embeddings deletion...");
-    await deleteExistingWorkspaceVectors(slackTeamId);
-    console.log("3. Delete complete.");
-
+export async function createEmbeddingVectorsFromGitHubChunks(allChunks: EmbeddedChunkData[], slackTeamId: string) {
     const BATCH_SIZE = 50;
     // EMBEDDINGS CREATION LOOP: VoyageAI API is used here 
     for (let i = 0; i < allChunks.length; i += BATCH_SIZE) {
@@ -294,7 +285,7 @@ export async function createEmbeddingVectorsFromChunks(allChunks: EmbeddedChunkD
         console.log(`4b. Batch ${i / BATCH_SIZE + 1} embedding response received.`);
 
         if (!response.data) {
-            continue;
+            throw new Error("VoyageAI returned no data for this batch of GitHub chunks.");
         }
 
         response.data.forEach((result, index) => {
@@ -338,7 +329,7 @@ export async function createEmbeddingVectorsFromLinearChunks(allLinearChunks: Em
         console.log(`Batch ${i / BATCH_SIZE + 1} embedding response received.`);
 
         if (!response.data) {
-            continue;
+            throw new Error("VoyageAI returned no data for this batch of Linear chunks.");
         }
 
         response.data.forEach((result, index) => {
@@ -435,6 +426,8 @@ async function deleteExistingWorkspaceVectors(teamId: string) {
 
 // Pipeline: Store vector embeddings, chunk text, and their corresponding metadata in a Redis vector index
 export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: EmbeddedChunkData[], slackTeamId: string) {
+    // First, delete any existing vectors here. That way, if Voyage fails, the old data stays (yay).
+    await deleteExistingWorkspaceVectors(slackTeamId);
     try {
         const indexes = await redisClient.ft._list();
         // await redisConnect();
@@ -493,7 +486,7 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
         //     console.log("Redis vector index already exists.");
         // }
         console.error(err);
-        return;
+        throw err;
     }
     
     const pipeline = redisClient.multi();
@@ -506,7 +499,7 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
         const embeddingKey = `chunk:${crypto.randomUUID()}`;
         // Skip current embedding store if not correct dimension.
         if (chunk.embedding.length !== 1024) {
-            continue;
+            throw new Error(`Embedding has ${chunk.embedding.length} dimensions, but 1024 was expected.`)
         }
 
         // One hash is set per chunked object. Hence, the for loop. NOTE: doesn't need `await` keyword, since hSet() queues 
@@ -558,7 +551,7 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
 
 // async function main() {
 //     const chunkedResults = await chunkTextContent();
-//     const embeddedChunkObjects = await createEmbeddingVectorsFromChunks(chunkedResults);
+//     const embeddedChunkObjects = await createEmbeddingVectorsFromGitHubChunks(chunkedResults);
 //     await storeVectorsAndChunkedMetadata(embeddedChunkObjects);
 
 // }

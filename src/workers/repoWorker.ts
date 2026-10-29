@@ -14,7 +14,7 @@ import { redisClient, redisConnect } from "../redisClient.js";
 import { getRelevantTechDocObjects } from "../github.js";
 import { extractFileObjects,
         chunkTextContent,
-        createEmbeddingVectorsFromChunks,
+        createEmbeddingVectorsFromGitHubChunks,
         storeVectorsAndChunkedMetadata } from "../ingest.js";
 
 const connection = createBullConnection("worker");
@@ -64,7 +64,7 @@ const repoWorker = new Worker(
             const textChunks = await chunkTextContent(techDocObjects);
             // DEBUGGING LOG (7/21/26)
             console.log("\n 1. Starting embeddings...");
-            const embeddings = await createEmbeddingVectorsFromChunks(textChunks, slackTeamId);
+            const embeddings = await createEmbeddingVectorsFromGitHubChunks(textChunks, slackTeamId);
             console.log("\n\n4. Embeddings complete.");
             console.log("\n5. Starting Redis store...");
             await storeVectorsAndChunkedMetadata(embeddings, slackTeamId);
