@@ -18,7 +18,8 @@ export const redisClient = createClient({
     socket: {
         host,
         port: Number(port),
-        // tls: true,       // TODO: Getting errors when tls mode is on. Might need Socket Mode so that bot works 24/7.
+        // Set REDIS_TLS=true in production once it's confirmed TLS works on my Redis Cloud plan!
+        ...(process.env.REDIS_TLS === "true" ? { tls: true } : {}),
     }
 });
 

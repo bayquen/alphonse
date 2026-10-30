@@ -1,13 +1,25 @@
+// Program: repoWorker.ts
+// Author: Brandon Bayquen
+// Purpose: A BullMQ + Redis background worker program for creating ingestion jobs
+//          for GitHub repositories. 
+//          Each job filters and reads relevant repo files -> extract data objects 
+//          -> chunking -> embedding -> store in a Redis Cloud DB
+
 import { Job, Worker } from "bullmq";
-import { bullConnection, repoIngestQueue } from "./../queue.js";
-import type { RepoIngestJobData } from "./../queue.js";
-import { redisClient, redisConnect } from ".././redisClient.js";
-import type { GitHubFileObject } from ".././github.js";
-import { inspectGitHubRepo, getGitHubRepoTree, getRelevantTechDocObjects } from ".././github.js";
-import { extractFileObjects, 
-        chunkTextContent, 
-        createEmbeddingVectorsFromChunks, 
-        storeVectorsAndChunkedMetadata } from ".././ingest.js";
+import { createBullConnection } from "../bullConnection.js";
+import { runWorkerLifecycle } from "./lifecycle.js";
+import type { RepoIngestJobData } from "../queue.js";
+import { redisClient, redisConnect } from "../redisClient.js";
+// import type { GitHubFileObject } from "./../github.js";
+import { getRelevantTechDocObjects } from "../github.js";
+import { extractFileObjects,
+        chunkTextContent,
+        createEmbeddingVectorsFromGitHubChunks,
+        storeVectorsAndChunkedMetadata } from "../ingest.js";
+
+const connection = createBullConnection("worker");
+// Fail fast at startup if Redis is unreachable; the host will restart the process
+await redisConnect();
 
 const repoWorker = new Worker(
     "repo-ingest",
@@ -23,11 +35,6 @@ const repoWorker = new Worker(
         } = job.data;
 
         await redisConnect();
-
-        const indexes = await redisClient.ft._list();
-        console.log("\n\n");
-        console.log(indexes);
-        console.log("\n\n");
 
         // Check repo access (is it public or private?) by using helper function from github.ts
         // Then returns GitHub repo metadata needed
@@ -52,7 +59,7 @@ const repoWorker = new Worker(
             const textChunks = await chunkTextContent(techDocObjects);
             // DEBUGGING LOG (7/21/26)
             console.log("\n 1. Starting embeddings...");
-            const embeddings = await createEmbeddingVectorsFromChunks(textChunks, slackTeamId);
+            const embeddings = await createEmbeddingVectorsFromGitHubChunks(textChunks, slackTeamId);
             console.log("\n\n4. Embeddings complete.");
             console.log("\n5. Starting Redis store...");
             await storeVectorsAndChunkedMetadata(embeddings, slackTeamId);
@@ -70,18 +77,19 @@ const repoWorker = new Worker(
         }
     },
     {
-        connection: bullConnection,
-        lockDuration: 360000,  // 5 minutes in ms,
-        lockRenewTime: 5000,  // 5 seconds in ms
+        connection,
+        concurrency: Number(process.env.REPO_WORKER_CONCURRENCY ?? 1),
+        lockDuration: 360_000,  // 360,000 / 1000 / 60 = 6 minutes in ms,
+        maxStalledCount: 3,
     }
 );
 
 // BullMQ Job listeners that check when some queued job succeeds after execution OR fails during/before execution.
 repoWorker.on('ready', () => {
-    console.log("redisWorker: Worker is ready and listening for jobs!");
+    console.log("repoWorker: Worker is ready and listening for jobs!");
 });
 repoWorker.on('error', (err) => {
-    console.log("redisWorker: Worker error:", err);
+    console.log("repoWorker: Worker error:", err);
 });
 
 repoWorker.on('completed', async job => {
@@ -96,6 +104,9 @@ repoWorker.on('failed', (job, err) => {
 
 // Ensure that worker is ready BEFORE the module completes loading
 await repoWorker.waitUntilReady();
-console.log("redisWorker: Worker initialization complete");
+console.log("repoWorker: Worker initialization complete");
 
-// await repoIngestQueue.obliterate({ force: true });
+runWorkerLifecycle("repoWorker", repoWorker, [
+    () => redisClient.quit(),
+    () => connection.quit(),
+]);

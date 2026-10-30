@@ -21,8 +21,9 @@
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
         "build": "tsc",
-        "start": "npm run build && node dist/app.js",
-        "worker": "npm run build && node dist/redisWorker.js",
+        "start": "node dist/app.js",
+        "worker:repo": "node dist/workers/repoWorker.js",
+        "worker:linear": "node dist/workers/linearWorker.js",
         "dev": "tsc --watch"
     },
     "dependencies": {
@@ -31,18 +32,22 @@
         "@octokit/app": "^16.1.4",
         "@octokit/rest": "^22.0.1",
         "@slack/bolt": "^4.7.3",
+        "@supabase/supabase-js": "^2.117.2",
         "bullmq": "^5.81.2",
         "dotenv": "^17.4.2",
         "express": "^5.2.1",
         "ioredis": "^5.11.1",
         "markdown-parser": "^0.1.3",
         "openai": "^6.42.0",
+        "pg": "^8.23.0",
+        "pgvector": "^0.3.0",
         "redis": "^5.12.1",
         "voyageai": "^0.2.1"
     },
     "devDependencies": {
         "@octokit/types": "^16.0.0",
         "@slack/cli-hooks": "^1.3.3",
+        "@types/pg": "^8.23.1",
         "typescript": "^7.0.2"
     }
 }

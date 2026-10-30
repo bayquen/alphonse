@@ -8,7 +8,7 @@ import { App } from "@octokit/app";
 // import * as fs from 'fs';  // file-system module From NodeJS
 import dotenv from "dotenv";
 import fs from "node:fs/promises";
-import { readFileSync } from "node:fs";
+
 import { Dirent } from "node:fs";
 import path from "path";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -16,7 +16,10 @@ import { tmpdir } from "node:os";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import { timingSafeEqual, createHmac } from "crypto";
-import { getInstallationId, saveInstallationId, deleteInstallationId } from "./githubInstallationStore.js";
+import { getInstallationId, 
+    deleteInstallationId,
+    createInstallState
+} from "./githubInstallationStore.js";
 
 
 dotenv.config();
@@ -26,7 +29,11 @@ const octokit = new Octokit({
     userAgent: 'myApp v1.2.3',
 });
 
-const githubAppPrivateKey = readFileSync(process.env.GITHUB_APP_PRIVATE_KEY_PATH!, "utf8");
+const githubAppPrivateKeyBase64 = process.env.GITHUB_APP_PRIVATE_KEY_BASE64;
+if (!githubAppPrivateKeyBase64) {
+    throw new Error("Missing GitHub App (base64) private key.");
+}
+const githubAppPrivateKey = Buffer.from(githubAppPrivateKeyBase64, "base64").toString("utf8");
 
 const githubApp = new App({
     appId: process.env.GITHUB_APP_ID!,
@@ -192,6 +199,10 @@ export interface GitHubFileObject {
 // Check if public GitHub repo exists, and if so then grab relevant metadata needed for authentication
 export async function inspectGitHubRepo(repoUrl: string, slackTeamId?: string) {
     const url = new URL(repoUrl.trim());
+    if (url.protocol !== "https:" || url.hostname !== "github.com") {
+        console.log("inspectGitHubRepo(): rejected a non-github.com URL.");
+        return;
+    }
     const [, owner, repoName] = url.pathname.split("/");
 
     if (!owner || !repoName ) {
@@ -309,30 +320,42 @@ function shouldSkipEntry(entry: Dirent): boolean {
     }
 }
 
+// Builds a safe clone URL from a user-supplied URL, or returns null if it isn't a plain github.com repo URL.
+function buildGitHubCloneUrl(userUrl: string, githubToken?: string): string | null {
+    let parsed: URL;
+    try {
+        parsed = new URL(userUrl.trim());
+    } catch {
+        return null;
+    }
+    if (parsed.protocol !== "https:" || parsed.hostname !== "github.com") return null;
+
+    const [owner, rawRepo] = parsed.pathname.split("/").filter(Boolean);
+    if (!owner || !rawRepo) return null;
+    const repo = rawRepo.replace(/\.git$/, "");
+
+    // GitHub names only contain letters, digits, "_", "." and "-"
+    const SAFE_NAME = /^[A-Za-z0-9_.-]+$/;
+    if (!SAFE_NAME.test(owner) || !SAFE_NAME.test(repo)) return null;
+
+    const auth = githubToken ? `x-access-token:${githubToken}@` : "";
+    return `https://${auth}github.com/${owner}/${repo}.git`;
+}
+
+const CLONE_TIMEOUT_MS = 5 * 60 * 1000; // give up on a clone after 5 minutes
 // REFACTORED: function to get GitHub documents via efficient `git clone` on backend server, which avoids any GitHub API request limit reaching.
 export async function getRelevantTechDocObjects(cleanedUrl: string, githubToken?: string) {
     // If there's a GitHub token, that means a private repo needs to be authenticated by an owner or contributor with access rights.
     // Otherwise, the regular cleaned URL is used if it's a public repo.
-    const cloneUrl = githubToken
-    ? cleanedUrl.replace('https://', `https://x-access-token:${githubToken}@`)
-    : cleanedUrl;
+    const cloneUrl =  buildGitHubCloneUrl(cleanedUrl, githubToken);
+    if (!cloneUrl) {
+        throw new Error("Not a valid github.com repository URL.");
+    }
 
-    let relevantTechDocObjects: GitHubFileObject[] = [];
-
+    const relevantTechDocObjects: GitHubFileObject[] = [];
     const execFileAsync = promisify(execFile);
-    // Create a unique temp directory by appending random chars to the prefix "rtfm-repo"
-    // This prevents directory collisions when multiple directories are made
-    const cloneDirectory = await mkdtemp(
-        path.join(tmpdir(), "rtfm-repo-")
-    );
-    // A repository root directory variable for later - named differently for better context
+    const cloneDirectory = await mkdtemp(path.join(tmpdir(), "rtfm-repo-"));
     const repoRoot = cloneDirectory;
-    await execFileAsync("git", [
-        "clone",
-        "--depth=1",
-        cloneUrl,  // Repository URL
-        cloneDirectory,
-    ]);
 
     // Walk (i.e. parse thru) the repository and process each repo file
     async function walk(repoRoot: string) {
@@ -364,8 +387,17 @@ export async function getRelevantTechDocObjects(cleanedUrl: string, githubToken?
             }
         }
     }
-    await walk(repoRoot);
-    return relevantTechDocObjects;
+    try {
+        // "--" tells git that everything after it is data, never an option
+        await execFileAsync("git", ["clone", "--depth=1", "--", cloneUrl, cloneDirectory], {
+            timeout: CLONE_TIMEOUT_MS,
+        });
+        await walk(repoRoot);
+        return relevantTechDocObjects;
+    } finally {
+        // Always delete the temp folder, whether it's a success or failure
+        await rm(cloneDirectory, { recursive: true, force: true }); 
+    }
 }
 // Check if GitHub App is installed for a given Slack workspace
 export async function checkGitHubAppInstallation(slackTeamId: string): Promise<boolean> {
@@ -380,54 +412,37 @@ export async function checkGitHubAppInstallation(slackTeamId: string): Promise<b
 }
 
 // Generate GitHub App authorization URL for a Slack workspace (for private repos)
-export function generateGitHubAppAuthUrl(slackTeamId: string): string {
+export async function generateGitHubAppAuthUrl(slackTeamId: string): Promise<string> {
+    const state = await createInstallState(slackTeamId);
     const redirectUri = `${process.env.GITHUB_APP_BASE_URL}/github/oauth/callback`;
-    return `https://github.com/apps/${process.env.GITHUB_APP_NAME}/installations/new?state=${slackTeamId}&redirect_uri=${redirectUri}`;
+    return `https://github.com/apps/${process.env.GITHUB_APP_NAME}/installations/new?state=${state}&redirect_uri=${encodeURIComponent(redirectUri)}`;
 }
 
-// Helper function for private repos; executed inside githubRoute.ts program
-export function parseGitHubInstallationWebhook(body: any, signature: string | string[]) {
-    // TODO: Verify signature, validate event, return { installationId, action }
-    const secret = process.env.GITHUB_APP_INSTALLATION_WEBHOOK_SECRET!;
-    // Check if signature is an array of multiple header(?) strings, otherwise it's a single string 
-    const sig = Array.isArray(signature) ? signature[0] : signature;
-
-    // Verify HMAC-SHA256:
-    const hash = createHmac('sha256', secret)
-        .update(body)
-        .digest('hex');
-    // Signature must be SHA256 encoded.
-    const expectedSignature = `sha256=${hash}`;
-    // Secured method for checking if the actual and expected signature values are equal.
-    try {
-        timingSafeEqual(
-            Buffer.from(sig!),
-            Buffer.from(expectedSignature), 
-        );
-    } catch (err) {
-        throw new Error('Webhook signature verification failed.');
+// Helper function to verify an GitHub installation webhook's signature for security; 
+// E.g., prevent malicious entities from prompting malicious execution.
+export function verifyGitHubWebhookSignature(
+    rawBody: Buffer | undefined,
+    signatureHeader: string | string[] | undefined,
+): boolean {
+    const secret = process.env.GITHUB_APP_INSTALLATION_WEBHOOK_SECRET;
+    if (!secret) {
+        console.error("Github installation webhook secret is not set; rejecting Github webhook.");
+        return false;
     }
 
-    // Parse body as JSON
-    const payload = typeof body === 'string'
-        ? JSON.parse(body)
-        : JSON.parse(body.toString());
-    
-    if (payload.action !== 'created' && payload.action !== 'deleted') {
-        throw new Error('Invalid installation action.');
-    }
+    const sig = Array.isArray(signatureHeader) ? signatureHeader[0] : signatureHeader;
+    if (!rawBody || !sig) return false;
 
-    const installationId = payload.installation?.id;
-    const action = payload.action;
-    
-    if (!installationId) {
-        throw new Error('Missing installation ID.');
-    }
+    const expectedSig = "sha256=" + createHmac("sha256", secret).update(rawBody).digest("hex");
 
-    return { installationId, action };
+    const sigBuf = Buffer.from(sig, "utf8");
+    const expectedBuf = Buffer.from(expectedSig, "utf8");
+
+    // timingSafeEqual THROWS if lengths differ, so check first.
+    if (sigBuf.length !== expectedBuf.length) return false;
+
+    return timingSafeEqual(sigBuf, expectedBuf);
 }
-
-
 
 // LOCAL FUNCTION TESTS:
 // TEST 1:
@@ -444,6 +459,6 @@ export function parseGitHubInstallationWebhook(body: any, signature: string | st
 // }
 
 // TEST 3:
-const exampleCleanedUrl = 'https://github.com/firecrawl/firecrawl';
-const getObjects = await getRelevantTechDocObjects(exampleCleanedUrl);
+// const exampleCleanedUrl = 'https://github.com/firecrawl/firecrawl';
+// const getObjects = await getRelevantTechDocObjects(exampleCleanedUrl);
 // console.log(getObjects);
