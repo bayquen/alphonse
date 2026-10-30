@@ -12,7 +12,6 @@ export function runWorkerLifecycle(name: string, worker: Worker, closers: Closer
             process.exit(1);
         }
         shuttingDown = true;
-        console.log(`[${name}] Shutdown timed out; forcing exit.`);
         
         // Safety net: set this just below your host's shutdown grace period
         const force = setTimeout(() => {
