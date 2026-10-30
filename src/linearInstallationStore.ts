@@ -3,6 +3,19 @@
 
 import { redisClient } from "./redisClient.js";
 import type { LinearTokenResponse } from "./linear.js";
+import { randomBytes } from "node:crypto";
+
+// Creates a random, single-use token tied to a Slack team. it expires in 10 minutes
+export async function createLinearInstallState(slackTeamId: string): Promise<string> {
+    const nonce = randomBytes(32).toString("hex");
+    await redisClient.setEx(`linear:state:${nonce}`, 600, slackTeamId);
+    return nonce;
+}
+// Reads AND deletes the single-use token in one step, so each one works only once (hence "NONCE").
+export async function consumeLinearInstallState(nonce: string): Promise<string | null> {
+    return redisClient.getDel(`linear:state:${nonce}`);
+}
+
 
 export async function getLinearAccessToken(slackTeamId: string, token: (refreshToken: string) => Promise<LinearTokenResponse>) {
     const linearTokenBundle = await redisClient.get(`linear:installation:${slackTeamId}`);

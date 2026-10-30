@@ -259,7 +259,7 @@ app.command("/add_linear_workspace", async ({command, ack, respond, say, logger 
     await ack();
 
     try {
-        const authUrl = generateLinearAppAuthUrl(command.team_id);
+        const authUrl = await generateLinearAppAuthUrl(command.team_id);
         await respond(`<${authUrl} | Click here to connect your Linear workspace>`);
     } catch (err) {
         logger.error(err);

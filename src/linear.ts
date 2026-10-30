@@ -10,6 +10,7 @@ import {
     getLinearAccessToken,
     saveLinearTokens,
     deleteLinearTokens,
+    createLinearInstallState,
 } from "./linearInstallationStore.js";
 import type { LinearIssueObject } from "./ingest.js";
 import { linearIngestQueue } from "./queue.js";
@@ -40,15 +41,16 @@ export interface LinearTokenResponse {
 // Generates the Linear OAuth authorization URL for a given Slack workspace.
 // `actor=app` requests a workspace-level (app) token instead of a per-user token,
 // so the bot gets access to all public teams without needing an individual to stay authenticated.
-export function generateLinearAppAuthUrl(slackTeamId: string): string {
+export async function generateLinearAppAuthUrl(slackTeamId: string): Promise<string> {
     const redirectUri = `${process.env.LINEAR_APP_BASE_URL}/linear/oauth/callback`;
+    const state = await createLinearInstallState(slackTeamId);
     const params = new URLSearchParams({
         client_id: process.env.LINEAR_CLIENT_ID!,
         redirect_uri: redirectUri,
         response_type: "code",
         scope: "read",
         actor: "app",
-        state: slackTeamId,
+        state,
     });
     return `${LINEAR_AUTHORIZE_URL}?${params.toString()}`;
 }

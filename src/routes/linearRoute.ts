@@ -8,7 +8,7 @@ import {
     linearWorkspaceIdFetcher,
     backfillWorkspaceLinearIssues,
 } from "./../linear.js";
-import { saveLinearTokens, deleteLinearTokens } from "./../linearInstallationStore.js";
+import { saveLinearTokens, deleteLinearTokens, consumeLinearInstallState } from "./../linearInstallationStore.js";
 import { linearIngestQueue } from "./../queue.js";
 import { redisClient } from "./../redisClient.js";
 
@@ -32,15 +32,13 @@ linearRouter.get("/linear/oauth/callback", async (req, res) => {
 
     try {
         const { state, code } = req.query;
-        const slackWorkspaceId = state as string;
-
-        if (!state || !code) {
-            console.error("[LINEAR OAUTH DEBUG] Missing state or code");
-            return res.status(400).send("Missing state or code parameter");
+        if (typeof state !== "string" || typeof code !== "string" || !state || !code) {
+            return res.status(400).send("Missing state or code parameter")
         }
+        // Security: Consume the state BEFORE exchanging the code, so that a stolen state can't be reused.
+        const slackWorkspaceId = await consumeLinearInstallState(state);
         if (!slackWorkspaceId || slackWorkspaceId.trim() === "") {
-            console.error("[LINEAR OAUTH DEBUG] Invalid workspace ID from state");
-            return res.status(400).send("Invalid state parameter");
+            return res.status(400).send("Invalid or expired state. Please run /add_linear_workspace again.");
         }
 
         const tokens = await exchangeLinearOAuthCode(code as string);
