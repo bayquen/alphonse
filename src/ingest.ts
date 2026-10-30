@@ -300,10 +300,6 @@ export async function createEmbeddingVectorsFromGitHubChunks(allChunks: Embedded
         // Debugging VoyageAI output:
         // console.log("Response embedding from VoyageAi", response);
     }
-    // Debugging the new results of all chunked data objects:
-    console.log(allChunks);
-    console.log("\n\n\n");
-    console.log("Printed current chunk data objects! \n")
     return allChunks;
 }
 
@@ -344,10 +340,11 @@ export async function createEmbeddingVectorsFromLinearChunks(allLinearChunks: Em
         // Debugging VoyageAI output:
         // console.log("Response embedding from VoyageAi", response);
     }
-    // Debugging the new results of all chunked data objects:
-    console.log(allLinearChunks);
-    console.log("\n\n\n");
-    console.log("Printed current Linear chunk data objects! \n")
+    // // Debugging the new results of all chunked data objects:
+    // console.log(allLinearChunks);
+    // console.log("\n\n\n");
+    // console.log("Printed current Linear chunk data objects! \n")
+
     return allLinearChunks;
 }
 
@@ -492,8 +489,8 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
     const pipeline = redisClient.multi();
     // Loop for storing embeddings inside Redis
     for (const [i, chunk] of embeddedChunkObjects.entries()) {
-        // DEBUGGING LOG
-        console.log(`Writing ${i}`);
+        // // DEBUGGING LOG
+        // console.log(`Writing ${i}`);
         // A string key is created for EACH embedding so that it can be properly accessed outside of 
         // this function's scope whenever an embedding needs to be deleted from storage.
         const embeddingKey = `chunk:${crypto.randomUUID()}`;
@@ -519,8 +516,8 @@ export async function storeVectorsAndChunkedMetadata(embeddedChunkObjects: Embed
             h2: chunk.h2 ?? '',
             h3: chunk.h3 ?? '',
         });
-        // DEBUGGING LOG (7/21/26)
-        console.log(`Finished ${i}`);
+        // // DEBUGGING LOG (7/21/26)
+        // console.log(`Finished ${i}`);
 
         // Debugging log to check if embeddings, along with chunks + metadata, were successfully stored in Redis.
         // const stored = await redisClient.hGetAll(`doc:${i + 1}`);

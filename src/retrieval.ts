@@ -28,8 +28,10 @@ function formatLinearChunk(r: any, n: number): string {
 }
 
 export async function retrieveRelevantChunks(userPrompt: string, slackTeamId: string) {
-    console.log("Redis Client open during retrieveRelevantChunks()?:", redisClient.isOpen);
-    console.log("Redis Client ready during retrieveRelevantChunks()?:", redisClient.isReady);
+    // // Debugging logs
+    // console.log("Redis Client open during retrieveRelevantChunks()?:", redisClient.isOpen);
+    // console.log("Redis Client ready during retrieveRelevantChunks()?:", redisClient.isReady);
+
     // Embed userPrompt with VoyageAI model via its API
     const response = await voyageClient.embed({
         input: userPrompt,

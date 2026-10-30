@@ -18,17 +18,10 @@ export const linearRouter = express.Router();
 // // Webhook signature verification needs the raw body, so capture it before express.json() parses it.
 // linearExpressApp.use(express.json({ verify: (req: any, _res, buf) => { req.rawBody = buf; } }));
 
-// // Debug: log all incoming requests
-// linearExpressApp.use((req, res, next) => {
-//     console.log(`[LINEAR REQUEST DEBUG] ${req.method} ${req.path}`);
-//     next();
-// });
-
 // Linear OAuth callback - receives `state` (Slack workspace ID) and `code`,
 // then exchanges the code for a workspace-level (actor=app) access + refresh token pair.
 linearRouter.get("/linear/oauth/callback", async (req, res) => {
     console.log("[LINEAR OAUTH DEBUG] Received OAuth callback");
-    console.log("[LINEAR OAUTH DEBUG] Query params:", req.query);
 
     try {
         const { state, code } = req.query;

@@ -12,15 +12,6 @@ dotenv.config();
 // export const expressApp = express();
 export const githubRouter = express.Router();
 
-// expressApp.use(express.json());
-// expressApp.use(express.urlencoded({ extended: true }));
-
-// // Debug: log all incoming requests
-// expressApp.use((req, res, next) => {
-//     console.log(`[REQUEST DEBUG] ${req.method} ${req.path}`);
-//     next();
-// });
-
 // GitHub OAuth callback - receives state (Slack workspace ID), code, and installation_id
 githubRouter.get('/github/oauth/callback', async (req, res) => {
     console.log("[GITHUB OAUTH] Received OAuth callback");

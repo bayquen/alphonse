@@ -36,11 +36,6 @@ const repoWorker = new Worker(
 
         await redisConnect();
 
-        const indexes = await redisClient.ft._list();
-        console.log("\n\n");
-        console.log(indexes);
-        console.log("\n\n");
-
         // Check repo access (is it public or private?) by using helper function from github.ts
         // Then returns GitHub repo metadata needed
         try {
