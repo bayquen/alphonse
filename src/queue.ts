@@ -32,6 +32,9 @@ export const repoIngestQueue = new Queue<RepoIngestJobData>(
         defaultJobOptions: {
             // Max attempts before BullMQ cancels a given job. (TODO: REMEMBER to add code that deletes a job from the queue after it is cancelled.)
             attempts: 3,
+            // Waits a given time before retry #1, then 60s before retry #2 
+            // (the wait doubles each time)
+            backoff: { type: "exponential", delay: 30_000 },
             // Number of successfully completed jobs to save in history logs (via Redis). Useful for debugging!
             removeOnComplete: 12,
             // Number of failed jobs to save in history logs (via Redis). Useful for debugging!
@@ -47,6 +50,9 @@ export const privateRepoIngestQueue = new Queue<RepoIngestJobData>(
         defaultJobOptions: {
             // Max attempts before BullMQ cancels a given job. (TODO: REMEMBER to add code that deletes a job from the queue after it is cancelled.)
             attempts: 3,
+            // Waits a given time before retry #1, then 60s before retry #2 
+            // (the wait doubles each time)
+            backoff: { type: "exponential", delay: 30_000 },
             // Number of successfully completed jobs to save in history logs (via Redis). Useful for debugging!
             removeOnComplete: 12,
             // Number of failed jobs to save in history logs (via Redis). Useful for debugging!
@@ -62,6 +68,7 @@ export const linearIngestQueue = new Queue<LinearIngestJobData>(
         defaultJobOptions: {
             // Max attempts before BullMQ cancels a given job. (TODO: REMEMBER to add code that deletes a job from the queue after it is cancelled.)
             attempts: 3,
+            backoff: { type: "exponential", delay: 5_000 },
             // Number of successfully completed jobs to save in history logs (via Redis). Useful for debugging!
             removeOnComplete: 12,
             // Number of failed jobs to save in history logs (via Redis). Useful for debugging!
