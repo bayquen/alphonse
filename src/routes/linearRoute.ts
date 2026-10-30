@@ -77,11 +77,18 @@ linearRouter.post("/linear/webhook", async (req, res) => {
 
         if (!verifyLinearWebhookSignature(rawBody, signature)) {
             console.error("[LINEAR WEBHOOK DEBUG] Signature verification failed");
-            return res.status(400).send("Invalid signature");
+            return res.status(401).send("Invalid signature");
         }
 
-        // TODO: reject if webhookTimestamp is more than ~1 minute old, to guard against replay attacks.
-        const { action, type, data, organizationId } = parseLinearWebhookPayload(req.body);
+        const { action, type, data, organizationId, webhookTimestamp } = parseLinearWebhookPayload(req.body);
+
+        // Security: Reject requests older (or newer) than 60 second so that a real, correctly-signed, and captured request can't be replayed later (e.g. malicious intent)
+        const ageInMs = Date.now() - Number(webhookTimestamp);
+        if (!Number.isFinite(ageInMs) || Math.abs(ageInMs) > 60_000) {
+            console.warn("[LINEAR WEBHOOK DEBUG] Rejected stale or invalid timestamp");
+            return res.status(401).send("Stale or invalid timestamp");
+        }
+
         console.log("[LINEAR WEBHOOK DEBUG] action:", action, "type:", type);
 
         // The payload carries Linear's organizationId (not the Slack team ID), so reverse-lookup the
@@ -99,12 +106,12 @@ linearRouter.post("/linear/webhook", async (req, res) => {
                 issueId: data.id,
             });
         }
-        // TODO: handle Comment / Project / ProjectUpdate / Document events similarly -
+        // TODO (POST-MVP?): handle Comment / Project / ProjectUpdate / Document events similarly -
         // for comments, re-ingest the parent issue; for docs/projects, re-ingest that entity directly.
 
         res.status(200).send("200 OK");
     } catch (err) {
         console.error("[LINEAR WEBHOOK DEBUG] Error in webhook handler:", err);
-        res.status(400).send("Webhook handling failed");
+        res.status(500).send("Webhook handling failed");
     }
 });
