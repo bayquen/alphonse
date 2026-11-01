@@ -140,6 +140,7 @@ vite.config.ts.timestamp-*
 
 # env files and secrets
 .env
+.env.docker
 docs.env
 /secrets
 
@@ -149,3 +150,5 @@ docs.env
 
 # Example docs folder for testing doc parsing pipeline
 /docs
+
+/claude_implementation_plans
