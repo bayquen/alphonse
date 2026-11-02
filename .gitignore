@@ -140,6 +140,7 @@ vite.config.ts.timestamp-*
 
 # env files and secrets
 .env
+.env.*
 .env.docker
 docs.env
 /secrets
