@@ -22,10 +22,6 @@ dotenv.config();
 const voyageAPIKey: string | undefined = process.env.VOYAGE_API_KEY;
 const voyageClient = new VoyageAIClient({ apiKey: voyageAPIKey});
 
-// const pool = new Pool({
-//     connectionString: process.env.SUPABASE_URL,
-// });
-
 interface FileObject {
     type: "file",
     filename: string;

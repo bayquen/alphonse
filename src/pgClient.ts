@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const connectionString = process.env.SUPABASE_URL;
+const connectionString = process.env.SUPABASE_CONNECTION_URL;
 // Supabase SSL (security) enforcement; clients that try to connect without SSL certification are rejected
 // (note: CA in this context stands for "Certificate Authority").
 const caBase64 = process.env.SUPABASE_CA_CERT_BASE64;
@@ -14,7 +14,7 @@ if (!connectionString || !caBase64) {
 }
 // If the URL contains sslmode, node-postgres silently ignores our ssl settings below
 if (/sslmode=|sslrootcert=/.test(connectionString)) {
-    throw new Error("Remove sslmode/sslrootcert from SUPABASE_URL; the ssl settings are configured in code.");
+    throw new Error("Remove sslmode/sslrootcert from SUPABASE_CONNECTION_URL; the ssl settings are configured in code.");
 }
 
 const ca = Buffer.from(caBase64, "base64").toString("utf8");
