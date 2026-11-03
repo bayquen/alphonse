@@ -11,7 +11,7 @@ import { runWorkerLifecycle } from "./lifecycle.js";
 import type { RepoIngestJobData } from "../queue.js";
 import { redisClient, redisConnect } from "../redisClient.js";
 // import type { GitHubFileObject } from "./../github.js";
-import { getRelevantTechDocObjects } from "../github.js";
+import { getRelevantTechDocObjects, getInstallationToken } from "../github.js";
 import { extractFileObjects,
         chunkTextContent,
         createEmbeddingVectorsFromGitHubChunks,
@@ -36,10 +36,13 @@ const repoWorker = new Worker(
 
         await redisConnect();
 
-        // Check repo access (is it public or private?) by using helper function from github.ts
+        // Check repo access (is it public or private?) and gets an access token by using helper functions from github.ts
         // Then returns GitHub repo metadata needed
         try {
-            const githubMetadataObjects = await getRelevantTechDocObjects(repoUrl);
+            const githubToken = job.name === "private-repo-ingest"
+                ? await getInstallationToken(slackTeamId)
+                : undefined;
+            const githubMetadataObjects = await getRelevantTechDocObjects(repoUrl, githubToken);
             if (!githubMetadataObjects) {
                 throw new Error("\nError: failed to extract any relevant GitHub-metadata file objects after running /add_repo\n");
             }
@@ -99,7 +102,7 @@ repoWorker.on('completed', async job => {
 });
 
 repoWorker.on('failed', (job, err) => {
-    console.log(`Job ${job?.id ?? "<unknown>"} has failed with ${err.message}`);
+    console.log(`Job ${job?.id ?? "<unknown>"} has failed with an error.`);
 });
 
 // Ensure that worker is ready BEFORE the module completes loading

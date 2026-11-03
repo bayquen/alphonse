@@ -268,6 +268,17 @@ export async function inspectPrivateGitHubRepo(repoUrl: string) {
     // const installationToken = await githubApp.getInstallationOctokit(installationId);
 }
 
+// Helper: Mints a short-lived (~1 hour) token that lets git clone repos the app is installed on.
+export async function getInstallationToken(slackTeamId: string): Promise<string> {
+    const installId = await getInstallationId(slackTeamId);
+    if (!installId) throw new Error("GitHub App not installed for this Slack workspace!");
+    const auth = await githubApp.octokit.auth({
+        type: "installation",
+        installationId: Number(installId),
+    }) as { token: string };
+    return auth.token;
+}
+
 export async function getGitHubRepoTree(repoUrl: string, slackTeamId: string) {
     // Grab repository metadata again, as needed
     const metadata = await inspectGitHubRepo(repoUrl, slackTeamId);
