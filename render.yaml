@@ -55,7 +55,7 @@ services:
   - type: worker
     name: rtfm-repo-worker
     runtime: docker
-    plan: 1c-2g               # = "standard" (2 GB). Drop to 0.5c-512mb to save money, then watch memory.
+    plan: 0.5c-512mb              # = "standard" (2 GB). Drop to 0.5c-512mb to save money, then watch memory.
     region: oregon
     dockerfilePath: ./Dockerfile
     dockerContext: .
