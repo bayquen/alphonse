@@ -38,6 +38,12 @@ export interface LinearTokenResponse {
 //     content: string;
 // }
 
+// Startup check if Linear access secrets exist in env vars so that the
+// service fails loudly instead of sending users a broken Linear-app auth link.
+if (!process.env.LINEAR_CLIENT_ID || !process.env.LINEAR_CLIENT_SECRET) {
+    throw new Error("Missing LINEAR_CLIENT_ID / LINEAR_CLIENT_SECRET");
+}
+
 // Generates the Linear OAuth authorization URL for a given Slack workspace.
 // `actor=app` requests a workspace-level (app) token instead of a per-user token,
 // so the bot gets access to all public teams without needing an individual to stay authenticated.
