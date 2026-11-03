@@ -1,0 +1,120 @@
+services:
+  # ---------- 1. Web: Slack bot (Socket Mode) + OAuth callbacks + webhooks ----------
+  - type: web
+    name: rtfm-web
+    runtime: docker
+    plan: 0.5c-512mb          # = "starter". Free tier sleeps, which would drop the Slack socket.
+    region: oregon            # CANNOT be changed later; pick the one closest to Supabase/Redis
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: REDIS_TLS
+        value: "true"
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: VOYAGE_API_KEY
+        sync: false
+      - key: SLACK_BOT_TOKEN
+        sync: false
+      - key: SLACK_APP_LEVEL_TOKEN
+        sync: false
+      - key: REDIS_CLOUD_HOST
+        sync: false
+      - key: REDIS_CLOUD_PORT
+        sync: false
+      - key: REDIS_CLOUD_USERNAME
+        sync: false
+      - key: REDIS_CLOUD_PASSWORD
+        sync: false
+      - key: SUPABASE_CONNECTION_URL
+        sync: false
+      - key: SUPABASE_CA_CERT_BASE64
+        sync: false
+      - key: GITHUB_APP_ID
+        sync: false
+      - key: GITHUB_APP_PRIVATE_KEY_BASE64
+        sync: false
+      - key: GITHUB_APP_NAME
+        sync: false
+      - key: GITHUB_APP_INSTALLATION_WEBHOOK_SECRET
+        sync: false
+      - key: GITHUB_APP_BASE_URL
+        sync: false
+      - key: LINEAR_APP_BASE_URL
+        sync: false
+      - key: LINEAR_CLIENT_ID
+        sync: false
+      - key: LINEAR_CLIENT_SECRET
+        sync: false
+      - key: LINEAR_WEBHOOK_SECRET
+        sync: false
+
+  # ---------- 2. Repo worker: clones repos, chunks, embeds ----------
+  - type: worker
+    name: rtfm-repo-worker
+    runtime: docker
+    plan: 1c-2g               # = "standard" (2 GB). Drop to 0.5c-512mb to save money, then watch memory.
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: node dist/workers/repoWorker.js
+    maxShutdownDelaySeconds: 300
+    autoDeployTrigger: commit
+    envVars:
+      - key: REDIS_TLS
+        value: "true"
+      - key: REPO_WORKER_CONCURRENCY
+        value: "1"
+      - key: SHUTDOWN_TIMEOUT_MS
+        value: "290000"       # just below 300 s so your code exits on its own before SIGKILL
+      - key: REDIS_CLOUD_HOST
+        sync: false
+      - key: REDIS_CLOUD_PORT
+        sync: false
+      - key: REDIS_CLOUD_USERNAME
+        sync: false
+      - key: REDIS_CLOUD_PASSWORD
+        sync: false
+      - key: VOYAGE_API_KEY
+        sync: false
+      - key: GITHUB_APP_ID
+        sync: false
+      - key: GITHUB_APP_PRIVATE_KEY_BASE64
+        sync: false
+
+  # ---------- 3. Linear worker: embeds Linear issues into Postgres ----------
+  - type: worker
+    name: rtfm-linear-worker
+    runtime: docker
+    plan: 0.5c-512mb
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: node dist/workers/linearWorker.js
+    maxShutdownDelaySeconds: 60
+    autoDeployTrigger: commit
+    envVars:
+      - key: REDIS_TLS
+        value: "true"
+      - key: SHUTDOWN_TIMEOUT_MS
+        value: "55000"
+      - key: REDIS_CLOUD_HOST
+        sync: false
+      - key: REDIS_CLOUD_PORT
+        sync: false
+      - key: REDIS_CLOUD_USERNAME
+        sync: false
+      - key: REDIS_CLOUD_PASSWORD
+        sync: false
+      - key: VOYAGE_API_KEY
+        sync: false
+      - key: SUPABASE_CONNECTION_URL
+        sync: false
+      - key: SUPABASE_CA_CERT_BASE64
+        sync: false
+      - key: LINEAR_CLIENT_ID
+        sync: false
+      - key: LINEAR_CLIENT_SECRET
+        sync: false
