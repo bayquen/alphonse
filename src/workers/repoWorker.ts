@@ -102,7 +102,7 @@ repoWorker.on('completed', async job => {
     // console.log("Notifying Slack channel:", job.data.slackChannelId);  // TEST LOG
     await notifyUser(
         job.data.slackChannelId,
-        `I finished reading *${repoName(job.data.repoUrl)}*. You can now ask me questions about it!`
+        `I finished reading your repo, *${repoName(job.data.repoUrl)}*. Your team can now ask me questions about it!`
     );
     // Removes job upon completion (I think this may override the 'removeOnComplete' param inside repoIngestQueue definition)
     await job.remove();
