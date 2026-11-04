@@ -254,27 +254,29 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
     }
 });
 
-app.command("/add_linear_workspace", async ({command, ack, respond, say, logger }) => {
+app.command("/add_linear_workspace", async ({command, ack, client, respond, say, logger }) => {
     // Acknowledge command request right away so the 3000ms Slack timeout doesn't hit
     await ack();
 
     try {
         const authUrl = await generateLinearAppAuthUrl(command.team_id);
-        await respond({
-            response_type: "ephemeral",
-            text:`<${authUrl} | Click here to connect your Linear workspace>`,
+        await client.views.open({
+            trigger_id: command.trigger_id,
+            view: {
+                type: "modal",
+                title: { type: "plain_text", text: "Connect Linear" },
+                close: { type: "plain_text", text: "Close" },
+                blocks: [
+                    {
+                        type: "section",
+                        text: {
+                            type: "mrkdwn",
+                            text: `<${authUrl}|Click here to connect your Linear workspace>`,
+                        },
+                    },
+                ],
+            },
         });
-        // Remove the bot's ephemeral message after a delay (Slack only allows deletion within 30 mins.)
-        setTimeout(async () => {
-            logger.info("DEBUG: delete timer fired for user", command.user_id);
-            try {
-                const result = await respond({ delete_original: true, text: " " });
-                logger.info("DEBUG: delete response status", result?.status, "data", JSON.stringify(result?.data));
-            } catch (err: any) {
-                logger.error("DEBUG: delete failed, status:", err?.response?.status);
-                logger.error("DEBUG: delete failed, Slack said:", JSON.stringify(err?.response?.data));
-            }
-        }, 0.25 * 60 * 1000); // TODO: test value (15s); restore to 10 * 60 * 1000 after testing
     } catch (err) {
         logger.error(err);
         await respond(`An error occurred starting the Linear connection. Try again, please.`);
