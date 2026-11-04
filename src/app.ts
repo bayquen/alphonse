@@ -268,7 +268,7 @@ app.command("/add_linear_workspace", async ({command, ack, respond, say, logger 
         setTimeout(async () => {
             logger.info("DEBUG: delete timer fired for user", command.user_id);
             try {
-                const result = await respond({ delete_original: true });
+                const result = await respond({ delete_original: true, text: " " });
                 logger.info("DEBUG: delete response status", result?.status, "data", JSON.stringify(result?.data));
             } catch (err: any) {
                 logger.error("DEBUG: delete failed, status:", err?.response?.status);
