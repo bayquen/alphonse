@@ -100,7 +100,7 @@ repoWorker.on('error', (err) => {
 repoWorker.on('completed', async job => {
     console.log(`Job ${job.id} has completed!`);
     await notifyUser(
-        job.data.slackUserId,
+        job.data.slackChannelId,
         `I finished reading *${repoName(job.data.repoUrl)}*. You can now ask me questions about it!`
     );
     // Removes job upon completion (I think this may override the 'removeOnComplete' param inside repoIngestQueue definition)

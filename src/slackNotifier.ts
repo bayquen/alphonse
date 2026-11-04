@@ -23,10 +23,10 @@ if (!botToken) throw new Error("Missing Slack bot token for worker notifications
 
 const slack = new WebClient(botToken);
 
-export async function notifyUser(userId: string, text: string): Promise<void> {
+export async function notifyUser(channelId: string, text: string): Promise<void> {
     try {
         // side note: `text` is required as the fallback for notifications. Blocks can come later if nicer formatting is desired.
-        await slack.chat.postMessage({ channel: userId, text });
+        await slack.chat.postMessage({ channel: channelId, text });
     } catch (err) {
         // A failed notification must never break or retry the BullMQ repo ingestion job
         console.error("Slack notification failed:", err);
