@@ -264,10 +264,16 @@ app.command("/add_linear_workspace", async ({command, ack, respond, say, logger 
             response_type: "ephemeral",
             text:`<${authUrl} | Click here to connect your Linear workspace>`,
         });
-        // Remove the message after 10 minutes (note that Slack only allows msg. deletion within 30 mins.)
-        setTimeout(() => {
-            respond({ delete_original: true }).catch((err) => logger.error(err));
-        }, 0.5 * 60 * 1000); // TODO test: try 30 seconds first to see if the msg disappearance works!
+        // Remove the bot's ephemeral message after a delay (Slack only allows deletion within 30 mins.)
+        setTimeout(async () => {
+            logger.info("DEBUG: delete timer fired for user", command.user_id);
+            try {
+                const result = await respond({ delete_original: true });
+                logger.info("DEBUG: delete response status", result?.status, "data", JSON.stringify(result?.data));
+            } catch (err) {
+                logger.error("DEBUG: delete failed", err);
+            }
+        }, 0.25 * 60 * 1000); // TODO: test value (15s); restore to 10 * 60 * 1000 after testing
     } catch (err) {
         logger.error(err);
         await respond(`An error occurred starting the Linear connection. Try again, please.`);
