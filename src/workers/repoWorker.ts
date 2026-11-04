@@ -99,7 +99,7 @@ repoWorker.on('error', (err) => {
 
 repoWorker.on('completed', async job => {
     console.log(`Job ${job.id} has completed!`);
-    console.log("Notifying Slack channel:", job.data.slackChannelId);  // TODO: TEST LOG
+    // console.log("Notifying Slack channel:", job.data.slackChannelId);  // TEST LOG
     await notifyUser(
         job.data.slackChannelId,
         `I finished reading *${repoName(job.data.repoUrl)}*. You can now ask me questions about it!`
