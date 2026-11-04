@@ -15,6 +15,8 @@
  */
 
 import { WebClient } from "@slack/web-api";
+import dotenv from "dotenv";
+dotenv.config();
 
 const botToken = process.env.SLACK_BOT_TOKEN;
 if (!botToken) throw new Error("Missing Slack bot token for worker notifications.");
