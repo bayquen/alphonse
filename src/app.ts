@@ -179,7 +179,7 @@ function normalizeSlackUrl(input: string): string {
     return url;
 }
 
-app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
+app.command("/add_repo", async ({ command, ack, respond, client, say, logger }) => {
     // Acknowledge the command request right away, so 3000ms ping timeout doesn't occur.
     await ack();
 
@@ -246,9 +246,43 @@ app.command("/add_repo", async ({ command, ack, respond, say, logger }) => {
         console.log(error);
         if (error instanceof Error && error.message.includes("GitHub App not installed")) {
             const authUrl = await generateGitHubAppAuthUrl(command.team_id);
-            await say((`GitHub App not installed! <${authUrl} | Click here to authorize> this workspace for private repo access.`));
+            await client.views.open({
+                trigger_id: command.trigger_id,
+                view: {
+                    type: "modal",
+                    title: { type: "plain_text", text: "Connect your GitHub repo to Alphonse" },
+                    close: { type: "plain_text", text: "Close" },
+                    blocks: [
+                        {
+                            type: "section",
+                            text: {
+                                type: "mrkdwn",
+                                text: `<${authUrl}|Click here to connect your GitHub>`,
+                            },
+                        },
+                    ],
+                },
+            });
+            // await say((`GitHub App not installed! <${authUrl} | Click here to authorize> this workspace for private repo access.`));
         } else {
-            await say(`Sorry, failed to access this repository. Please make sure the URL is valid and try again.`);
+            await client.views.open({
+                trigger_id: command.trigger_id,
+                view: {
+                    type: "modal",
+                    title: { type: "plain_text", text: "Failed to access GitHub repo:" },
+                    close: { type: "plain_text", text: "Close" },
+                    blocks: [
+                        {
+                            type: "section",
+                            text: {
+                                type: "mrkdwn",
+                                text: "Please make sure your repo URL is valid, then try running /add_repo again.",
+                            },
+                        },
+                    ],
+                },
+            });
+            // await say(`Sorry, failed to access this repository. Please make sure the URL is valid and try again.`);
         }
         return;
     }
@@ -264,7 +298,7 @@ app.command("/add_linear_workspace", async ({command, ack, client, respond, say,
             trigger_id: command.trigger_id,
             view: {
                 type: "modal",
-                title: { type: "plain_text", text: "Connect Linear" },
+                title: { type: "plain_text", text: "Connect Linear to Alphonse" },
                 close: { type: "plain_text", text: "Close" },
                 blocks: [
                     {
