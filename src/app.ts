@@ -223,6 +223,9 @@ app.command("/add_repo", async ({ command, ack, respond, client, say, logger }) 
                 slackUserId: command.user_id,
             });
             console.log(`A new job has successfully been added to the queue.`);
+            await respond(
+                `GitHub repo ${cleanedUrl.split("/").pop()} successfully queued for reading. Please wait.`
+            );
         } else { // Else this is a private repository
             // // Check if GitHub app is installed for this Slack workspace
             // const isGitHubAppInstalled = await checkGitHubAppInstallation(command.team_id);
@@ -241,6 +244,9 @@ app.command("/add_repo", async ({ command, ack, respond, client, say, logger }) 
                 slackUserId: command.user_id,                
             });
             console.log(`Private repo job added to queue for workspace: ${command.team_id}`);
+            await respond(
+                `GitHub repo ${cleanedUrl.split("/").pop()} successfully queued for reading. Please wait.`
+            );
         }
     } catch (error) {
         console.log(error);
