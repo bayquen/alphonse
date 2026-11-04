@@ -260,7 +260,14 @@ app.command("/add_linear_workspace", async ({command, ack, respond, say, logger 
 
     try {
         const authUrl = await generateLinearAppAuthUrl(command.team_id);
-        await respond(`<${authUrl} | Click here to connect your Linear workspace>`);
+        await respond({
+            response_type: "ephemeral",
+            text:`<${authUrl} | Click here to connect your Linear workspace>`,
+        });
+        // Remove the message after 10 minutes (note that Slack only allows msg. deletion within 30 mins.)
+        setTimeout(() => {
+            respond({ delete_original: true }).catch((err) => logger.error(err));
+        }, 0.5 * 60 * 1000); // TODO test: try 30 seconds first to see if the msg disappearance works!
     } catch (err) {
         logger.error(err);
         await respond(`An error occurred starting the Linear connection. Try again, please.`);
