@@ -99,6 +99,7 @@ repoWorker.on('error', (err) => {
 
 repoWorker.on('completed', async job => {
     console.log(`Job ${job.id} has completed!`);
+    console.log("Notifying Slack channel:", job.data.slackChannelId);  // TODO: TEST LOG
     await notifyUser(
         job.data.slackChannelId,
         `I finished reading *${repoName(job.data.repoUrl)}*. You can now ask me questions about it!`
@@ -116,7 +117,7 @@ repoWorker.on('failed', async (job, err) => {
     if (job.attemptsMade < maxAttempts) return;
 
     await notifyUser(
-        job.data.slackUserId,
+        job.data.slackChannelId,
         `I couldn't finish reading *${repoName(job.data.repoUrl)}*. Please check the repo URL, and then run /add_repo again.`
     );
 });
