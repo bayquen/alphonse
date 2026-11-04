@@ -16,6 +16,7 @@ import { extractFileObjects,
         chunkTextContent,
         createEmbeddingVectorsFromGitHubChunks,
         storeVectorsAndChunkedMetadata } from "../ingest.js";
+import { notifyUser } from "../slackNotifier.js";
 
 const connection = createBullConnection("worker");
 // Fail fast at startup if Redis is unreachable; the host will restart the process
@@ -87,6 +88,7 @@ const repoWorker = new Worker(
     }
 );
 
+const repoName = (url: string) => url.split("/").pop() ?? url;
 // BullMQ Job listeners that check when some queued job succeeds after execution OR fails during/before execution.
 repoWorker.on('ready', () => {
     console.log("repoWorker: Worker is ready and listening for jobs!");
@@ -97,12 +99,26 @@ repoWorker.on('error', (err) => {
 
 repoWorker.on('completed', async job => {
     console.log(`Job ${job.id} has completed!`);
+    await notifyUser(
+        job.data.slackUserId,
+        `I finished reading *${repoName(job.data.repoUrl)}*. You can now ask me questions about it!`
+    );
     // Removes job upon completion (I think this may override the 'removeOnComplete' param inside repoIngestQueue definition)
     await job.remove();
 });
 
-repoWorker.on('failed', (job, err) => {
+repoWorker.on('failed', async (job, err) => {
     console.log(`Job ${job?.id ?? "<unknown>"} has failed with an error.`);
+    if (!job) return;  // stalled jobs can arrive without a job object
+
+    // Only notify after the LAST attemot, not on every retry
+    const maxAttempts = job.opts.attempts ?? 1;
+    if (job.attemptsMade < maxAttempts) return;
+
+    await notifyUser(
+        job.data.slackUserId,
+        `I couldn't finish reading *${repoName(job.data.repoUrl)}*. Please check the repo URL, and then run /add_repo again.`
+    );
 });
 
 // Ensure that worker is ready BEFORE the module completes loading
