@@ -270,8 +270,9 @@ app.command("/add_linear_workspace", async ({command, ack, respond, say, logger 
             try {
                 const result = await respond({ delete_original: true });
                 logger.info("DEBUG: delete response status", result?.status, "data", JSON.stringify(result?.data));
-            } catch (err) {
-                logger.error("DEBUG: delete failed", err);
+            } catch (err: any) {
+                logger.error("DEBUG: delete failed, status:", err?.response?.status);
+                logger.error("DEBUG: delete failed, Slack said:", JSON.stringify(err?.response?.data));
             }
         }, 0.25 * 60 * 1000); // TODO: test value (15s); restore to 10 * 60 * 1000 after testing
     } catch (err) {
