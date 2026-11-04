@@ -224,7 +224,7 @@ app.command("/add_repo", async ({ command, ack, respond, client, say, logger }) 
             });
             console.log(`A new job has successfully been added to the queue.`);
             await respond(
-                `GitHub repo ${cleanedUrl.split("/").pop()} successfully queued for reading. Please wait.`
+                `Your GitHub repo, *${cleanedUrl.split("/").pop()}*, is successfully queued to be stored in Alphonse's memory. Please wait before prompting to Alphonse.`
             );
         } else { // Else this is a private repository
             // // Check if GitHub app is installed for this Slack workspace
