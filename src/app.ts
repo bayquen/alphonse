@@ -83,7 +83,7 @@ async function askLLM(systemPrompt: string, fullUserPrompt: string, llmAnswerCon
     const response = await openAIClient.responses.create({
         model: "gpt-5.6-terra",
         instructions: systemPrompt,
-        reasoning: {"effort": "medium"},
+        reasoning: {"effort": "high"},
         input: `\nUser says: ${fullUserPrompt}\n\nContext:\n${llmAnswerContextPrompt}`,
     });
     // Messages the Slack user a Q&A answer!
