@@ -273,14 +273,14 @@ app.command("/add_repo", async ({ command, ack, respond, client, say, logger }) 
                 trigger_id: command.trigger_id,
                 view: {
                     type: "modal",
-                    title: { type: "plain_text", text: "Connect your GitHub repo to Alphonse" },
+                    title: { type: "plain_text", text: "GitHub connection" },
                     close: { type: "plain_text", text: "Close" },
                     blocks: [
                         {
                             type: "section",
                             text: {
                                 type: "mrkdwn",
-                                text: `<${authUrl}|Click here to connect your GitHub>`,
+                                text: `<${authUrl}|Click here to connect your GitHub to Alphonse>`,
                             },
                         },
                     ],
@@ -292,7 +292,7 @@ app.command("/add_repo", async ({ command, ack, respond, client, say, logger }) 
                 trigger_id: command.trigger_id,
                 view: {
                     type: "modal",
-                    title: { type: "plain_text", text: "Failed to access GitHub repo:" },
+                    title: { type: "plain_text", text: "Repo access failed" },
                     close: { type: "plain_text", text: "Close" },
                     blocks: [
                         {
@@ -321,14 +321,14 @@ app.command("/add_linear_workspace", async ({command, ack, client, respond, say,
             trigger_id: command.trigger_id,
             view: {
                 type: "modal",
-                title: { type: "plain_text", text: "Connect Linear to Alphonse" },
+                title: { type: "plain_text", text: "Linear connection" },
                 close: { type: "plain_text", text: "Close" },
                 blocks: [
                     {
                         type: "section",
                         text: {
                             type: "mrkdwn",
-                            text: `<${authUrl}|Click here to connect your Linear workspace>`,
+                            text: `<${authUrl}|Click here to connect your Linear workspace to Alphonse>`,
                         },
                     },
                 ],
