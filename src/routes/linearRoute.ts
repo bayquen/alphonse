@@ -25,6 +25,11 @@ linearRouter.get("/linear/oauth/callback", async (req, res) => {
 
     try {
         const { state, code } = req.query;
+
+        // TODO: Debug logs (11/8/26)
+        console.log(Object.keys(req.query));
+        console.log(req.query.error);
+
         if (typeof state !== "string" || typeof code !== "string" || !state || !code) {
             return res.status(400).send("Missing state or code parameter")
         }
