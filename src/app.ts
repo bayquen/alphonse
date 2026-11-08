@@ -81,9 +81,9 @@ console.log("Bot ID:", botUserId);
 // Pass entire prompt (LLM system prompt, user's question, && relevant technical doc chunks) to LLM API so it can respond to Slack user
 async function askLLM(systemPrompt: string, fullUserPrompt: string, llmAnswerContextPrompt: string) {
     const response = await openAIClient.responses.create({
-        model: "gpt-5.6-terra",
+        model: "gpt-6.1-sol",
         instructions: systemPrompt,
-        reasoning: {"effort": "high"},
+        reasoning: {"effort": "medium"},
         input: `\nUser says: ${fullUserPrompt}\n\nContext:\n${llmAnswerContextPrompt}`,
     });
     // Messages the Slack user a Q&A answer!
