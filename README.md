@@ -42,7 +42,10 @@ Perfect question, you clanker-loving, tech enthusiast *(or AI hater, or skeptic 
 ## Usage Tips
 Tips to maximize Alphonse's usefulness
 
-- MOST IMPORTANT: Keep your product's documentation up to date!! Alphonse works best when your repo docs and Linear issues are well written, because Alphonse answers based on what he's read.
-- If Alphonse says he doesn't know, the information probably isn't in your connected repos or Linear workspace. He won't make up an answer.
-- Be specific. "How does login work in the auth service?" works better than "How does it work?"
-- Wait for the "finished reading" Slack message before asking questions about a newly added repo.
+1) **MOST IMPORTANT:** Keep your product's documentation up to date!! Alphonse works best when your repo docs and Linear issues are well written, because Alphonse answers based on what he's read.
+  
+2) If Alphonse says he doesn't know, the information probably isn't in your connected repos or Linear workspace. He won't make up an answer.
+  
+3) Be specific. "How does login work in the auth service?" works better than "How does it work?"
+  
+4) Wait for the "finished reading" Slack message before asking questions about a newly added repo.
