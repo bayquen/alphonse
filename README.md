@@ -1,14 +1,20 @@
 # Alphonse
-> Developer: Brandon Bayquen
+> Developer: Brandon Bayquen (a.k.a. big bro)
 
 Slack assistant that helps onboard your engineers faster.
 <p align="center">
 <img width="358" height="358" alt="alphonse-serious-mogging" src="https://github.com/user-attachments/assets/b61b2f96-b7f6-4b29-8b0e-f1b3f1fe20b2" />
 </p>
 
-Alphonse is a Q&A Slack assistant that quickly answers questions about your team's software product. Help your engineers get up to speed on product features, architecture, updates, and team decisions. Alphonse can read data from both your team's GitHub repo and relevant Linear workspace for comprehensive Q&A queries (technical + business/product-level context).
+#### *Hi there, reader. You're probably wondering...*
 
-## How to Use
+## "What in the flop is Alphonse, big bro?"  
+<img width="220" height="124" alt="MYBROTHA" src="https://github.com/user-attachments/assets/b9cb0d95-791e-4bd1-85eb-e3b050208217" />  
+
+Perfect question you clanker-loving, AI enthusiast (or clanker hater, or skeptic - I won't discriminate). Alphonse is a Q&A Slack assistant that quickly answers questions about your team's software product. Help your engineers get up to speed on product features, architecture, updates, and team decisions. Alphonse can read data from both your team's GitHub repo and relevant Linear workspace for comprehensive Q&A queries (technical + business/product-level context).
+
+## "Fine, now how the flip do I use Alphonse???" 😳😖
+#### *Woah, why are you making sus faces? Calm down, I'll advise you right neow:*
 1. Open your team's Slack and choose the channel where you'd like to ask questions. 
 2. Then run this Slack command: `/invite @Alphonse`. You can also click the channel name, open **Integrations**, and add Alphonse from there. Of course, you can have him present in multiple Slack channels.  
 ### Teach Alphonse about your product's GitHub repo
