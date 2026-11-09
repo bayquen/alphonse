@@ -18,7 +18,7 @@ Perfect question, you clanker-loving, tech enthusiast *(or AI hater, or skeptic 
 > And yes, my assistant is inspired by Al Elric from Fullmetal, hence his character :)
 
 ## "Fine, now how the flip do I use Alphonse???" 😳😖
-#### *Woah reader, why are you making sus faces? Calm down, I'll advise you right neow:*
+#### *Woah reader, why are you making those faces? Settle down, I'll tell you how:*
 1. Open your team's Slack and choose the channel where you'd like to ask questions. 
 2. Then run this Slack command: `/invite @Alphonse`. You can also click the channel name, open **Integrations**, and add Alphonse from there. Of course, you can have him present in multiple Slack channels.  
 ### Teach Alphonse about your product's GitHub repo
