@@ -18,7 +18,7 @@ Perfect question, you clanker-loving, tech enthusiast *(or AI hater, or skeptic 
 > And yes, my assistant is inspired by Al Elric from Fullmetal, hence his character :)
 
 ## "Fine, now how the flip do I use Alphonse???" 😳😖
-#### *Woah, why are you making sus faces? Calm down, I'll advise you right neow:*
+#### *Woah reader, why are you making sus faces? Calm down, I'll advise you right neow:*
 1. Open your team's Slack and choose the channel where you'd like to ask questions. 
 2. Then run this Slack command: `/invite @Alphonse`. You can also click the channel name, open **Integrations**, and add Alphonse from there. Of course, you can have him present in multiple Slack channels.  
 ### Teach Alphonse about your product's GitHub repo
@@ -49,3 +49,12 @@ Tips to maximize Alphonse's usefulness
 3) Be specific. "How does login work in the auth service?" works better than "How does it work?"
   
 4) Wait for the "finished reading" Slack message before asking questions about a newly added repo.
+
+## Tech Stack, BTW:
+**Frontend:** Slack's interface did all the heavylifting *(yay!)*  
+**Backend:** Node.js, TypeScript, Express, Slack Bolt JS  
+**Databases:** Supabase (PostgreSQL + pgvector), Redis Cloud (Redis CLI)  
+**Auth:** GitHub OAuth, Linear OAuth, Slack OAuth  
+**AI:** OpenAI `gpt-6.1-sol`  
+**Embeddings (RAG):** VoyageAI `voyage-code-3`  
+**Backend deploy:** Render (with WebSocket enabled)  
