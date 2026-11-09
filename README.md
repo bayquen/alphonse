@@ -51,10 +51,10 @@ Tips to maximize Alphonse's usefulness
 4) Wait for the "finished reading" Slack message before asking questions about a newly added repo.
 
 ## Tech Stack, BTW:
-**Frontend:** Slack's interface did all the heavylifting *(yay!)*  
+**Frontend:** Slack's already-existing UI *(yay!)*  
 **Backend:** Node.js, TypeScript, Express, Slack Bolt JS  
 **Databases:** Supabase (PostgreSQL + pgvector), Redis Cloud (Redis CLI)  
 **Auth:** GitHub OAuth, Linear OAuth, Slack OAuth  
-**AI:** OpenAI `gpt-6.1-sol`  
+**AI:** OpenAI `gpt-6.1-sol` and/or `gpt-6.1-terra`
 **Embeddings (RAG):** VoyageAI `voyage-code-3`  
 **Backend deploy:** Render (with WebSocket enabled)  
