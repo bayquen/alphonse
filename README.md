@@ -10,10 +10,12 @@ Slack assistant that helps onboard your engineers faster.
 
 ## "What in the flop is Alphonse, big bro?" 
 <p align="center">
-   <img width="220" height="124" alt="MYBROTHA" src="https://github.com/user-attachments/assets/b9cb0d95-791e-4bd1-85eb-e3b050208217" />  
+<img width="500" height="210" alt="alphonse-goofy-mogging" src="https://github.com/user-attachments/assets/2065ad62-3f38-41cd-98f4-119c8fd8f0cf" />
 </p>
 
-Perfect question you clanker-loving, AI enthusiast (or clanker hater, or skeptic - I won't discriminate). Alphonse is a Q&A Slack assistant that quickly answers questions about your team's software product. Help your engineers get up to speed on product features, architecture, updates, and team decisions. Alphonse can read data from both your team's GitHub repo and relevant Linear workspace for comprehensive Q&A queries (technical + business/product-level context).
+Perfect question, you clanker-loving, tech enthusiast *(or AI hater, or skeptic - I won't discriminate)*. Alphonse is a Q&A Slack assistant that quickly answers questions about your team's software product. Help your engineers get up to speed on product features, architecture, updates, and team decisions. Alphonse can read data from both your team's GitHub repo and relevant Linear workspace for comprehensive Q&A queries (technical + business/product-level context).
+
+> And yes, my assistant is inspired by Al Elric from Fullmetal, hence his character :)
 
 ## "Fine, now how the flip do I use Alphonse???" 😳😖
 #### *Woah, why are you making sus faces? Calm down, I'll advise you right neow:*
