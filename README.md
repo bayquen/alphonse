@@ -22,7 +22,7 @@ Perfect question, you clanker-loving, tech enthusiast *(or AI hater, or skeptic 
 1. Open your team's Slack and choose the channel where you'd like to ask questions. 
 2. Then run this Slack command: `/invite @Alphonse`. You can also click the channel name, open **Integrations**, and add Alphonse from there. Of course, you can have him present in multiple Slack channels.  
 ### Teach Alphonse about your product's GitHub repo
-3. In any channel where Alphonse resides, run the `/add_repo` command followed by your repository's link (including the *https://* prefix).
+3. In any channel where Alphonse resides, run the `/add_repo` command followed by your repository's link, INCLUDING the `https://` prefix!
 > For example: `/add_repo https://github.com/user/your-repo`
 4. Alphonse will check that he can reach the repository (and that it's a valid URL).
 5. If your repo is public: he'll confirm that it's been queued to be stored in his memory.
