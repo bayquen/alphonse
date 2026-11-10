@@ -3,6 +3,7 @@
 // Purpose: The background workers must be able to import the Slack installtion store without importing app.ts,
 //          which unnecessarily boots the whole bot. Hence, this separate program file.
 
+import "dotenv/config";
 import { InstallProvider } from "@slack/oauth";
 import { slackInstallationStore } from "./slackInstallationStore.js";
 

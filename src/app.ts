@@ -18,6 +18,9 @@ import express from "express";
 import { githubRouter } from "./routes/githubRoute.js";
 import { generateLinearAppAuthUrl } from "./linear.js";
 import { linearRouter } from "./routes/linearRoute.js";
+import { installer } from "./slackInstaller.js";
+import { slackRouter } from "./routes/slackRoute.js";
+import { purgeWorkspaceData } from "./purgeSlackWorkspace.js";
 
 export interface IngestContext {
     slackTeamId: string;
@@ -32,23 +35,17 @@ const openAIClient = new OpenAI({
     apiKey: openAIAPIKey,
 });
 
-// Tokens for accessing Slack Bolt functionalities
-const token = process.env.SLACK_BOT_TOKEN;
+// Token for accessing the Slack Bolt app's functionalities
 const appToken = process.env.SLACK_APP_LEVEL_TOKEN;
-if (!token || !appToken) {
-    throw new Error("Missing Slack environment variables.");
+if (!appToken) {
+    throw new Error("Missing Slack app-level token.");
 }
-// Initializes Slack Bolt app via Socket Mode with your Slack bot and app tokens
+
+// Initializes Slack Bolt app via Socket Mode with your Slack bot and tokens
 export const app = new App({
-    token,
     appToken,
     socketMode: true,
-});
-
-// For grabbing user ID of the RTFM Agent Slack bot;
-// this is used a bit later to remove the bot mention-tag when extracting a Slack user's Q&A prompt.
-const grabBotUserId = await app.client.auth.test({
-    token,
+    authorize: (source) => installer.authorize(source),
 });
 
 const webServer = express();
@@ -59,6 +56,7 @@ webServer.use(express.urlencoded({ extended: true }));
 webServer.get("/health", (_req, res) => {
     res.status(200).send("OK");
 });
+webServer.use(slackRouter);
 webServer.use(githubRouter);
 webServer.use(linearRouter);
 
@@ -74,10 +72,6 @@ const WEB_PORT = Number(process.env.PORT) || 3000;
 // });
 
 
-// Get and store RTFM bot's user ID; needed to remove bot mention tag from Slack user's message.
-const botUserId = grabBotUserId.user_id;
-console.log("Bot ID:", botUserId);
-
 // Pass entire prompt (LLM system prompt, user's question, && relevant technical doc chunks) to LLM API so it can respond to Slack user
 async function askLLM(systemPrompt: string, fullUserPrompt: string, llmAnswerContextPrompt: string) {
     const response = await openAIClient.responses.create({
@@ -90,46 +84,28 @@ async function askLLM(systemPrompt: string, fullUserPrompt: string, llmAnswerCon
     return response.output_text;
 }
 
-app.event("app_mention", async({ event, client, say }) => {
+app.event("app_mention", async({ event, client, say, context }) => {
     try {
         redisConnect();
-        // Debugging log
-        // console.log(textMessage, "\n");
 
-        const botMention = `<@${botUserId}>`;
+        const botMention = `<@${context.botUserId}>`;
         const slackUserPrompt = event.text
             .replace(botMention, "")
             .trim();
         if (!event.user) return;
-        // const { user } = await client.users.info({ user: event.user });
-        const res = await client.users.info({ user: event.user });
 
-        if (!res.user) return;
-        const slackUser = res.user;
-
-        if (!res.user.team_id) return;
-        const slackTeamId = res.user.team_id;
+        const slackTeamId = context.teamId ?? event.team;
+        if (!slackTeamId) return;
         
-        const userDisplayName = 
-        slackUser.profile?.display_name ||
-        slackUser.real_name ||
-        slackUser.name;
         
         // Debugging log
         // console.log("Cleaned up user prompt:", slackUserPrompt);
 
         // If user pings bot with NO message, notify user with a call-to-action
-        if (slackUserPrompt.trim() === "") {
-            // Edge case: Check to make sure user's display name exists or isn't empty
-            if (userDisplayName != null && userDisplayName.trim() !== "") {
-                // Have the Slack bot ping the user and respond with this message 
-                await say(`Howdy <@${userDisplayName}>, I'm here to help with any questions for your product's technical docs. Make sure to provide a prompt while mentioning me :)`)
-                return;
-            // Edge case (continued): If by any rare chance the user's display name is empty or can't be read, send alternate message
-            } else {
-                await say(`Howdy, I'm here to help with any questions for your product's technical docs. Make sure to provide a prompt while mentioning me :)`)
-                return;
-            }
+        if (slackUserPrompt === "") {
+            // Have the Slack bot ping the user and respond with this message 
+            await say(`Hey <@${event.user}>! Got a question or prompt for me about your team's software product?`);
+            return;
         }
 
         const systemPrompt = `[Your personality]: You're a reincarnation of Alphonse "Al" Elric in the form of a bot. You carry his gentle, steady nature: kind to a fault,
@@ -337,6 +313,31 @@ app.command("/add_linear_workspace", async ({command, ack, client, respond, say,
     } catch (err) {
         logger.error(err);
         await respond(`An error occurred starting the Linear connection. Try again, please.`);
+    }
+});
+
+app.event("app_uninstalled", async ({ context, logger }) => {
+    const slackTeamId = context.teamId;
+    if (!slackTeamId) return;
+    try {
+        await purgeWorkspaceData(slackTeamId);
+        logger.info(`Purged data after app_uninstalled for Slack team ${slackTeamId}`);
+    } catch (err) {
+        logger.error(`Purge failed for Slack team ${slackTeamId}`);
+    }
+});
+
+// Fired when tokens are revoked. Only act if the BOT token was revoked;
+// a single person revoking their own user token must not wipe the workspace.
+app.event("tokens_revoked", async ({ event, context, logger }) => {
+    if (!event.tokens.bot || event.tokens.bot.length === 0) return;
+    const slackTeamId = context.teamId;
+    if (!slackTeamId) return;
+    try {
+        await purgeWorkspaceData(slackTeamId);
+        logger.info(`Purged data after tokens_revoked (bot) for Slack team ${slackTeamId}`);
+    } catch (err) {
+        logger.error(`Purge failed for team ${slackTeamId}:`, err);
     }
 });
 

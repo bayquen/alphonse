@@ -362,7 +362,7 @@ export function escapeRedisTagValue(value: string): string {
 // Private helper function for deleting all pre-existing Workspace tech-doc embeddings in the application's storage.
 // This is used before Redis adds the new file data when user requests to save a new repo within the bot 
 // application's integrated cloud storage.
-async function deleteExistingWorkspaceVectors(teamId: string) {
+export async function deleteExistingWorkspaceVectors(teamId: string) {
     const indexes = await redisClient.ft._list();
     // let offset = 0;
     const pageSize = 500;
