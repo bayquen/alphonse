@@ -54,7 +54,7 @@ He can read data from both your team's GitHub repo and relevant Linear workspace
 > (**Recommended** for comprehensive Q&A, but optional)  
 7. **ADD YOUR LINEAR TEAM.** Run the Slack command: `/add_linear_workspace`  
 8. Click the access link provided in the Connect Linear pop-up and follow the steps in the Linear redirect page.
-- ⚠️ **IMPORTANT:** Alphonse v1.0 has a bug where he forgets to delete previously ingested Linear data, so make sure you pick the correct ***Linear*** team/workspace associated with your ***GitHub*** repo!  
+- ⚠️ **IMPORTANT:** Alphonse v1.0 has a bug where he forgets to delete previously-ingested Linear team data when you completely run `/add_linear_workspace` a 2nd time. So make sure you initially pick the correct ***Linear*** team/workspace associated with your ***GitHub*** repo.
 9. Approve access for your desired Linear workspace/team. When you see "Linear connected!", return to Slack. Alphonse can now read your team's Linear issues.
 > Now you can ask Alphonse anything regarding your product's code AND your team's product decisions! Just @Alphonse <prompt>  
   
