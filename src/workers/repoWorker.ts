@@ -101,8 +101,7 @@ repoWorker.on('completed', async job => {
     await notifyUser(
         job.data.slackTeamId,
         job.data.slackUserId,
-        `Hi! I've finished reading your repo, *${repoName(job.data.repoUrl)}*. Your team can now ask me questions! Try \`@Alphonse <prompt>\` in a channel I'm already invited in.\n
-        For more comprehensive Q&A, you may also connect your Linear workspace by running \`/add_linear_workspace\` in a channel I'm already in and following the steps in the pop-up Linear page.`
+        `Hi! I've finished reading your repo, *${repoName(job.data.repoUrl)}*. Your team can now ask me questions! Try \`@Alphonse <prompt>\` in a channel I'm already invited in. For more comprehensive Q&A, you may also connect your Linear workspace by running \`/add_linear_workspace\` in a channel I'm already in and following the steps in the pop-up Linear page.`
     );
     // Removes job upon completion (I think this may override the 'removeOnComplete' param inside repoIngestQueue() definition)
     await job.remove();
