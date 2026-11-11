@@ -35,11 +35,11 @@ He can read data from both your team's GitHub repo and relevant Linear workspace
 3. Open your team's Slack workspace and open a channel where you'd like to ask questions.  
 4. Then run this Slack command: `/invite @Alphonse`. You can also click the channel name, open **Integrations**, and add Alphonse from there. Of course, you can have him present in multiple Slack channels.  
 ### Teach Alphonse about your product's GitHub repo
-5. In any Slack channel where your team invited Alphonse, run the `/add_repo` command followed by your team's repo URL, ***including*** the `https://` prefix!  
-> **Follow this URL format:** `/add_repo https://github.com/user/your-repo`  
-6. Alphonse will check that he can reach the repository (and that it's a valid URL).  
-7. If your repo is public: he'll confirm that it's been queued to be stored in his memory.  
-8. If your repo is private: a pop-up will appear:
+5. **ADD YOUR REPO.** In any Slack channel where your team invited Alphonse, run the `/add_repo` command followed by your team's repo URL, ***including*** the `https://` prefix! Alphonse will check that he can reach the repository (and that it's a valid URL).  
+> **Follow this URL format:** `/add_repo https://github.com/user/your-repo`
+  
+- If your repo is set to **public**: he'll confirm that it's been queued to be stored in his memory.  
+- Otherwise, if it's **private**: a pop-up will appear:
   
    a. Click the access link provided  
   
@@ -47,15 +47,15 @@ He can read data from both your team's GitHub repo and relevant Linear workspace
      
    c. When you see "GitHub app authorized" in a new page, return to Slack and run `/add_repo` again.  
      
-9. Wait for Alphonse to finish reading (wait time depends on repo size). A confirmation DM from Alphonse will be sent to you upon success.  
+6. Wait for Alphonse to finish reading (wait time depends on repo size). A confirmation DM from Alphonse will be sent to you upon success.  
 > Note: If you see a "Repo Access Failed" pop-up on Slack, make sure the **GitHub URL** is correct and try again  
   
 ### Connect your Linear workspace
 > (**Recommended** for comprehensive Q&A, but optional)  
-8. Run the Slack command: `/add_linear_workspace`  
-9. Click the access link provided in the Connect Linear pop-up and follow the steps in the Linear redirect page.
+7. **ADD YOUR LINEAR TEAM.** Run the Slack command: `/add_linear_workspace`  
+8. Click the access link provided in the Connect Linear pop-up and follow the steps in the Linear redirect page.
 - ⚠️ **IMPORTANT:** Alphonse v1.0 has a bug where he forgets to delete previously ingested Linear data, so make sure you pick the correct ***Linear*** team/workspace associated with your ***GitHub*** repo!  
-10. Approve access for your desired Linear workspace/team. When you see "Linear connected!", return to Slack. Alphonse can now read your team's Linear issues.
+9. Approve access for your desired Linear workspace/team. When you see "Linear connected!", return to Slack. Alphonse can now read your team's Linear issues.
 > Now you can ask Alphonse anything regarding your product's code AND your team's product decisions! Just @Alphonse <prompt>  
   
 ## Usage Tips
