@@ -53,8 +53,9 @@ He can read data from both your team's GitHub repo and relevant Linear workspace
 ### Connect your Linear workspace
 > (**Recommended** for comprehensive Q&A, but optional)  
 8. Run the Slack command: `/add_linear_workspace`  
-9. Click the access link provided in the Connect Linear pop-up  
-10. Approve access on the Linear page that opens. When you see "Linear connected!", return to Slack. Alphonse can now read your team's Linear issues.  
+9. Click the access link provided in the Connect Linear pop-up and follow the steps in the Linear redirect page.
+- ⚠️ **IMPORTANT:** Alphonse v1.0 has a bug where he forgets to delete previously ingested Linear data, so make sure you pick the correct ***Linear*** team/workspace associated with your ***GitHub*** repo!  
+10. Approve access for your desired Linear workspace/team. When you see "Linear connected!", return to Slack. Alphonse can now read your team's Linear issues.
 > Now you can ask Alphonse anything regarding your product's code AND your team's product decisions! Just @Alphonse <prompt>  
   
 ## Usage Tips
@@ -68,9 +69,9 @@ He can read data from both your team's GitHub repo and relevant Linear workspace
 - "Which blockers do you recommend we prioritize now?"  
 > e.g. Alphonse could answer by gathering your team's repo file docs and/or Linear Issues!  
 
-#### Tips to maximize Alphonse's usefulness
+### Tips to maximize Alphonse's usefulness
 
-1) **MOST IMPORTANT:** Keep your product's documentation up to date!! Alphonse works best when your repo docs and Linear issues are comprehensive and well-written. Alphonse provides better answers the more thorough and clear all your documentation is.
+1) ⚠️**MOST IMPORTANT:** Keep your product's documentation up to date!! Alphonse works best when your repo docs and Linear issues are comprehensive and well-written. Alphonse provides better answers the more thorough and clear all your documentation is.
 
 2) If Alphonse says he doesn't know, the information probably isn't in your connected repos or Linear workspace. He won't make up an answer.  
 
