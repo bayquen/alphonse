@@ -27,7 +27,7 @@ He can read data from both your team's GitHub repo and relevant Linear workspace
 
 > And yes, my assistant is inspired by Al Elric from Fullmetal, hence his character :)  
 
-## "Ohhh WOW- but how the flip do I use Alphonse?" 😳😖
+## "How the flip do I use Alphonse?" 😳😖
 > *Woah reader, why are you making those faces? Calm down, I'll tell you how:*
   
 1. Follow this [awesome link](https://rtfm-web.onrender.com/slack/install) to install Alphonse.  
