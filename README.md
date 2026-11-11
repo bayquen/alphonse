@@ -1,12 +1,18 @@
 # Alphonse
-> Developer: Brandon Bayquen (a.k.a. big bro)
+> Developer: [Brandon Bayquen](https://github.com/bayquen) (a.k.a. big bro)
 
-Slack assistant that helps onboard your engineers faster.
+### Slack assistant that helps onboard your engineers faster.
+
 <p align="center">
    <img width="358" height="358" alt="alphonse-serious-mogging" src="https://github.com/user-attachments/assets/b61b2f96-b7f6-4b29-8b0e-f1b3f1fe20b2" />
 </p>
 
-#### *Hi there, reader. You're probably wondering...*
+## Main Commands
+- **Ask Alphonse (Q&A)**: On a Slack channel where the assistant resides, type `@Alphonse <prompt>` and send.  
+- `/add_repo <https://github.com/[user]/[repo-name]>` - Queues and adds your team's GitHub repo to Alphonse's memory (max 1 repo per Slack workspace)  
+- `/add_linear_workspace` - Queues and adds your team's Linear workspace Issues to Alphonse's memory (make sure to choose ONLY your team's workspace via your Linear account)  
+  
+### [*Hi there, reader. You're probably wondering...*]()
 
 ## "What in the flop is Alphonse, big bro?" 
 <p align="center">
@@ -43,13 +49,15 @@ Perfect question, you clanker-loving, tech enthusiast *(or AI hater, or skeptic 
 > Now you can ask Alphonse anything regarding your product's code AND your team's product decisions! Just @Alphonse <prompt>
 
 ## Usage Tips
-#### Example questions to ask Alphonse:  
-"How does (feature X) work on the backend? Explain the flow step by step."  
-"Onboard me on our product without the advanced tech jargon."
-"What are some blockers right now?"
+#### Example questions to ask Alphonse:   
+- "Help me get familiar with our product without the advanced technical jargon."
+> e.g. Alphonse could answer by gathering your team's repo file docs!
+- "How does (feature X) work on the backend? Explain the flow step by step."  
+> e.g. via repo + Linear   
+- "Which blockers do you recommend we prioritize now?"  
+> e.g. Alphonse could answer by gathering your team's repo file docs and/or Linear Issues!  
 
-
-Tips to maximize Alphonse's usefulness
+#### Tips to maximize Alphonse's usefulness
 
 1) **MOST IMPORTANT:** Keep your product's documentation up to date!! Alphonse works best when your repo docs and Linear issues are comprehensive and well-written. Alphonse provides better answers the more thorough and clear all your documentation is.
 
