@@ -55,7 +55,7 @@ slackRouter.get("/slack/install", async (req, res) => {
     }
 });
 
-slackRouter.get("slack/oauth_redirect", async (req, res) => {
+slackRouter.get("/slack/oauth_redirect", async (req, res) => {
     try {
         await installer.handleCallback(req, res, callbackOptions, installOptions);
     } catch (err) {
