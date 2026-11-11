@@ -36,16 +36,16 @@ He can read data from both your team's GitHub repo and relevant Linear workspace
 4. Then run this Slack command: `/invite @Alphonse`. You can also click the channel name, open **Integrations**, and add Alphonse from there. Of course, you can have him present in multiple Slack channels.  
 ### Teach Alphonse about your product's GitHub repo
 5. **ADD YOUR REPO.** In any Slack channel where your team invited Alphonse, run the `/add_repo` command followed by your team's repo URL, ***including*** the `https://` prefix! Alphonse will check that he can reach the repository (and that it's a valid URL).  
-> **Follow this URL format:** `/add_repo https://github.com/user/your-repo`
+> **Please follow this URL format:** `/add_repo https://github.com/user/your-repo`
   
 - If your repo is set to **public**: he'll confirm that it's been queued to be stored in his memory.  
 - Otherwise, if it's **private**: a pop-up will appear:
   
-   a. Click the access link provided  
+   a. For private repos, click the access link provided 
   
-   b. Approve access for Alphonse on the GitHub page that opens. You can select which repos that Alphonse can reach. Just make sure you have access to view the given repo.  
+   b. Approve access for Alphonse on the GitHub page that opens. Select the desired repo you want Alphonse to read from. Just make sure you have access to that private repo.  
      
-   c. When you see "GitHub app authorized" in a new page, return to Slack and run `/add_repo` again.  
+   c. Once you see "GitHub app authorized" in a new page, you may close it and return to Slack, running `/add_repo <GitHub URL>` again!  
      
 6. Wait for Alphonse to finish reading (wait time depends on repo size). A confirmation DM from Alphonse will be sent to you upon success.  
 > Note: If you see a "Repo Access Failed" pop-up on Slack, make sure the **GitHub URL** is correct and try again  
