@@ -19,12 +19,17 @@
 <img width="500" height="210" alt="alphonse-goofy-mogging" src="https://github.com/user-attachments/assets/2065ad62-3f38-41cd-98f4-119c8fd8f0cf" />
 </p>
 
-Perfect question, you clanker-loving, tech enthusiast *(or AI hater, or skeptic - I won't discriminate)*. Alphonse is a Q&A Slack assistant that quickly answers questions about your team's software product. Help your engineers get up to speed on product features, architecture, updates, and team decisions. Alphonse can read data from both your team's GitHub repo and relevant Linear workspace for comprehensive Q&A queries (technical + business/product-level context).
+> Great question, you clanker-loving, tech enthusiast *(or AI hater, or skeptic - I won't discriminate)*.  
+  
+***Alphonse*** is a Q&A Slack assistant that quickly answers technical questions about your team's software product. 
+Get up to speed on product features, system architecture, updates, and team product decisions. 
+He can read data from both your team's GitHub repo and relevant Linear workspace for comprehensive Q&A queries (technical + business/product-level context).
 
 > And yes, my assistant is inspired by Al Elric from Fullmetal, hence his character :)  
 
 ## "Ohhh WOW- but how the flip do I use Alphonse?" 😳😖
-#### *Woah reader, why are you making those faces? Calm down, I'll tell you how:*
+> *Woah reader, why are you making those faces? Calm down, I'll tell you how:*
+  
 1. Follow this [awesome link](https://rtfm-web.onrender.com/slack/install) to install Alphonse.  
 2. After clicking "Add to Slack" on that page, follow the steps on the new page to choose your team's Slack workspace in which Alphonse will be installed. (You'll see a "Yippee!" page upon success.)  
 3. Open your team's Slack workspace and open a channel where you'd like to ask questions.  
@@ -43,17 +48,17 @@ Perfect question, you clanker-loving, tech enthusiast *(or AI hater, or skeptic 
    c. When you see "GitHub app authorized" in a new page, return to Slack and run `/add_repo` again.  
      
 9. Wait for Alphonse to finish reading (wait time depends on repo size). A confirmation DM from Alphonse will be sent to you upon success.  
-> Note: If you see a "Repo Access Failed" pop-up on Slack, check that the link is correct and try again  
+> Note: If you see a "Repo Access Failed" pop-up on Slack, make sure the **GitHub URL** is correct and try again  
   
 ### Connect your Linear workspace
-> (Optional, but recommended for comprehensive Q&A)  
+> (**Recommended** for comprehensive Q&A, but optional)  
 8. Run the Slack command: `/add_linear_workspace`  
 9. Click the access link provided in the Connect Linear pop-up  
 10. Approve access on the Linear page that opens. When you see "Linear connected!", return to Slack. Alphonse can now read your team's Linear issues.  
 > Now you can ask Alphonse anything regarding your product's code AND your team's product decisions! Just @Alphonse <prompt>  
   
 ## Usage Tips
-#### Example questions to ask Alphonse:  
+### Example questions to ask Alphonse:  
 - "Help me get familiar with our product without the advanced technical jargon."  
 > e.g. Alphonse could answer by gathering your team's repo file docs!
   
