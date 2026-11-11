@@ -31,8 +31,6 @@ const repoWorker = new Worker(
         const {
             repoUrl,
             slackTeamId,
-            slackChannelId,
-            slackUserId,
         } = job.data;
 
         await redisConnect();
@@ -101,7 +99,7 @@ repoWorker.on('completed', async job => {
     console.log(`Job ${job.id} has completed!`);
     // console.log("Notifying Slack channel:", job.data.slackChannelId);  // TEST LOG
     await notifyUser(
-        job.data.slackChannelId,
+        job.data.slackTeamId,
         job.data.slackUserId,
         `Hi! I've finished reading your repo, *${repoName(job.data.repoUrl)}*. Your team can now ask me questions! Try \`@Alphonse <prompt>\` in a channel I'm already invited in.\n
         For more comprehensive Q&A, you may also connect your Linear workspace by running \`/add_linear_workspace\` in a channel I'm already in and following the steps in the pop-up Linear page.`
@@ -119,7 +117,7 @@ repoWorker.on('failed', async (job, err) => {
     if (job.attemptsMade < maxAttempts) return;
 
     await notifyUser(
-        job.data.slackChannelId,
+        job.data.slackTeamId,
         job.data.slackUserId,
         `I couldn't finish reading *${repoName(job.data.repoUrl)}*. Please check the repo URL, and then run \`/add_repo again.\``
     );
