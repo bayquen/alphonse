@@ -1,7 +1,7 @@
 services:
   # ---------- 1. Web: Slack bot (Socket Mode) + OAuth callbacks + webhooks ----------
   - type: web
-    name: alphonse-web
+    name: alphonse-slack-app
     runtime: docker
     plan: 0.5c-512mb          # = "starter". Free tier sleeps, which would drop the Slack socket.
     region: oregon            # CANNOT be changed later; pick the one closest to Supabase/Redis
