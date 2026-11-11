@@ -24,7 +24,7 @@ Perfect question, you clanker-loving, tech enthusiast *(or AI hater, or skeptic 
 3. Open your team's Slack workspace and open a channel where you'd like to ask questions.  
 4. Then run this Slack command: `/invite @Alphonse`. You can also click the channel name, open **Integrations**, and add Alphonse from there. Of course, you can have him present in multiple Slack channels.  
 ### Teach Alphonse about your product's GitHub repo
-5. In any channel where Alphonse resides, run the `/add_repo` command followed by your repository's link, INCLUDING the `https://` prefix!  
+5. In any Slack channel where your team invited Alphonse, run the `/add_repo` command followed by your team's repo URL, INCLUDING the `https://` prefix!  
 > For example: `/add_repo https://github.com/user/your-repo`  
 6. Alphonse will check that he can reach the repository (and that it's a valid URL).  
 7. If your repo is public: he'll confirm that it's been queued to be stored in his memory.  
@@ -32,25 +32,30 @@ Perfect question, you clanker-loving, tech enthusiast *(or AI hater, or skeptic 
    a. Click the link provided  
    b. Approve access for Alphonse on the GitHub page that opens. You can select which repos that Alphonse can reach. Just make sure you have access to view the given repo.  
    c. When you see "GitHub app authorized" in a new page, return to Slack and run `/add_repo` again.  
-9. Wait for Alphonse to finish reading. Wait time depends on repo size.  
+9. Wait for Alphonse to finish reading (wait time depends on repo size). A confirmation DM from Alphonse will be sent to you upon success. 
 > Note: If you see a "Repo Access Failed" pop-up on Slack, check that the link is correct and try again  
 
 ### Connect your Linear workspace
 > (Optional, but recommended for comprehensive Q&A)  
 8. Run the Slack command: `/add_linear_workspace`  
 9. Click the access link provided in the Connect Linear pop-up  
-10. Approve access on the Linear page that opens. When you see "Linear connected!", return to Slack. Alphonse can now read your team's Linear issues.  
+10. Approve access on the Linear page that opens. When you see "Linear connected!", return to Slack. Alphonse can now read your team's Linear issues.
+> Now you can ask Alphonse anything regarding your product's code AND your team's product decisions! Just @Alphonse <prompt>
 
 ## Usage Tips
+#### Example questions to ask Alphonse:  
+"How does (feature X) work on the backend? Explain the flow step by step."  
+"Onboard me on our product without the advanced tech jargon."
+"What are some blockers right now?"
+
+
 Tips to maximize Alphonse's usefulness
 
-1) **MOST IMPORTANT:** Keep your product's documentation up to date!! Alphonse works best when your repo docs and Linear issues are well written, because Alphonse answers based on what he's read.  
+1) **MOST IMPORTANT:** Keep your product's documentation up to date!! Alphonse works best when your repo docs and Linear issues are comprehensive and well-written. Alphonse provides better answers the more thorough and clear all your documentation is.
 
 2) If Alphonse says he doesn't know, the information probably isn't in your connected repos or Linear workspace. He won't make up an answer.  
 
-3) Be specific. "How does login work in the auth service?" works better than "How does it work?"  
-
-4) Wait for the "finished reading" Slack message before asking questions about a newly added repo.  
+3) Just like with any other LLM interface, be as specific as needed. "How does enterprise login work in the OAuth service?" is more specific than "How does our login work?"  
 
 ## Tech Stack, BTW:
 **Frontend:** Slack's already-existing UI *(yay!)*  
