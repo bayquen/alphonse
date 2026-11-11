@@ -30,13 +30,13 @@ He can read data from both your team's GitHub repo and relevant Linear workspace
 ## "How the flip do I use Alphonse?" 😳😖
 > *Woah reader, why are you making those faces? Calm down, I'll tell you how:*
   
-1. Follow this [awesome link](https://rtfm-web.onrender.com/slack/install) to install Alphonse.  
+1. **INSTALL.** Follow this [awesome link](https://rtfm-web.onrender.com/slack/install) to install Alphonse.  
 2. After clicking "Add to Slack" on that page, follow the steps on the new page to choose your team's Slack workspace in which Alphonse will be installed. (You'll see a "Yippee!" page upon success.)  
 3. Open your team's Slack workspace and open a channel where you'd like to ask questions.  
 4. Then run this Slack command: `/invite @Alphonse`. You can also click the channel name, open **Integrations**, and add Alphonse from there. Of course, you can have him present in multiple Slack channels.  
 ### Teach Alphonse about your product's GitHub repo
-5. In any Slack channel where your team invited Alphonse, run the `/add_repo` command followed by your team's repo URL, INCLUDING the `https://` prefix!  
-> For example: `/add_repo https://github.com/user/your-repo`  
+5. In any Slack channel where your team invited Alphonse, run the `/add_repo` command followed by your team's repo URL, ***including*** the `https://` prefix!  
+> **Follow this URL format:** `/add_repo https://github.com/user/your-repo`  
 6. Alphonse will check that he can reach the repository (and that it's a valid URL).  
 7. If your repo is public: he'll confirm that it's been queued to be stored in his memory.  
 8. If your repo is private: a pop-up will appear:
