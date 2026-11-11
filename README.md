@@ -89,5 +89,8 @@ He can read data from both your team's GitHub repo and relevant Linear workspace
 ## FAQ
 ### What is Linear and why does Alphonse connect to it?
 - Linear is a trusted platform used by software and product teams alike to help organize and keep track of their software-related projects. You use it to manage project tasks, bugs, and features, assign responsibilities, and stay on top of development progress.
-- Alphonse uses Linear data to get better context of your team's product decisions and tasks that your GitHub repo(s) may otherwise not have documentation for. Assuming your team's Linear is well-documented, you'll have better decisional context at the business/org level, rather than just technical context.  
-  
+- Alphonse uses Linear data to get better context of your team's product decisions and tasks that your GitHub repo(s) may otherwise not have documentation for. Assuming your team's Linear is well-documented, you'll have better decisional context at the business/org level, rather than just technical context.
+
+### Where can I provide feedback or suggestions on Alphonse?
+- Any feedback (bug reports, improvements, feature suggestions) are happily appreciated in the [Discussions](https://github.com/bayquen/alphonse/discussions) page.  
+- OR, feel free to connect with me via [LinkedIn](https://linkedin.com/in/bayquen) with a connection note, so I know you used Alphonse! I'm quite active and post my work there mainly :)  
