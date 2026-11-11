@@ -34,26 +34,32 @@ Perfect question, you clanker-loving, tech enthusiast *(or AI hater, or skeptic 
 > For example: `/add_repo https://github.com/user/your-repo`  
 6. Alphonse will check that he can reach the repository (and that it's a valid URL).  
 7. If your repo is public: he'll confirm that it's been queued to be stored in his memory.  
-8. If your repo is private: a pop-up will appear:  
+8. If your repo is private: a pop-up will appear:
+  
    a. Click the access link provided  
+  
    b. Approve access for Alphonse on the GitHub page that opens. You can select which repos that Alphonse can reach. Just make sure you have access to view the given repo.  
+     
    c. When you see "GitHub app authorized" in a new page, return to Slack and run `/add_repo` again.  
-9. Wait for Alphonse to finish reading (wait time depends on repo size). A confirmation DM from Alphonse will be sent to you upon success. 
+     
+9. Wait for Alphonse to finish reading (wait time depends on repo size). A confirmation DM from Alphonse will be sent to you upon success.  
 > Note: If you see a "Repo Access Failed" pop-up on Slack, check that the link is correct and try again  
-
+  
 ### Connect your Linear workspace
 > (Optional, but recommended for comprehensive Q&A)  
 8. Run the Slack command: `/add_linear_workspace`  
 9. Click the access link provided in the Connect Linear pop-up  
-10. Approve access on the Linear page that opens. When you see "Linear connected!", return to Slack. Alphonse can now read your team's Linear issues.
-> Now you can ask Alphonse anything regarding your product's code AND your team's product decisions! Just @Alphonse <prompt>
-
+10. Approve access on the Linear page that opens. When you see "Linear connected!", return to Slack. Alphonse can now read your team's Linear issues.  
+> Now you can ask Alphonse anything regarding your product's code AND your team's product decisions! Just @Alphonse <prompt>  
+  
 ## Usage Tips
-#### Example questions to ask Alphonse:   
-- "Help me get familiar with our product without the advanced technical jargon."
+#### Example questions to ask Alphonse:  
+- "Help me get familiar with our product without the advanced technical jargon."  
 > e.g. Alphonse could answer by gathering your team's repo file docs!
+  
 - "How does (feature X) work on the backend? Explain the flow step by step."  
-> e.g. via repo + Linear   
+> e.g. via repo + Linear
+  
 - "Which blockers do you recommend we prioritize now?"  
 > e.g. Alphonse could answer by gathering your team's repo file docs and/or Linear Issues!  
 
@@ -65,7 +71,7 @@ Perfect question, you clanker-loving, tech enthusiast *(or AI hater, or skeptic 
 
 3) Just like with any other LLM interface, be as specific as needed. "How does enterprise login work in the OAuth service?" is more specific than "How does our login work?"  
 
-## Tech Stack, BTW:
+## Tech Stack:
 **Frontend:** Slack's already-existing UI *(yay!)*  
 **Backend:** Node.js, TypeScript, Express, Slack Bolt JS  
 **Databases:** Supabase (PostgreSQL + pgvector), Redis Cloud (Redis CLI)  
