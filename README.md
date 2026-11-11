@@ -77,7 +77,7 @@ He can read data from both your team's GitHub repo and relevant Linear workspace
 
 3) Just like with any other LLM interface, be as specific as needed. "How does enterprise login work in the OAuth service?" is more specific than "How does our login work?"  
 
-## Tech Stack:
+## Tech Stack
 **Frontend:** Slack's already-existing UI *(yay!)*  
 **Backend:** Node.js, TypeScript, Express, Slack Bolt JS  
 **Databases:** Supabase (PostgreSQL + pgvector), Redis Cloud (Redis CLI)  
@@ -85,3 +85,9 @@ He can read data from both your team's GitHub repo and relevant Linear workspace
 **AI:** OpenAI `gpt-6.1-sol` and/or `gpt-6.1-terra`  
 **Embeddings (RAG):** VoyageAI `voyage-code-3`  
 **Backend deploy:** Render (with WebSocket enabled)  
+
+## FAQ
+### What is Linear and why does Alphonse connect to it?
+- Linear is a trusted platform used by software and product teams alike to help organize and keep track of their software-related projects. You use it to manage project tasks, bugs, and features, assign responsibilities, and stay on top of development progress.
+- Alphonse uses Linear data to get better context of your team's product decisions and tasks that your GitHub repo(s) may otherwise not have documentation for. Assuming your team's Linear is well-documented, you'll have better decisional context at the business/org level, rather than just technical context.  
+  
