@@ -16,7 +16,7 @@ function page(title: string, body: string): string {
 
 const callbackOptions: CallbackOptions = {
     successAsync: async (installation, _opts, _req, res) => {
-        res.writeHead(200, { "Content-Type": "text/html; char_set=utf-8" });
+        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
         res.end(page(
             "Yippee! Alphonse is installed.",
             "Now head back to Slack and run <code>/add_repo &lt;your GitHub repo URL&gt;</code> to get started."

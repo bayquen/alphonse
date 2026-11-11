@@ -1,7 +1,7 @@
 services:
   # ---------- 1. Web: Slack bot (Socket Mode) + OAuth callbacks + webhooks ----------
   - type: web
-    name: rtfm-web
+    name: alphonse-web
     runtime: docker
     plan: 0.5c-512mb          # = "starter". Free tier sleeps, which would drop the Slack socket.
     region: oregon            # CANNOT be changed later; pick the one closest to Supabase/Redis
@@ -16,9 +16,17 @@ services:
         sync: false
       - key: VOYAGE_API_KEY
         sync: false
-      - key: SLACK_BOT_TOKEN
+      - key: SLACK_APP_BASE_URL
         sync: false
       - key: SLACK_APP_LEVEL_TOKEN
+        sync: false
+      - key: SLACK_CLIENT_ID
+        sync: false
+      - key: SLACK_CLIENT_SECRET
+        sync: false
+      - key: SLACK_STATE_SECRET
+        sync: false
+      - key: SLACK_TOKEN_ENCRYPTION_KEY
         sync: false
       - key: REDIS_CLOUD_HOST
         sync: false
@@ -53,7 +61,7 @@ services:
 
   # ---------- 2. Repo worker: clones repos, chunks, embeds ----------
   - type: worker
-    name: rtfm-repo-worker
+    name: alphonse-repo-worker
     runtime: docker
     plan: 0.5c-512mb              # = "standard" (2 GB). Drop to 0.5c-512mb to save money, then watch memory.
     region: oregon
@@ -77,6 +85,12 @@ services:
         sync: false
       - key: REDIS_CLOUD_PASSWORD
         sync: false
+      - key: SUPABASE_CONNECTION_URL
+        sync: false
+      - key: SUPABASE_CA_CERT_BASE64
+        sync: false
+      - key: SLACK_TOKEN_ENCRYPTION_KEY
+        sync: false
       - key: VOYAGE_API_KEY
         sync: false
       - key: GITHUB_APP_ID
@@ -86,7 +100,7 @@ services:
 
   # ---------- 3. Linear worker: embeds Linear issues into Postgres ----------
   - type: worker
-    name: rtfm-linear-worker
+    name: alphonse-linear-worker
     runtime: docker
     plan: 0.5c-512mb
     region: oregon
@@ -100,6 +114,8 @@ services:
         value: "true"
       - key: SHUTDOWN_TIMEOUT_MS
         value: "55000"
+      - key: SLACK_TOKEN_ENCRYPTION_KEY
+        sync: false
       - key: REDIS_CLOUD_HOST
         sync: false
       - key: REDIS_CLOUD_PORT
