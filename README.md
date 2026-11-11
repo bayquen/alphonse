@@ -34,8 +34,8 @@ Perfect question, you clanker-loving, tech enthusiast *(or AI hater, or skeptic 
 > For example: `/add_repo https://github.com/user/your-repo`  
 6. Alphonse will check that he can reach the repository (and that it's a valid URL).  
 7. If your repo is public: he'll confirm that it's been queued to be stored in his memory.  
-8. If your repo is private: a pop-up modal will appear.  
-   a. Click the link provided  
+8. If your repo is private: a pop-up will appear:  
+   a. Click the access link provided  
    b. Approve access for Alphonse on the GitHub page that opens. You can select which repos that Alphonse can reach. Just make sure you have access to view the given repo.  
    c. When you see "GitHub app authorized" in a new page, return to Slack and run `/add_repo` again.  
 9. Wait for Alphonse to finish reading (wait time depends on repo size). A confirmation DM from Alphonse will be sent to you upon success. 
