@@ -74,12 +74,12 @@ He can read data from both your team's GitHub repo and relevant Linear workspace
 3) Just like with any other LLM interface, be as specific as needed. "How does enterprise login work in the OAuth service?" is more specific than "How does our login work?"  
 
 ## Tech Stack
-**Frontend:** Slack's already-existing UI *(yay!)*  
+**Frontend:** *Slack UI itself!*
 **Backend:** Node.js, TypeScript, Express, Slack Bolt JS  
 **Databases:** Supabase (PostgreSQL + pgvector), Redis Cloud (Redis CLI)  
 **Auth:** GitHub OAuth, Linear OAuth, Slack OAuth  
-**AI:** OpenAI `gpt-6.1-sol` and/or `gpt-6.1-terra`  
-**Embeddings (RAG):** VoyageAI `voyage-code-3`  
+**AI:** OpenAI `gpt-6.1-sol`
+**Embeddings (RAG):** Voyage AI `voyage-code-3`  
 **Backend deploy:** Render (with WebSocket enabled)  
 
 ## FAQ
