@@ -73,7 +73,7 @@ He can read data from both your team's GitHub repo and relevant Linear workspace
 
 3) Just like with any other LLM interface, be as specific as needed. "How does enterprise login work in the OAuth service?" is more specific than "How does our login work?"  
 
-## Tech Stack
+## Tech Stack (v1)
 | **Layer** | **Technology** |  
 |---|---|  
 Frontend | *N/A* (Slack's UI) |   
