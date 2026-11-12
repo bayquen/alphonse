@@ -1,5 +1,5 @@
 # Alphonse
-> Developer: [Brandon Bayquen](https://github.com/bayquen) (a.k.a. big bro)
+> Developer: [Brandon Bayquen](https://github.com/bayquen)
 
 ### Slack assistant that helps onboard your engineers faster.
 
@@ -14,12 +14,10 @@
   
 ### [*Hi there, reader. You're probably wondering...*]()
 
-## "What in the flop is Alphonse, big bro?" 
+## "What in the flop is Alphonse?" 
 <p align="center">
 <img width="500" height="210" alt="alphonse-goofy-mogging" src="https://github.com/user-attachments/assets/2065ad62-3f38-41cd-98f4-119c8fd8f0cf" />
 </p>
-
-> Great question, you clanker-loving, tech enthusiast *(or AI hater, or skeptic - I won't discriminate)*.  
   
 ***Alphonse*** is a Q&A Slack assistant that quickly answers technical questions about your team's software product. 
 Get up to speed on product features, system architecture, updates, and team product decisions. 
