@@ -74,14 +74,17 @@ He can read data from both your team's GitHub repo and relevant Linear workspace
 3) Just like with any other LLM interface, be as specific as needed. "How does enterprise login work in the OAuth service?" is more specific than "How does our login work?"  
 
 ## Tech Stack
-**Frontend:** *Slack UI itself!*
-**Backend:** Node.js, TypeScript, Express, Slack Bolt JS  
-**Databases:** Supabase (PostgreSQL + pgvector), Redis Cloud (Redis CLI)  
-**Auth:** GitHub OAuth, Linear OAuth, Slack OAuth  
-**AI:** OpenAI `gpt-6.1-sol`
-**Embeddings (RAG):** Voyage AI `voyage-code-3`  
-**Backend deploy:** Render (with WebSocket enabled)  
-
+| **Layer** | **Technology** |  
+|---|---|  
+Frontend | *N/A* (Slack's UI) |   
+Backend | Node.js · TypeScript · Express · Slack Bolt JS  
+Databases | Supabase (PostgreSQL + pgvector) | Redis Cloud |  
+Auth | GitHub OAuth | Linear OAuth | Slack OAuth |  
+AI | OpenAI - `gpt-6.1-sol` |  
+Embeddings (RAG) | Voyage AI - `voyage-code-3` |  
+Frontend deploy | Slack |  
+Backend deploy | Render (WebSocket required) |  
+  
 ## FAQ
 ### What is Linear and why does Alphonse connect to it?
 - Linear is a trusted platform used by software and product teams alike to help organize and keep track of their software-related projects. You use it to manage project tasks, bugs, and features, assign responsibilities, and stay on top of development progress.
