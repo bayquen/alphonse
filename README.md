@@ -12,9 +12,9 @@
 - `/add_repo <https://github.com/[user]/[repo-name]>` - Queues and adds your team's GitHub repo to Alphonse's memory (max 1 repo per Slack workspace)  
 - `/add_linear_workspace` - Queues and adds your team's Linear workspace Issues to Alphonse's memory (make sure to choose ONLY your team's workspace via your Linear account)  
   
-### *Hi there. You're probably wondering...*
+### *Hi there. You're may be wondering what Alphonse is...*
 
-## "What in the flop is Alphonse?" 
+## Introduction
 <p align="center">
 <img width="500" height="210" alt="alphonse-goofy-mogging" src="https://github.com/user-attachments/assets/2065ad62-3f38-41cd-98f4-119c8fd8f0cf" />
 </p>
@@ -25,7 +25,13 @@ He can read data from both your team's GitHub repo and relevant Linear workspace
 
 > And yes, my assistant is inspired by Al Elric from Fullmetal, hence his character :)  
 
-## "How do I use Alphonse?"
+## Setup and Usage
+### **REQUIREMENTS:** 
+- a Slack account  
+- a Slack workspace that you have admin or app installation permissions.  
+> ⚠️Important note for Slack developers: make sure you're on a regular Slack workspace and NOT on Developer Sandbox!)  
+  
+### **SETUP INSTRUCTIONS:**  
 1. **INSTALL.** Follow this [awesome URL](https://rtfm-web.onrender.com/slack/install) to install Alphonse.  
 2. Click the "**Add to Slack**" button. Then on the new Slack auth page, choose your team's Slack workspace in which Alphonse will be installed. (You should be redirected to a "Yippee!" page upon success.)  
 3. Open your team's Slack workspace and open a channel where you'd like to ask questions.  
