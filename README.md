@@ -30,6 +30,8 @@ He can read data from both your team's GitHub repo and relevant Linear workspace
 - a Slack account  
 - a Slack workspace that you have admin or app installation permissions.  
 > ⚠️Important note for Slack developers: make sure you're on a regular Slack workspace and NOT on Developer Sandbox!)  
+- ***(highly recommended, but optional):*** a Linear account + workspace associated with your team's product.  
+> Linear-team data access gives Alphonse business decision context for Q&A.  
   
 ### **SETUP INSTRUCTIONS:**  
 1. **INSTALL.** Follow this [awesome URL](https://rtfm-web.onrender.com/slack/install) to install Alphonse.  
