@@ -26,7 +26,7 @@ He can read data from both your team's GitHub repo and relevant Linear workspace
 > And yes, my assistant is inspired by Al Elric from Fullmetal, hence his character :)  
 
 ## Setup and Usage
-### **REQUIREMENTS:** s
+### **REQUIREMENTS:**  
 - a [Slack](https://slack.com/signin) account  
 - a Slack workspace that you have admin or app installation permissions.  
 > ⚠️Important note for Slack developers: make sure you're on a regular Slack workspace and NOT on Developer Sandbox!)  
