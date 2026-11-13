@@ -73,11 +73,11 @@ He can read data from both your team's GitHub repo and relevant Linear workspace
 
 ### Tips to maximize Alphonse's usefulness
 
-1) ⚠️**MOST IMPORTANT:** Keep your product's documentation up to date!! Alphonse works best when your repo docs and Linear issues are comprehensive and well-written. Alphonse provides better answers the more thorough and clear all your documentation is.
+1) ⚠️**MOST IMPORTANT:** Keep your product's documentation up to date!! Alphonse works best at answering Q&A when your repo docs and Linear issues are thorough and well-written.
 
 2) If Alphonse says he doesn't know, the information probably isn't in your connected repos or Linear workspace. He won't make up an answer.  
 
-3) Just like with any other LLM interface, be as specific as needed. "How does enterprise login work in the OAuth service?" is more specific than "How does our login work?"  
+3) Just like with any other AI chat interface, be as specific as needed. "How does enterprise login work in the OAuth service?" is more specific than "How does our login work?"  
 
 ## Tech Stack (v1)
 | **Layer** | **Technology** |  
