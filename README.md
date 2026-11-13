@@ -84,8 +84,8 @@ He can read data from both your team's GitHub repo and relevant Linear workspace
 |---|---|  
 Frontend | *N/A* (Slack's UI) |   
 Backend | Node.js · TypeScript · Express · Slack Bolt JS  
-Databases | Supabase (PostgreSQL + pgvector) | Redis Cloud |  
-Auth | GitHub OAuth | Linear OAuth | Slack OAuth |  
+Databases | Supabase (PostgreSQL + pgvector) · Redis Cloud |  
+Auth | GitHub OAuth · Linear OAuth · Slack OAuth |  
 AI | OpenAI - `gpt-6.1-sol` |  
 Embeddings (RAG) | Voyage AI - `voyage-code-3` |  
 Frontend deploy | Slack |  
