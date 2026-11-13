@@ -56,14 +56,12 @@ He can read data from both your team's GitHub repo and relevant Linear workspace
   
 ## Usage Tips
 ### Example questions to ask Alphonse:  
-- "Help me get familiar with our product without the advanced technical jargon."  
-> e.g. Alphonse could answer by gathering your team's repo file docs!
-  
-- "How does (feature X) work on the backend? Explain the flow step by step."  
-> e.g. via repo + Linear
-  
-- "Which blockers do you recommend we prioritize now?"  
-> e.g. Alphonse could answer by gathering your team's repo file docs and/or Linear Issues!  
+| **Question** | **Description** |
+|---|---|
+"Help me get familiar with our product quickly as a new engineer." | e.g. Alphonse answers by retrieving from your team's repo docs |
+"How does [feature X] work? Explain the flow step by step." | e.g. retrieves answer via repo + Linear |
+"Which blockers do you recommend we prioritize now?" | e.g. retrieves answer via your team's Linear Issues |
+"Why did we decide to implement [feature X]?" | e.g. both from repo and Linear |
 
 ### Tips to maximize Alphonse's usefulness
 
