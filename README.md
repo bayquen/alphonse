@@ -98,4 +98,4 @@ Backend deploy | Render (WebSocket required) |
   
 ### Where can I provide feedback or suggestions on Alphonse?
 - Any feedback (bug reports, improvements, feature suggestions) are happily appreciated in the [Discussions](https://github.com/bayquen/alphonse/discussions) page.  
-- OR, feel free to connect with me via [LinkedIn](https://linkedin.com/in/bayquen) with a connection note, so I know you used Alphonse! I'm quite active and post my work there mainly :)  
+- OR, feel free to connect with me via [LinkedIn](https://linkedin.com/in/bayquen) with a connection note, so I know you used Alphonse! I'm quite active and post about my work there :)
