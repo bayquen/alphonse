@@ -12,7 +12,7 @@
 - `/add_repo <https://github.com/[user]/[repo-name]>` - Queues and adds your team's GitHub repo to Alphonse's memory (max 1 repo per Slack workspace)  
 - `/add_linear_workspace` - Queues and adds your team's Linear workspace Issues to Alphonse's memory (make sure to choose ONLY your team's workspace via your Linear account)  
   
-### [*Hi there. You're probably wondering...*]()
+### *Hi there. You're probably wondering...*
 
 ## "What in the flop is Alphonse?" 
 <p align="center">
